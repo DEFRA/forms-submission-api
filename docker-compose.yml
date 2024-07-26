@@ -1,33 +1,72 @@
+version: '3.4'
 services:
-  mongo:
-    # Initialise a Mongo cluster with a replicaset of 1 node.
-    # Based on https://medium.com/workleap/the-only-local-mongodb-replica-set-with-docker-compose-guide-youll-ever-need-2f0b74dd8384
-    # Since we are using transactions, we require a replicaset. Local dev with docker compose uses 1 node below, but our live
-    # environments have multiple nodes.
-    # The replicaset needs initialising, so the healthcheck can be hijacked to initialise this so that it can keep retrying
-    # until the operation is successful (might need to wait a while after container boot for this to work, hence the interval/retries)
-    # WARNING: do not turn on authentication, otherwise will need to deal with generating key pairs and sharing them between
-    # the replicaset nodes. For local development this is overkill, so just turn off auth and connect to Mongo without creds.
-    image: mongo:6.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
-    restart: unless-stopped
+  localstack:
+    image: localstack/localstack:3.0.2
     ports:
-      - 27017:27017
+      - '4566:4566' # LocalStack Gateway
+      - '4510-4559:4510-4559' # external services port range
+    env_file:
+      - 'compose/aws.env'
+    environment:
+      DEBUG: ${DEBUG:-1}
+      LS_LOG: WARN # Localstack DEBUG Level
+      SERVICES: s3,sqs,sns,firehose
+      LOCALSTACK_HOST: 127.0.0.1
+    volumes:
+      - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
+      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}) }" | mongosh --port 27017 --quiet
+      test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s
-      timeout: 30s
-      start_period: 0s
-      start_interval: 1s
-      retries: 30
-    environment:
-      MONGO_INITDB_DATABASE: forms-submission-api
+      start_period: 5s
+      retries: 3
+    networks:
+      cdpuploader:
+        ipv4_address: 10.0.2.20
 
-  mongo-express:
-    image: mongo-express
-    restart: unless-stopped
+  redis:
+    image: redis:7.2.3-alpine3.18
     ports:
-      - 8081:8081
+      - '6379:6379'
+    restart: always
+    networks:
+      - cdpuploader
+
+  cdp-uploader:
+    image: defradigital/cdp-uploader:${CDP_UPLOADER_VERSION:-latest}
+    ports:
+      - '7337:7337'
+    links:
+      - 'localstack:localstack'
+      - 'redis:redis'
+    depends_on:
+      localstack:
+        condition: service_healthy
+    env_file:
+      - 'compose/aws.env'
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
-      ME_CONFIG_BASICAUTH: false
+      VIRTUAL_HOST: ~^uploader\..*\.sslip\.io
+      VIRTUAL_PATH: /
+      VIRTUAL_PORT: 7337
+      PORT: 7337
+      NODE_ENV: development
+      REDIS_HOST: redis
+      LOCALSTACK_ENDPOINT: http://localhost.localstack.cloud:4566
+      S3_ENDPOINT: http://localhost.localstack.cloud:4566
+      SQS_ENDPOINT: http://localhost.localstack.cloud:4566
+      USE_SINGLE_INSTANCE_CACHE: true
+      MOCK_VIRUS_SCAN_ENABLED: true
+      MOCK_VIRUS_RESULT_DELAY: 3
+    dns:
+      # Set the DNS server to be the LocalStack container
+      - 10.0.2.20
+    networks:
+      - cdpuploader
+
+networks:
+  cdpuploader:
+    driver: bridge
+    ipam:
+      config:
+        # Specify the subnet range for IP address allocation
+        - subnet: 10.0.2.0/24
