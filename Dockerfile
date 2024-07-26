@@ -11,8 +11,10 @@ ARG PORT_DEBUG
 ENV PORT ${PORT}
 EXPOSE ${PORT} ${PORT_DEBUG}
 
-COPY --chown=node:node package*.json ./
-RUN npm install
+COPY --chown=node:node packag*.json ./
+
+RUN npm ci
+
 COPY --chown=node:node . .
 RUN npm run build
 
@@ -38,4 +40,4 @@ ARG PORT
 ENV PORT ${PORT}
 EXPOSE ${PORT}
 
-CMD [ "node", "." ]
+CMD [ "npm", "start", "--ignore-scripts" ]

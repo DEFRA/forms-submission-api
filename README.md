@@ -9,8 +9,6 @@ Core delivery platform Node.js Backend Template.
   - [Development](#development)
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
-  - [Formatting](#formatting)
-    - [Windows prettier issue](#windows-prettier-issue)
 - [API endpoints](#api-endpoints)
 - [Calling API endpoints](#calling-api-endpoints)
   - [Postman](#postman)
@@ -38,11 +36,29 @@ nvm use
 
 ### Setup
 
-Install application dependencies:
+1. Install Docker
+
+2. Bring up runtime dependencies
 
 ```bash
-npm install
+docker compose up
 ```
+
+3. Create a `.env` file with the following mandatory environment variables populated at root level:
+
+```text
+MONGO_URI=""
+MONGO_DATABASE=""
+OIDC_JWKS_URI=""
+OIDC_VERIFY_AUD=""
+OIDC_VERIFY_ISS=""
+ROLE_EDITOR_GROUP_ID=""
+HTTP_PROXY=
+HTTPS_PROXY=
+NO_PROXY=
+```
+
+For proxy options, see https://www.npmjs.com/package/proxy-from-env which is used by https://github.com/TooTallNate/proxy-agents/tree/main/packages/proxy-agent. It's currently supports Hapi Wreck only, e.g. in the JWKS lookup.
 
 ### Development
 
@@ -50,14 +66,6 @@ To run the application in `development` mode run:
 
 ```bash
 npm run dev
-```
-
-### Testing
-
-To test the application run:
-
-```bash
-npm run test
 ```
 
 ### Production
@@ -77,78 +85,24 @@ To view them in your command line run:
 npm run
 ```
 
-### Formatting
-
-#### Windows prettier issue
-
-If you are having issues with formatting of line breaks on Windows update your global git config by running:
-
-```bash
-git config --global core.autocrlf false
-```
-
 ## API endpoints
 
-| Endpoint             | Description                    |
-| :------------------- | :----------------------------- |
-| `GET: /health`       | Health                         |
-| `GET: /example    `  | Example API (remove as needed) |
-| `GET: /example/<id>` | Example API (remove as needed) |
+| Endpoint                       | Description       |
+| :----------------------------- | :---------------- |
+| `GET: /health`                 | Health            |
+| `GET: /v1/entities`            | Entities          |
+| `GET: /v1/entities/<entityId>` | Entity by ID      |
+| `PATCH: /forms/<id>`           | Update Form by ID |
 
 ## Calling API endpoints
 
 ### Postman
 
-A [Postman](https://www.postman.com/) collection and environment are available for making calls to the forms-submission-api API.
-Simply import the collection and environment into Postman.
+A [Postman](https://www.postman.com/) collection and environment are available for making calls to the Teams and
+Repositories API. Simply import the collection and environment into Postman.
 
 - [CDP Node Backend Template Postman Collection](postman/forms-submission-api.postman_collection.json)
 - [CDP Node Backend Template Postman Environment](postman/forms-submission-api.postman_environment.json)
-
-## Development helpers
-
-### MongoDB Locks
-
-If you require a write lock for Mongo you can acquire it via `server.locker` or `request.locker`:
-
-```javascript
-async function doStuff(server) {
-  const lock = await server.locker.lock('unique-resource-name')
-
-  if (!lock) {
-    // Lock unavailable
-    return
-  }
-
-  try {
-    // do stuff
-  } finally {
-    await lock.free()
-  }
-}
-```
-
-Keep it small and atomic.
-
-You may use **using** for the lock resource management.
-Note test coverage reports do not like that syntax.
-
-```javascript
-async function doStuff(server) {
-  await using lock = await server.locker.lock('unique-resource-name')
-
-  if (!lock) {
-    // Lock unavailable
-    return
-  }
-
-  // do stuff
-
-  // lock automatically released
-}
-```
-
-Helper methods are also available in `/src/helpers/mongo-lock.js`.
 
 ## Docker
 
@@ -163,7 +117,7 @@ docker build --target development --no-cache --tag forms-submission-api:developm
 Run:
 
 ```bash
-docker run -e PORT=3001 -p 3001:3001 forms-submission-api:development
+docker run -e GITHUB_API_TOKEN -p 3008:3008 forms-submission-api:development
 ```
 
 ### Production image
@@ -177,21 +131,7 @@ docker build --no-cache --tag forms-submission-api .
 Run:
 
 ```bash
-docker run -e PORT=3001 -p 3001:3001 forms-submission-api
-```
-
-### Docker Compose
-
-A local environment with:
-
-- Localstack for AWS services (S3, SQS)
-- Redis
-- MongoDB
-- This service.
-- A commented out frontend example.
-
-```bash
-docker compose up --build -d
+docker run -e GITHUB_API_TOKEN -p 3001:3001 forms-submission-api
 ```
 
 ## Licence

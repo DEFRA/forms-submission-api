@@ -1,7 +1,13 @@
-function failAction(request, h, error) {
-  request.logger.error(error, error.message)
+/**
+ * Log and throw and error
+ * @type {Method}
+ */
+export function failAction(request, h, error) {
+  request.logger.error(error, error?.message)
 
-  throw error
+  throw error ?? new Error('Unknown error')
 }
 
-export { failAction }
+/**
+ * @typedef {import('@hapi/hapi').Lifecycle.Method} Method
+ */

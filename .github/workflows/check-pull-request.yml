@@ -2,26 +2,162 @@ name: Check Pull Request
 
 on:
   pull_request:
+
+  push:
     branches:
       - main
-    types:
-      - opened
-      - edited
-      - reopened
-      - synchronize
-      - ready_for_review
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  pr-validator:
-    name: Run Pull Request Checks
-    runs-on: ubuntu-latest
+  install:
+    name: Install
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        runner:
+          - ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        id: npm-install-cache
         with:
-          node-version: 20
-          cache: npm
-      - run: npm install
-      - run: npm run format:check
-      - run: npm run lint
-      - run: npm test
+          enableCrossOsArchive: true
+          key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+
+      - name: Setup Node.js
+        if: steps.npm-install-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        if: steps.npm-install-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+  build:
+    name: Build
+    runs-on: ${{ matrix.runner }}
+    needs: [install]
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        runner:
+          - ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          enableCrossOsArchive: true
+          key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+
+      - name: Cache build
+        uses: actions/cache@v4
+        with:
+          enableCrossOsArchive: true
+          key: npm-build-${{ runner.os }}-${{ github.sha }}
+          path: .server
+
+      - name: Run build
+        run: npm run build
+
+  lint:
+    name: ${{ matrix.task.description }} (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    needs: [install]
+
+    env:
+      # Authorise GitHub API requests for EditorConfig checker binary
+      # https://www.npmjs.com/package/editorconfig-checker
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        runner:
+          - ubuntu-latest
+
+        task:
+          - description: Prettier
+            run: npm run format:check
+
+          - description: EditorConfig
+            run: npm run lint:editorconfig
+
+          - description: ESLint
+            run: npm run lint:js
+
+          - description: TypeScript compiler
+            run: npm run lint:types
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          enableCrossOsArchive: true
+          key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+
+      - name: Run lint task
+        run: ${{ matrix.task.run }}
+
+  tasks:
+    name: ${{ matrix.task.description }} (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    needs: [install, build]
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        runner:
+          - ubuntu-latest
+
+        task:
+          - description: Unit tests
+            run: npm run test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v4
+        with:
+          enableCrossOsArchive: true
+          key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          path: node_modules
+
+      - name: Restore build
+        uses: actions/cache/restore@v4
+        with:
+          enableCrossOsArchive: true
+          key: npm-build-${{ runner.os }}-${{ github.sha }}
+          path: .server
+
+      - name: Run task
+        run: ${{ matrix.task.run }}

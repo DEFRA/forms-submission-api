@@ -1,13 +1,24 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "checkJs": true,
     "module": "NodeNext",
     "noEmit": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "target": "es2022",
+    "baseUrl": "./",
     "paths": {
       "~/*": ["./*"]
-    },
-    "resolveJsonModule": true
+    }
   },
-  "exclude": [".cache", ".public", ".server", "node_modules"],
-  "include": ["**/*.cjs", "**/*.js"]
+  "include": [
+    "**/*.cjs",
+    "**/*.js",
+    "**/*.mjs",
+    ".eslintrc.*",
+    ".prettierrc.*",
+    ".lintstagedrc.*"
+  ],
+  "exclude": ["node_modules", "coverage", ".server"]
 }

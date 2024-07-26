@@ -1,20 +1,37 @@
 import path from 'path'
+
 import hapi from '@hapi/hapi'
+import Wreck from '@hapi/wreck'
+import { ProxyAgent } from 'proxy-agent'
 
 import { config } from '~/src/config/index.js'
-import { router } from '~/src/api/router.js'
-import { requestLogger } from '~/src/helpers/logging/request-logger.js'
-import { mongoDb } from '~/src/helpers/mongodb.js'
 import { failAction } from '~/src/helpers/fail-action.js'
-import { secureContext } from '~/src/helpers/secure-context/index.js'
-import { pulse } from '~/src/helpers/pulse.js'
+import { prepareDb } from '~/src/mongo.js'
+import { auth } from '~/src/plugins/auth.js'
+import { logRequests } from '~/src/plugins/log-requests.js'
+import { router } from '~/src/plugins/router.js'
+import { prepareSecureContext } from '~/src/secure-context.js'
 
 const isProduction = config.get('isProduction')
 
-async function createServer() {
+const proxyAgent = new ProxyAgent()
+
+Wreck.agents = {
+  https: proxyAgent,
+  http: proxyAgent,
+  httpsAllowUnauthorized: proxyAgent
+}
+
+/**
+ * Creates the Hapi server
+ */
+export async function createServer() {
   const server = hapi.server({
     port: config.get('port'),
     routes: {
+      auth: {
+        mode: 'required'
+      },
       validate: {
         options: {
           abortEarly: false
@@ -40,17 +57,15 @@ async function createServer() {
     }
   })
 
-  await server.register(requestLogger)
+  await server.register(auth)
+  await server.register(logRequests)
 
   if (isProduction) {
-    await server.register(secureContext)
+    prepareSecureContext(server)
   }
 
-  // The mongoDb plugin adds access to mongo by adding `db` to the server and request object.
-  // Also adds an instance of mongoClient to just the server object.
-  await server.register([pulse, mongoDb, router])
+  await prepareDb(server.logger)
+  await server.register(router)
 
   return server
 }
-
-export { createServer }
