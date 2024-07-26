@@ -16,8 +16,7 @@ export let db
  */
 export let client
 
-export const METADATA_COLLECTION_NAME = 'form-metadata'
-export const DEFINITION_COLLECTION_NAME = 'form-definition'
+export const COLLECTION_NAME = 'files'
 
 /**
  * Prepare the database and establish a connection
@@ -37,10 +36,10 @@ export async function prepareDb(logger) {
   db = client.db(databaseName)
 
   // Ensure db indexes
-  const coll = db.collection(METADATA_COLLECTION_NAME)
+  const coll = db.collection(COLLECTION_NAME)
 
-  await coll.createIndex({ title: 1 })
-  await coll.createIndex({ slug: 1 }, { unique: true })
+  /** @todo */
+  // await coll.createIndex({ title: 1 })
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
