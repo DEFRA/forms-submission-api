@@ -32,6 +32,10 @@ export async function ingestFile(uploadPayload) {
   }
 }
 
+export async function get(formId, fileId) {
+  // TODO
+}
+
 /**
  * @import { UploadPayload } from '~/src/api/types.js'
  */
