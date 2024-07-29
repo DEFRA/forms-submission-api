@@ -10,7 +10,7 @@ const logger = createLogger()
 export async function create(fileStatus) {
   logger.info(`Creating file status for file ID ${fileStatus.fileId}`)
 
-  const coll = /** @satisfies {Collection<FileUploadStatus>}>} */ (
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
     db.collection(COLLECTION_NAME)
   )
 
@@ -29,5 +29,5 @@ export async function create(fileStatus) {
  */
 
 /**
- * @import { FileUploadStatus } from '../types.js'
+ * @import { FormFileUploadStatus } from '../types.js'
  */
