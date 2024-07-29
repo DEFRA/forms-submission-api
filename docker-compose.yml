@@ -97,6 +97,15 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
       ME_CONFIG_BASICAUTH: false
 
+  forms-submission-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3002:3000
+    env_file:
+      - '.env'
+
 networks:
   cdpuploader:
     driver: bridge
