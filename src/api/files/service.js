@@ -32,6 +32,10 @@ export async function ingestFile(uploadPayload) {
   }
 }
 
+export async function get(formId, fileId) {
+  // TODO
+}
+
 /**
  * Checks if a file status exists for a given upload ID. Throws an Not Found error if not in the database.
  * @param {string} fileId

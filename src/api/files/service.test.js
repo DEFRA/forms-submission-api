@@ -3,7 +3,7 @@ import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
-import { checkExists, ingestFile } from '~/src/api/files/service.js'
+import { checkExists, ingestFile, get } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
 jest.mock('~/src/api/files/repository.js')
@@ -141,6 +141,32 @@ describe('Files service', () => {
       await expect(checkExists('1234')).rejects.toEqual(Boom.notFound())
     })
   })
+
+  describe('getFile', () => {
+    it('should get the file previously uploaded', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        formId: '123-456-789'
+      }
+
+      jest
+        .mocked(repository.getByFileId)
+        .mockResolvedValue({ _id: new ObjectId(), ...dummyData })
+
+      await expect(get('123456', '123-456-789')).resolves.toMatchObject({
+        url: 'https://s3.example/file.txt'
+      })
+    })
+
+    it('should fail if not found', async () => {
+      jest.mocked(repository.getByFileId).mockResolvedValue(null)
+
+      await expect(get('123456', '123-456-789')).resolves.toEqual(
+        Boom.notFound('File not found')
+      )
+    })
+  })
 })
 
 /**
@@ -149,5 +175,5 @@ describe('Files service', () => {
  */
 
 /**
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
