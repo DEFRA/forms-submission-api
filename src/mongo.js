@@ -39,7 +39,7 @@ export async function prepareDb(logger) {
   const coll = db.collection(COLLECTION_NAME)
 
   /** @todo */
-  // await coll.createIndex({ title: 1 })
+  await coll.createIndex({ formId: 1 })
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
