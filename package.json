@@ -79,7 +79,7 @@
   "optionalDependencies": {
     "@types/convict": "^6.1.6",
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.14.10",
+    "@types/node": "^22.0.0",
     "oidc-client-ts": "^3.0.1"
   },
   "engines": {
