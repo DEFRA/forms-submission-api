@@ -6,19 +6,14 @@ import { ingestFile } from '../api/files/service.js'
 export default [
   {
     method: 'POST',
-    path: '/files/upload',
+    path: '/files',
     /**
      * @param {RequestFileUpload} request
      */
     async handler(request) {
       const { payload } = request
 
-      const fileCount = await ingestFile(payload)
-
-      return {
-        message: 'Files uploaded successfully',
-        count: fileCount
-      }
+      await ingestFile(payload)
     },
     options: {
       auth: false

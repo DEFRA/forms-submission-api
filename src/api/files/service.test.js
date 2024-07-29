@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
@@ -73,17 +74,13 @@ describe('Files service', () => {
       jest.mocked(repository.create).mockResolvedValue()
     })
 
-    test('should upload all files in the payload', async () => {
+    test('should upload the file in the payload', async () => {
       /**
        * @type {import('../types.js').UploadPayload}
        */
       const uploadPayload = {
         form: {
-          'file-one': successfulFile,
-          'file-two': {
-            ...successfulFile,
-            filename: 'dummy2.txt'
-          }
+          file: successfulFile
         },
         metadata: {
           formId: '123-456-789'
@@ -94,30 +91,24 @@ describe('Files service', () => {
 
       const dbSpy = jest.spyOn(repository, 'create')
 
-      const uploadCount = await ingestFile(uploadPayload)
+      await ingestFile(uploadPayload)
 
       const dbOperationArgs = dbSpy.mock.calls
 
-      expect(dbSpy).toHaveBeenCalledTimes(2)
+      expect(dbSpy).toHaveBeenCalledTimes(1)
       expect(dbOperationArgs[0][0]).toMatchObject({
         filename: 'dummy.txt',
         formId: uploadPayload.metadata.formId
       })
-      expect(dbOperationArgs[1][0]).toMatchObject({
-        filename: 'dummy2.txt',
-        formId: uploadPayload.metadata.formId
-      })
-
-      expect(uploadCount).toBe(2)
     })
 
-    test('should reject all failed files in the payload', async () => {
+    test('should reject a failed file in the payload', async () => {
       /**
        * @type {import('../types.js').UploadPayload}
        */
       const uploadPayload = {
         form: {
-          'file-one': failedFile
+          file: failedFile
         },
         metadata: {
           formId: '123-456-789'
@@ -128,10 +119,13 @@ describe('Files service', () => {
 
       const dbSpy = jest.spyOn(repository, 'create')
 
-      const uploadCount = await ingestFile(uploadPayload)
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(
+        Boom.badRequest(
+          `File received which was not complete. Upload ID: 123456, status: rejected.`
+        )
+      )
 
       expect(dbSpy).not.toHaveBeenCalled()
-      expect(uploadCount).toBe(0)
     })
   })
 })

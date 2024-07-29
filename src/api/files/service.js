@@ -1,3 +1,5 @@
+import Boom from '@hapi/boom'
+
 import * as repository from './repository.js'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
@@ -11,36 +13,29 @@ const logger = createLogger()
 export async function ingestFile(uploadPayload) {
   const { formId } = uploadPayload.metadata
 
-  let successfulFiles = 0
+  const fileContainer = uploadPayload.form.file
 
-  for (const file in uploadPayload.form) {
-    const fileStatus = uploadPayload.form[file]
+  if (typeof fileContainer !== 'object') {
+    const error =
+      'payload.form.file was not of type instead of a FileUploadStatus'
 
-    if (typeof fileStatus === 'string') {
-      logger.warn(
-        `Received a string under key '${file}' instead of a FileUploadStatus, skipping`
-      )
+    logger.error(error)
 
-      // this a result of client error (in forms-runner) but not something we care about here, we only need files
-      continue
-    }
-
-    if (fileStatus.fileStatus === 'complete') {
-      await repository.create({
-        formId,
-        ...fileStatus
-      })
-
-      successfulFiles++
-    } else {
-      logger.error(
-        `File received which has not yet completed. Upload ID: ${fileStatus.fileId}}, status: ${fileStatus.fileStatus}.`
-      )
-      // nothing we can do other than flag this with the CDP team
-    }
+    throw Boom.badRequest(error)
   }
 
-  return successfulFiles
+  if (fileContainer.fileStatus !== 'complete') {
+    const error = `File received which was not complete. Upload ID: ${fileContainer.fileId}, status: ${fileContainer.fileStatus}.`
+
+    logger.error(error)
+
+    throw Boom.badRequest(error)
+  }
+
+  await repository.create({
+    formId,
+    ...fileContainer
+  })
 }
 
 /**
