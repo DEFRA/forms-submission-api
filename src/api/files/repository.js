@@ -20,10 +20,31 @@ export async function create(fileStatus) {
 }
 
 /**
+ * Retrieves a file for a given form
+ * @param {string} fileId
+ * @param {string} formId
+ * @returns {Promise<FormFileUploadStatus | null>}
+ */
+export async function get(fileId, formId) {
+  logger.info(`Getting file status for file ID ${fileId}`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  const fileStatus = await coll.findOne({ fileId, formId })
+
+  logger.info(`Got file for file ID ${fileId}`)
+
+  return fileStatus
+}
+
+/**
  * @template {object} Schema
  * @typedef {import('mongodb').Collection<Schema>} Collection
  */
 
 /**
  * @import { FormFileUploadStatus } from '../types.js'
+ * @import { WithId } from 'mongodb'
  */

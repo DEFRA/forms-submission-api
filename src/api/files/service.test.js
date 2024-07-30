@@ -1,12 +1,18 @@
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
+import { mockClient } from 'aws-sdk-client-mock'
 import { MongoServerError } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
-import { ingestFile, get } from '~/src/api/files/service.js'
+import { ingestFile, getPresignedLink } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
+const s3Mock = mockClient(S3Client)
+
 jest.mock('~/src/api/files/repository.js')
+jest.mock('@aws-sdk/s3-request-presigner')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -123,6 +129,10 @@ describe('Files service', () => {
   })
 
   describe('getFile', () => {
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
     it('should get the file previously uploaded', async () => {
       /** @type {FormFileUploadStatus} */
       const dummyData = {
@@ -131,16 +141,18 @@ describe('Files service', () => {
       }
 
       jest.mocked(repository.get).mockResolvedValue(dummyData)
+      s3Mock.on(GetObjectCommand).resolvesOnce({})
+      jest.mocked(getSignedUrl).mockResolvedValue('https://s3.example/file.txt')
 
-      await expect(get('123456', '123-456-789')).resolves.toMatchObject({
-        url: 'https://s3.example/file.txt'
-      })
+      await expect(getPresignedLink('123456', '123-456-789')).resolves.toBe(
+        'https://s3.example/file.txt'
+      )
     })
 
     it('should fail if not found', async () => {
       jest.mocked(repository.get).mockResolvedValue(null)
 
-      await expect(get('123456', '123-456-789')).resolves.toEqual(
+      await expect(getPresignedLink('123456', '123-456-789')).rejects.toEqual(
         Boom.notFound('File not found')
       )
     })

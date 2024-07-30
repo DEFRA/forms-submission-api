@@ -1,5 +1,5 @@
-import { ingestFile } from '../api/files/service.js'
-import { fileIngestPayloadSchema } from '../models/files.js'
+import { getPresignedLink, ingestFile } from '~/src/api/files/service.js'
+import { fileIngestPayloadSchema } from '~/src/models/files.js'
 
 /**
  * @type {ServerRoute[]}
@@ -26,10 +26,30 @@ export default [
         payload: fileIngestPayloadSchema
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/file/{formId}/{fileId}',
+    /**
+     * @param {RequestFileRetrieve} request
+     */
+    async handler(request) {
+      const { payload } = request
+      const { fileId, formId } = payload
+
+      const presignedLink = await getPresignedLink(formId, fileId)
+
+      return {
+        url: presignedLink
+      }
+    },
+    options: {
+      auth: false
+    }
   }
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileUpload } from '~/src/api/types.js'
+ * @import { RequestFileRetrieve, RequestFileUpload } from '~/src/api/types.js'
  */
