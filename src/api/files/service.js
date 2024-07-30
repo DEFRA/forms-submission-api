@@ -10,7 +10,7 @@ const logger = createLogger()
  * Accepts files into the forms-submission-api
  * @param {UploadPayload} uploadPayload
  */
-export function ingestFile(uploadPayload) {
+export async function ingestFile(uploadPayload) {
   const { formId } = uploadPayload.metadata
 
   const fileContainer = uploadPayload.form.file
@@ -32,7 +32,7 @@ export function ingestFile(uploadPayload) {
     throw Boom.badRequest(error)
   }
 
-  return repository.create({
+  await repository.create({
     formId,
     ...fileContainer
   })
