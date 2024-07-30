@@ -6,7 +6,7 @@ import { ingestFile } from '../api/files/service.js'
 export default [
   {
     method: 'POST',
-    path: '/files',
+    path: '/file',
     /**
      * @param {RequestFileUpload} request
      */
@@ -14,6 +14,10 @@ export default [
       const { payload } = request
 
       await ingestFile(payload)
+
+      return {
+        message: 'Ingestion completed'
+      }
     },
     options: {
       auth: false
