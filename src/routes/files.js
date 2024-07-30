@@ -34,8 +34,8 @@ export default [
      * @param {RequestFileRetrieve} request
      */
     async handler(request) {
-      const { payload } = request
-      const { fileId, formId } = payload
+      const { params } = request
+      const { fileId, formId } = params
 
       const presignedLink = await getPresignedLink(formId, fileId)
 
