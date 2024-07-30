@@ -86,7 +86,7 @@ services:
       start_interval: 1s
       retries: 30
     environment:
-      MONGO_INITDB_DATABASE: forms-manager
+      MONGO_INITDB_DATABASE: forms-submission-api
 
   mongo-express:
     image: mongo-express
@@ -98,6 +98,9 @@ services:
       ME_CONFIG_BASICAUTH: false
 
   forms-submission-api:
+    depends_on:
+      mongo:
+        condition: service_healthy
     build:
       context: .
       dockerfile: Dockerfile
@@ -105,6 +108,8 @@ services:
       - 3002:3000
     env_file:
       - '.env'
+    environment:
+      MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
 
 networks:
   cdpuploader:

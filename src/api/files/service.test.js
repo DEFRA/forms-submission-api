@@ -97,6 +97,28 @@ describe('Files service', () => {
 
       expect(dbSpy).not.toHaveBeenCalled()
     })
+
+    test('should reject when the form ID is not provided', async () => {
+      /**
+       * @type {import('../types.js').UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {},
+        numberOfRejectedFiles: 1,
+        uploadStatus: 'ready'
+      }
+
+      const dbSpy = jest.spyOn(repository, 'create')
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(
+        Boom.badRequest(`payload.metadata.formId was not provided`)
+      )
+
+      expect(dbSpy).not.toHaveBeenCalled()
+    })
   })
 })
 

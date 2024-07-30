@@ -16,7 +16,13 @@ export async function ingestFile(uploadPayload) {
 
   if (typeof fileContainer !== 'object') {
     const error = 'payload.form.file was not of type object'
+    logger.error(error)
 
+    throw Boom.badRequest(error)
+  }
+
+  if (!formId?.length) {
+    const error = 'payload.metadata.formId was not provided'
     logger.error(error)
 
     throw Boom.badRequest(error)
@@ -24,7 +30,6 @@ export async function ingestFile(uploadPayload) {
 
   if (fileContainer.fileStatus !== 'complete') {
     const error = `File received which was not complete. Upload ID: ${fileContainer.fileId}, status: ${fileContainer.fileStatus}.`
-
     logger.error(error)
 
     throw Boom.badRequest(error)
