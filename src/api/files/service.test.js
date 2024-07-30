@@ -27,19 +27,6 @@ describe('Files service', () => {
     hasError: false
   }
 
-  /** @type {FileUploadStatus} */
-  const failedFile = {
-    checksumSha256: 'dummy',
-    contentLength: 10,
-    contentType: 'text/plain',
-    detectedContentType: 'text/plain',
-    fileId: '123456',
-    filename: 'dummy2.txt',
-    fileStatus: 'rejected',
-    hasError: true,
-    errorMessage: 'File has a virus'
-  }
-
   describe('ingestFile', () => {
     test('should upload the file in the payload', async () => {
       /**
@@ -69,58 +56,6 @@ describe('Files service', () => {
         filename: 'dummy.txt',
         formId: uploadPayload.metadata.formId
       })
-    })
-
-    test('should reject a failed file in the payload', async () => {
-      /**
-       * @type {UploadPayload}
-       */
-      const uploadPayload = {
-        form: {
-          file: failedFile
-        },
-        metadata: {
-          formId: '123-456-789'
-        },
-        numberOfRejectedFiles: 1,
-        uploadStatus: 'ready'
-      }
-
-      jest.mocked(repository.create).mockResolvedValueOnce()
-
-      const dbSpy = jest.spyOn(repository, 'create')
-
-      await expect(ingestFile(uploadPayload)).rejects.toThrow(
-        Boom.badRequest(
-          `File received which was not complete. Upload ID: 123456, status: rejected.`
-        )
-      )
-
-      expect(dbSpy).not.toHaveBeenCalled()
-    })
-
-    test('should reject when the form ID is not provided', async () => {
-      /**
-       * @type {UploadPayload}
-       */
-      const uploadPayload = {
-        form: {
-          file: successfulFile
-        },
-        metadata: {},
-        numberOfRejectedFiles: 1,
-        uploadStatus: 'ready'
-      }
-
-      jest.mocked(repository.create).mockResolvedValueOnce()
-
-      const dbSpy = jest.spyOn(repository, 'create')
-
-      await expect(ingestFile(uploadPayload)).rejects.toThrow(
-        Boom.badRequest(`payload.metadata.formId was not provided`)
-      )
-
-      expect(dbSpy).not.toHaveBeenCalled()
     })
 
     test('should reject when the file has already been ingested', async () => {

@@ -22,7 +22,7 @@
  * @property {string} detectedContentType - The mime type as detected by the CDP-Uploader
  * @property {string} [s3Key] - S3 bucket where scanned file is moved. Only set if file status is complete
  * @property {string} [s3Bucket] - S3 Path where scanned file is moved. Includes path prefix if set. Only set when fileStatus is complete
- * @property {boolean} hasError - true/false Only set to true if the file has been rejected or could not be delivered. Reason is supplied in errorMessage field.
+ * @property {boolean} [hasError] - true/false Only set to true if the file has been rejected or could not be delivered. Reason is supplied in errorMessage field.
  * @property {string} [errorMessage] - Reason why file was rejected. Error message is based on GDS design guidelines and can be show directly to the end-user.
  */
 
@@ -31,7 +31,7 @@
 /**
  * @typedef {object} UploadPayload
  * @property {('initiated'|'pending'|'ready')} uploadStatus - Have all scans completed, can be initiated, pending or ready
- * @property {{formId?: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
- * @property {Object.<string, FileUploadStatus|string>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
+ * @property {{formId: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
+ * @property {Object.<string, FileUploadStatus>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
  * @property {number} numberOfRejectedFiles - Total number of files that have been rejected by the uploader
  */

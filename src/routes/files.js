@@ -1,4 +1,5 @@
 import { ingestFile } from '../api/files/service.js'
+import { fileIngestPayloadSchema } from '../models/files.js'
 
 /**
  * @type {ServerRoute[]}
@@ -20,7 +21,10 @@ export default [
       }
     },
     options: {
-      auth: false
+      auth: false,
+      validate: {
+        payload: fileIngestPayloadSchema
+      }
     }
   }
 ]
