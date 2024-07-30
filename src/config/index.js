@@ -94,6 +94,18 @@ export const config = convict({
     default:
       'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/v2.0',
     env: 'OIDC_VERIFY_ISS'
+  },
+  s3Region: {
+    doc: 'S3 region for the app on CDP',
+    format: String,
+    default: 'eu-west-2',
+    env: 'S3_REGION'
+  },
+  s3Endpoint: {
+    doc: 'The S3 HTTP(S) endpoint, if required (e.g. a local development dev service). Activating this will force path style addressing for compatibility with Localstack.',
+    format: String,
+    default: '',
+    env: 'S3_ENDPOINT'
   }
 })
 
