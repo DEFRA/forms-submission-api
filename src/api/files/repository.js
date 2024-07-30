@@ -5,7 +5,7 @@ const logger = createLogger()
 
 /**
  * Adds a form to the Form Store
- * @param {import('../types.js').FormFileUploadStatus} fileStatus - file status
+ * @param {FormFileUploadStatus} fileStatus - file status
  */
 export async function create(fileStatus) {
   logger.info(`Creating file status for file ID ${fileStatus.fileId}`)

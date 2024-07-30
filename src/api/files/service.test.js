@@ -43,7 +43,7 @@ describe('Files service', () => {
   describe('ingestFile', () => {
     test('should upload the file in the payload', async () => {
       /**
-       * @type {import('../types.js').UploadPayload}
+       * @type {UploadPayload}
        */
       const uploadPayload = {
         form: {
@@ -73,7 +73,7 @@ describe('Files service', () => {
 
     test('should reject a failed file in the payload', async () => {
       /**
-       * @type {import('../types.js').UploadPayload}
+       * @type {UploadPayload}
        */
       const uploadPayload = {
         form: {
@@ -101,7 +101,7 @@ describe('Files service', () => {
 
     test('should reject when the form ID is not provided', async () => {
       /**
-       * @type {import('../types.js').UploadPayload}
+       * @type {UploadPayload}
        */
       const uploadPayload = {
         form: {
@@ -125,7 +125,7 @@ describe('Files service', () => {
 
     test('should reject when the file has already been ingested', async () => {
       /**
-       * @type {import('../types.js').UploadPayload}
+       * @type {UploadPayload}
        */
       const uploadPayload = {
         form: {
@@ -164,5 +164,5 @@ describe('Files service', () => {
  */
 
 /**
- * @import { FileUploadStatus } from '~/src/api/types.js'
+ * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
