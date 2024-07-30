@@ -1,4 +1,5 @@
 import Boom from '@hapi/boom'
+import { MongoServerError } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
@@ -40,10 +41,6 @@ describe('Files service', () => {
   }
 
   describe('ingestFile', () => {
-    beforeEach(() => {
-      jest.mocked(repository.create).mockResolvedValue()
-    })
-
     test('should upload the file in the payload', async () => {
       /**
        * @type {import('../types.js').UploadPayload}
@@ -58,6 +55,8 @@ describe('Files service', () => {
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
       }
+
+      jest.mocked(repository.create).mockResolvedValueOnce()
 
       const dbSpy = jest.spyOn(repository, 'create')
 
@@ -87,6 +86,8 @@ describe('Files service', () => {
         uploadStatus: 'ready'
       }
 
+      jest.mocked(repository.create).mockResolvedValueOnce()
+
       const dbSpy = jest.spyOn(repository, 'create')
 
       await expect(ingestFile(uploadPayload)).rejects.toThrow(
@@ -111,6 +112,8 @@ describe('Files service', () => {
         uploadStatus: 'ready'
       }
 
+      jest.mocked(repository.create).mockResolvedValueOnce()
+
       const dbSpy = jest.spyOn(repository, 'create')
 
       await expect(ingestFile(uploadPayload)).rejects.toThrow(
@@ -118,6 +121,39 @@ describe('Files service', () => {
       )
 
       expect(dbSpy).not.toHaveBeenCalled()
+    })
+
+    test('should reject when the file has already been ingested', async () => {
+      /**
+       * @type {import('../types.js').UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          formId: '123-456-789'
+        },
+        numberOfRejectedFiles: 1,
+        uploadStatus: 'ready'
+      }
+
+      /**
+       * @type {MongoServerError}
+       */
+      const mongoErrorMock = Object.create(MongoServerError.prototype)
+      mongoErrorMock.errorResponse = {
+        code: 11000
+      }
+      mongoErrorMock.toString = () => 'dummy'
+
+      jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(
+        Boom.badRequest(
+          `File ID '123456' for form ID '123-456-789' has already been ingested`
+        )
+      )
     })
   })
 })

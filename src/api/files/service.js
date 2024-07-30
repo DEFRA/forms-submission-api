@@ -1,4 +1,5 @@
 import Boom from '@hapi/boom'
+import { MongoServerError } from 'mongodb'
 
 import * as repository from './repository.js'
 
@@ -35,10 +36,21 @@ export async function ingestFile(uploadPayload) {
     throw Boom.badRequest(error)
   }
 
-  await repository.create({
-    formId,
-    ...fileContainer
-  })
+  try {
+    await repository.create({
+      formId,
+      ...fileContainer
+    })
+  } catch (err) {
+    if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
+      const error = `File ID '${fileContainer.fileId}' for form ID '${formId}' has already been ingested`
+      logger.error(error)
+
+      throw Boom.badRequest(error)
+    }
+
+    throw err
+  }
 }
 
 /**
