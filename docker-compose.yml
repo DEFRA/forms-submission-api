@@ -97,6 +97,9 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
       ME_CONFIG_BASICAUTH: false
 
+  # Prefer to run the app using `npm run dev`, but if you experience Docker networking issues
+  # you may want to uncomment the below and run it all in Docker.
+  #
   # forms-submission-api:
   #   depends_on:
   #     mongo:
