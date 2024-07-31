@@ -67,9 +67,6 @@ export default [
       return {
         url: presignedLink
       }
-    },
-    options: {
-      auth: false
     }
   }
 ]

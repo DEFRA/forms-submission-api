@@ -1,7 +1,9 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { ingestFile, checkExists } from '~/src/api/files/service.js'
+import { ingestFile, checkExists, getPresignedLink } from '../api/files/service.js'
+
 import { createServer } from '~/src/api/server.js'
+import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/api/files/service.js')
@@ -70,6 +72,24 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
         message: 'Found'
+      })
+    })
+
+    test('Testing PPST /file/{formId}/{fileId} route returns an S3 link', async () => {
+      jest
+        .mocked(getPresignedLink)
+        .mockResolvedValue('https://s3.dummy.com/file.txt')
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/file/1234/123-456-789',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        url: expect.any(String)
       })
     })
   })
@@ -144,6 +164,15 @@ describe('Forms route', () => {
         error: 'Bad Request',
         message: '"metadata.formId" is required'
       })
+    })
+
+    test('Testing GET /file/{formId}/{fileId} route returns Forbidden if auth missing', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/file/1234/123-456-789'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
   })
 })
