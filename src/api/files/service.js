@@ -1,7 +1,7 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
-import bcrypt from 'bcrypt'
+import argon2 from 'argon2'
 import { MongoServerError } from 'mongodb'
 
 import * as repository from './repository.js'
@@ -11,7 +11,6 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 
 const logger = createLogger()
 const s3Region = config.get('s3Region')
-const SALT_ROUNDS = 10
 
 /**
  * Accepts file status into the forms-submission-api
@@ -21,7 +20,7 @@ export async function ingestFile(uploadPayload) {
   const { retrievalKey } = uploadPayload.metadata
   const { file: fileContainer } = uploadPayload.form
 
-  const hashed = await bcrypt.hash(retrievalKey, SALT_ROUNDS)
+  const hashed = await argon2.hash(retrievalKey)
 
   try {
     await repository.create({
@@ -53,7 +52,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
     throw Boom.notFound('File not found')
   }
 
-  if (!(await bcrypt.compare(retrievalKey, fileStatus.retrievalKey))) {
+  if (!(await argon2.verify(fileStatus.retrievalKey, retrievalKey))) {
     throw Boom.unauthorized('Retrieval key does not match')
   }
 
