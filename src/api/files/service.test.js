@@ -1,8 +1,8 @@
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
+import { hash, verify } from 'argon2'
 import { mockClient } from 'aws-sdk-client-mock'
-import { hash, compare } from 'bcrypt'
 import { MongoServerError } from 'mongodb'
 import { pino } from 'pino'
 
@@ -14,7 +14,7 @@ const s3Mock = mockClient(S3Client)
 
 jest.mock('~/src/api/files/repository.js')
 jest.mock('@aws-sdk/s3-request-presigner')
-jest.mock('bcrypt')
+jest.mock('argon2')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -82,7 +82,6 @@ describe('Files service', () => {
       }
 
       jest.mocked(repository.create).mockResolvedValueOnce()
-      // @ts-expect-error we can't tell the compiler using JSDoc what overloaded function is being mocked, ignore it for now
       jest.mocked(hash).mockResolvedValueOnce('dummy')
 
       const dbSpy = jest.spyOn(repository, 'create')
@@ -144,8 +143,7 @@ describe('Files service', () => {
 
       jest.mocked(repository.get).mockResolvedValue(dummyData)
       s3Mock.on(GetObjectCommand).resolvesOnce({})
-      // @ts-expect-error we can't tell the compiler using JSDoc what overloaded function is being mocked, ignore it for now
-      jest.mocked(compare).mockResolvedValue(true)
+      jest.mocked(verify).mockResolvedValue(true)
       jest.mocked(getSignedUrl).mockResolvedValue('https://s3.example/file.txt')
 
       await expect(getPresignedLink('123-456-789', 'test')).resolves.toBe(
@@ -168,8 +166,7 @@ describe('Files service', () => {
         retrievalKey: 'test'
       }
 
-      // @ts-expect-error we can't tell the compiler using JSDoc what overloaded function is being mocked, ignore it for now
-      jest.mocked(compare).mockResolvedValue(false)
+      jest.mocked(verify).mockResolvedValue(false)
       jest.mocked(repository.get).mockResolvedValue(dummyData)
 
       await expect(getPresignedLink('123-456-789', 'test')).rejects.toEqual(
