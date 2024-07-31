@@ -53,7 +53,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
   }
 
   if (!(await argon2.verify(fileStatus.retrievalKey, retrievalKey))) {
-    throw Boom.unauthorized('Retrieval key does not match')
+    throw Boom.forbidden('Retrieval key does not match')
   }
 
   const client = getS3Client()
