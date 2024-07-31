@@ -25,9 +25,5 @@ export async function create(fileStatus) {
  */
 
 /**
- * @typedef {import('mongodb').ClientSession} ClientSession
- */
-
-/**
  * @import { FormFileUploadStatus } from '../types.js'
  */

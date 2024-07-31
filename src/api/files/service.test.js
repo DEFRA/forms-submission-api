@@ -8,6 +8,36 @@ import { prepareDb } from '~/src/mongo.js'
 
 jest.mock('~/src/api/files/repository.js')
 
+jest.mock('~/src/mongo.js', () => {
+  let isPrepared = false
+
+  return {
+    get client() {
+      if (!isPrepared) {
+        return undefined
+      }
+
+      return {
+        startSession: () => ({
+          endSession: jest.fn().mockResolvedValue(undefined),
+          withTransaction: jest.fn(
+            /**
+             * Mock transaction handler
+             * @param {() => Promise<void>} fn
+             */
+            async (fn) => fn()
+          )
+        })
+      }
+    },
+
+    prepareDb() {
+      isPrepared = true
+      return Promise.resolve()
+    }
+  }
+})
+
 describe('Files service', () => {
   beforeAll(async () => {
     await prepareDb(pino())
