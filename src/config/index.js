@@ -106,6 +106,12 @@ export const config = convict({
     format: String,
     default: '',
     env: 'S3_ENDPOINT'
+  },
+  managerUrl: {
+    doc: 'The base path for forms-manager',
+    format: String,
+    default: '',
+    env: 'FORMS_MANAGER_URL'
   }
 })
 

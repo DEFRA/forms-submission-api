@@ -28,16 +28,16 @@ export default [
     }
   },
   {
-    method: 'GET',
-    path: '/file/{formId}/{fileId}',
+    method: 'POST',
+    path: '/file-link',
     /**
-     * @param {RequestFileRetrieve} request
+     * @param {RequestFileLinkCreate} request
      */
     async handler(request) {
-      const { params } = request
-      const { fileId, formId } = params
+      const { payload } = request
+      const { fileId, retrievalKey } = payload
 
-      const presignedLink = await getPresignedLink(formId, fileId)
+      const presignedLink = await getPresignedLink(fileId, retrievalKey)
 
       return {
         url: presignedLink
@@ -48,5 +48,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileRetrieve, RequestFileUpload } from '~/src/api/types.js'
+ * @import { RequestFileLinkCreate, RequestFileUpload } from '~/src/api/types.js'
  */

@@ -1,6 +1,6 @@
 /**
  * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileUpload
- * @typedef {Request<{ Server: { db: Db }, Params: { formId: string, fileId: string } }>} RequestFileRetrieve
+ * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  */
 
 /**
@@ -27,12 +27,12 @@
  * @property {string} [errorMessage] - Reason why file was rejected. Error message is based on GDS design guidelines and can be show directly to the end-user.
  */
 
-/** @typedef {{formId: string} & FileUploadStatus} FormFileUploadStatus */
+/** @typedef {{retrievalKey: string} & FileUploadStatus} FormFileUploadStatus */
 
 /**
  * @typedef {object} UploadPayload
  * @property {('initiated'|'pending'|'ready')} uploadStatus - Have all scans completed, can be initiated, pending or ready
- * @property {{formId: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
+ * @property {{retrievalKey: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
  * @property {Object.<string, FileUploadStatus>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
  * @property {number} numberOfRejectedFiles - Total number of files that have been rejected by the uploader
  */
