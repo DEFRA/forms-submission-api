@@ -38,7 +38,7 @@ export async function prepareDb(logger) {
   // Ensure db indexes
   const coll = db.collection(COLLECTION_NAME)
 
-  await coll.createIndex({ formId: 1, fileId: 1 }, { unique: true })
+  await coll.createIndex({ fileId: 1 }, { unique: true })
 
   logger.info(`Mongodb connected to ${databaseName}`)
 

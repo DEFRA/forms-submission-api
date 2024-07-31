@@ -45,7 +45,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             'ignored-key': 'value',
@@ -75,15 +75,19 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing PPST /file/{formId}/{fileId} route returns an S3 link', async () => {
+    test('Testing POST /file-link route returns an S3 link', async () => {
       jest
         .mocked(getPresignedLink)
         .mockResolvedValue('https://s3.dummy.com/file.txt')
 
       const response = await server.inject({
-        method: 'GET',
-        url: '/file/1234/123-456-789',
-        auth
+        method: 'POST',
+        url: '/file-link',
+        auth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -102,7 +106,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             'ignored-key': 'value',
@@ -129,7 +133,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             file: "this-shouldn't-be-a-string"
@@ -162,14 +166,18 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
       expect(response.result).toMatchObject({
         error: 'Bad Request',
-        message: '"metadata.formId" is required'
+        message: '"metadata.retrievalKey" is required'
       })
     })
 
-    test('Testing GET /file/{formId}/{fileId} route returns Forbidden if auth missing', async () => {
+    test('Testing POST /file-link route returns Forbidden if auth missing', async () => {
       const response = await server.inject({
-        method: 'GET',
-        url: '/file/1234/123-456-789'
+        method: 'POST',
+        url: '/file-link',
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)

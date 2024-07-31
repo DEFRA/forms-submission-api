@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
+import bcrypt from 'bcrypt'
 import { MongoServerError } from 'mongodb'
 
 import * as repository from './repository.js'
@@ -10,23 +11,26 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 
 const logger = createLogger()
 const s3Region = config.get('s3Region')
+const SALT_ROUNDS = 10
 
 /**
  * Accepts file status into the forms-submission-api
  * @param {UploadPayload} uploadPayload
  */
 export async function ingestFile(uploadPayload) {
-  const { formId } = uploadPayload.metadata
+  const { retrievalKey } = uploadPayload.metadata
   const { file: fileContainer } = uploadPayload.form
+
+  const hashed = await bcrypt.hash(retrievalKey, SALT_ROUNDS)
 
   try {
     await repository.create({
-      formId,
-      ...fileContainer
+      ...fileContainer,
+      retrievalKey: hashed
     })
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
-      const error = `File ID '${fileContainer.fileId}' for form ID '${formId}' has already been ingested`
+      const error = `File ID '${fileContainer.fileId}' has has already been ingested`
       logger.error(error)
 
       throw Boom.badRequest(error)
@@ -39,13 +43,18 @@ export async function ingestFile(uploadPayload) {
 /**
  *
  * @param {string} fileId
+ * @param {string} retrievalKey
  * @returns {Promise<string>} presigned url
  */
-export async function getPresignedLink(fileId) {
+export async function getPresignedLink(fileId, retrievalKey) {
   const fileStatus = await repository.getByFileId(fileId)
 
   if (!fileStatus) {
     throw Boom.notFound('File not found')
+  }
+
+  if (!(await bcrypt.compare(retrievalKey, fileStatus.retrievalKey))) {
+    throw Boom.unauthorized('Retrieval key does not match')
   }
 
   const client = getS3Client()

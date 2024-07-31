@@ -22,7 +22,7 @@ const fileUploadStatusSchema = Joi.object()
 export const fileIngestPayloadSchema = Joi.object()
   .keys({
     metadata: Joi.object({
-      formId: Joi.string().required()
+      retrievalKey: Joi.string().required()
     })
       .required()
       .unknown(true),
