@@ -1,5 +1,8 @@
 import { getPresignedLink, ingestFile } from '~/src/api/files/service.js'
-import { fileIngestPayloadSchema } from '~/src/models/files.js'
+import {
+  fileIngestPayloadSchema,
+  fileLinkCreatePayloadSchema
+} from '~/src/models/files.js'
 
 /**
  * @type {ServerRoute[]}
@@ -41,6 +44,11 @@ export default [
 
       return {
         url: presignedLink
+      }
+    },
+    options: {
+      validate: {
+        payload: fileLinkCreatePayloadSchema
       }
     }
   }

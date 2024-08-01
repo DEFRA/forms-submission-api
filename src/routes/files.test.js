@@ -168,6 +168,40 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
+
+    test('Testing POST /file-link route returns bad request if retrieval key missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file-link',
+        auth,
+        payload: {
+          fileId: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"retrievalKey" is required'
+      })
+    })
+
+    test('Testing POST /file-link route returns bad request if file ID is missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file-link',
+        auth,
+        payload: {
+          retrievalKey: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"fileId" is required'
+      })
+    })
   })
 })
 
