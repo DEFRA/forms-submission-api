@@ -1,6 +1,7 @@
 import { ingestFile, checkExists, getPresignedLink } from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
+  fileLinkCreatePayloadSchema,
   fileRetrievalParamsSchema
 } from '~/src/models/files.js'
 
@@ -66,6 +67,11 @@ export default [
 
       return {
         url: presignedLink
+      }
+    },
+    options: {
+      validate: {
+        payload: fileLinkCreatePayloadSchema
       }
     }
   }
