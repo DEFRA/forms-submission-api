@@ -1,5 +1,6 @@
 /**
- * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileUpload
+ * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileCreate
+ * @typedef {Request<{ Server: { db: Db }, Params: { fileId: string} }>} RequestFileGet
  */
 
 /**

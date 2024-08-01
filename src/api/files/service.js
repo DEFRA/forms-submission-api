@@ -33,5 +33,17 @@ export async function ingestFile(uploadPayload) {
 }
 
 /**
+ * Checks if a file status exists for a given upload ID. Throws an Not Found error if not in the database.
+ * @param {string} fileId
+ */
+export async function checkExists(fileId) {
+  const fileStatus = await repository.getByFileId(fileId)
+
+  if (!fileStatus) {
+    throw Boom.notFound()
+  }
+}
+
+/**
  * @import { UploadPayload } from '~/src/api/types.js'
  */

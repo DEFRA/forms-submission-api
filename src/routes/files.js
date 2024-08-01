@@ -1,5 +1,8 @@
-import { ingestFile } from '~/src/api/files/service.js'
-import { fileIngestPayloadSchema } from '~/src/models/files.js'
+import { ingestFile, checkExists } from '~/src/api/files/service.js'
+import {
+  fileIngestPayloadSchema,
+  fileRetrievalParamsSchema
+} from '~/src/models/files.js'
 
 /**
  * @type {ServerRoute[]}
@@ -9,7 +12,7 @@ export default [
     method: 'POST',
     path: '/file',
     /**
-     * @param {RequestFileUpload} request
+     * @param {RequestFileCreate} request
      */
     async handler(request) {
       const { payload } = request
@@ -26,10 +29,32 @@ export default [
         payload: fileIngestPayloadSchema
       }
     }
+  },
+  {
+    method: 'GET',
+    path: '/file/{fileId}',
+    /**
+     * @param {RequestFileGet} request
+     */
+    async handler(request) {
+      const { fileId } = request.params
+
+      await checkExists(fileId)
+
+      return {
+        message: 'Found'
+      }
+    },
+    options: {
+      auth: false,
+      validate: {
+        params: fileRetrievalParamsSchema
+      }
+    }
   }
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileUpload } from '~/src/api/types.js'
+ * @import { RequestFileCreate, RequestFileGet } from '~/src/api/types.js'
  */

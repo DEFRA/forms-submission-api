@@ -20,6 +20,24 @@ export async function create(fileStatus) {
 }
 
 /**
+ * Adds a form to the Form Store
+ * @param {string} fileId - file status
+ */
+export async function getByFileId(fileId) {
+  logger.info(`Retrieving file status for file ID ${fileId}`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  const value = coll.findOne({ fileId })
+
+  logger.info(`Found file status for file ID ${fileId}`)
+
+  return value
+}
+
+/**
  * @template {object} Schema
  * @typedef {import('mongodb').Collection<Schema>} Collection
  */
