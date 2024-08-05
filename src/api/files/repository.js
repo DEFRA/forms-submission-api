@@ -4,7 +4,7 @@ import { db, COLLECTION_NAME } from '~/src/mongo.js'
 const logger = createLogger()
 
 /**
- * Adds a form to the Form Store
+ * Adds a file status to the database
  * @param {FormFileUploadStatus} fileStatus - file status
  */
 export async function create(fileStatus) {
