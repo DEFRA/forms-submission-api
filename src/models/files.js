@@ -36,7 +36,7 @@ export const fileIngestPayloadSchema = Joi.object()
   .required()
   .unknown(true)
 
-export const fileLinkCreatePayloadSchema = Joi.object()
+export const fileAccessPayloadSchema = Joi.object()
   .keys({
     fileId: Joi.string().required(),
     retrievalKey: Joi.string().required()
