@@ -1,7 +1,11 @@
-import { getPresignedLink, ingestFile } from '~/src/api/files/service.js'
+import {
+  extendTtl,
+  getPresignedLink,
+  ingestFile
+} from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
-  fileLinkCreatePayloadSchema
+  fileAccessPayloadSchema
 } from '~/src/models/files.js'
 
 /**
@@ -48,7 +52,29 @@ export default [
     },
     options: {
       validate: {
-        payload: fileLinkCreatePayloadSchema
+        payload: fileAccessPayloadSchema
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/file/extend-ttl',
+    /**
+     * @param {RequestFileExtensionCreate} request
+     */
+    async handler(request) {
+      const { payload } = request
+      const { fileId, retrievalKey } = payload
+
+      await extendTtl(fileId, retrievalKey)
+
+      return {
+        message: 'TTL extended'
+      }
+    },
+    options: {
+      validate: {
+        payload: fileAccessPayloadSchema
       }
     }
   }
@@ -56,5 +82,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileLinkCreate, RequestFileUpload } from '~/src/api/types.js'
+ * @import { RequestFileExtensionCreate, RequestFileLinkCreate, RequestFileUpload } from '~/src/api/types.js'
  */

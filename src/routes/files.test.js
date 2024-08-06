@@ -1,12 +1,18 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { ingestFile, getPresignedLink } from '../api/files/service.js'
+import {
+  ingestFile,
+  getPresignedLink,
+  extendTtl
+} from '../api/files/service.js'
 
 import { createServer } from '~/src/api/server.js'
 import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/api/files/service.js')
+
+const accessFileEndpoints = ['/file-link', '/file/extend-ttl']
 
 describe('Forms route', () => {
   /** @type {Server} */
@@ -80,6 +86,26 @@ describe('Forms route', () => {
       expect(response.headers['content-type']).toContain('application/json')
       expect(response.result).toMatchObject({
         url: expect.any(String)
+      })
+    })
+
+    test('Testing POST /file/extend-ttl route returns success', async () => {
+      jest.mocked(extendTtl).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/extend-ttl',
+        auth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        message: 'TTL extended'
       })
     })
   })
@@ -156,52 +182,61 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing POST /file-link route returns Forbidden if auth missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file-link',
-        payload: {
-          fileId: '1234',
-          retrievalKey: 'test'
-        }
-      })
+    test.each(accessFileEndpoints)(
+      'Testing POST %s route returns Forbidden if auth missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          payload: {
+            fileId: '1234',
+            retrievalKey: 'test'
+          }
+        })
 
-      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
-    })
+        expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+      }
+    )
 
-    test('Testing POST /file-link route returns bad request if retrieval key missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file-link',
-        auth,
-        payload: {
-          fileId: '1234'
-        }
-      })
+    test.each(accessFileEndpoints)(
+      'Testing POST %s route returns bad request if retrieval key missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          auth,
+          payload: {
+            fileId: '1234'
+          }
+        })
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
-      expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"retrievalKey" is required'
-      })
-    })
+        expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+        expect(response.result).toMatchObject({
+          error: 'Bad Request',
+          message: '"retrievalKey" is required'
+        })
+      }
+    )
 
-    test('Testing POST /file-link route returns bad request if file ID is missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file-link',
-        auth,
-        payload: {
-          retrievalKey: '1234'
-        }
-      })
+    test.each(accessFileEndpoints)(
+      'Testing POST %s route returns bad request if file ID is missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          auth,
+          payload: {
+            retrievalKey: '1234'
+          }
+        })
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
-      expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"fileId" is required'
-      })
-    })
+        expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+        expect(response.result).toMatchObject({
+          error: 'Bad Request',
+          message: '"fileId" is required'
+        })
+      }
+    )
   })
 })
 
