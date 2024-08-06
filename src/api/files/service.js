@@ -77,7 +77,7 @@ export async function extendTtl(fileId, retrievalKey) {
   }
 
   if (fileStatus.s3Key.startsWith(LOADED_PREFIX)) {
-    throw Boom.badRequest(`File ID ${fileId} has already had its ttl extended`)
+    throw Boom.badRequest(`File ID ${fileId} has already had its TTL extended`)
   }
 
   const client = getS3Client()
@@ -98,17 +98,22 @@ export async function extendTtl(fileId, retrievalKey) {
  * @param {string} newS3Key
  */
 async function moveFile(fileId, client, bucket, oldS3Key, newS3Key) {
+  logger.info(`Copying file ${oldS3Key} to ${newS3Key}`)
   // Copy the file to the loaded prefix, which has a 30 day expiry
   await client.send(
     new CopyObjectCommand({
       Bucket: bucket,
-      CopySource: oldS3Key,
-      Key: newS3Key
+      Key: newS3Key,
+      CopySource: `${bucket}/${oldS3Key}`
     })
   )
 
+  logger.info(`Updating file ${fileId} with new S3 key '${newS3Key}'`)
+
   // Now that the file transfer was successful, update the record in the DB
   await repository.updateS3Key(fileId, newS3Key)
+
+  logger.info(`Deleting old file ${oldS3Key}`)
 
   // We no longer need the old file
   await client.send(

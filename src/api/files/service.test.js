@@ -64,7 +64,7 @@ describe('Files service', () => {
   /** @type {FileUploadStatus} */
   const successfulFile = {
     s3Key: 'dummy.txt',
-    s3Bucket: 'dummy',
+    s3Bucket: 'dummy-bucket',
     checksumSha256: 'dummy',
     contentLength: 1,
     contentType: 'text/plain',
@@ -205,8 +205,8 @@ describe('Files service', () => {
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
-        CopySource: dummyData.s3Key,
-        Key: expectedNewKey
+        Key: expectedNewKey,
+        CopySource: 'dummy-bucket/staging/dummy-file-123.txt'
       })
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
@@ -237,8 +237,8 @@ describe('Files service', () => {
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
-        CopySource: dummyData.s3Key,
-        Key: expectedNewKey
+        Key: expectedNewKey,
+        CopySource: 'dummy-bucket/staging/extra-level/extra-level-two/dummy-file-123.txt',
       })
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
@@ -267,7 +267,7 @@ describe('Files service', () => {
         extendTtl(dummyData.fileId, dummyData.retrievalKey)
       ).rejects.toEqual(
         Boom.badRequest(
-          `File ID ${dummyData.fileId} has already had its ttl extended`
+          `File ID ${dummyData.fileId} has already had its TTL extended`
         )
       )
     })
