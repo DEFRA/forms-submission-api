@@ -1,13 +1,23 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import {
+  CopyObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+  S3Client
+} from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
 import { hash, verify } from 'argon2'
 import { mockClient } from 'aws-sdk-client-mock'
 import { MongoServerError } from 'mongodb'
 import { pino } from 'pino'
+import 'aws-sdk-client-mock-jest'
 
 import * as repository from '~/src/api/files/repository.js'
-import { ingestFile, getPresignedLink } from '~/src/api/files/service.js'
+import {
+  ingestFile,
+  getPresignedLink,
+  extendTtl
+} from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
 const s3Mock = mockClient(S3Client)
@@ -141,10 +151,12 @@ describe('Files service', () => {
         retrievalKey: 'test'
       }
 
-      jest.mocked(repository.get).mockResolvedValue(dummyData)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
       s3Mock.on(GetObjectCommand).resolvesOnce({})
-      jest.mocked(verify).mockResolvedValue(true)
-      jest.mocked(getSignedUrl).mockResolvedValue('https://s3.example/file.txt')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest
+        .mocked(getSignedUrl)
+        .mockResolvedValueOnce('https://s3.example/file.txt')
 
       await expect(getPresignedLink('123-456-789', 'test')).resolves.toBe(
         'https://s3.example/file.txt'
@@ -152,7 +164,7 @@ describe('Files service', () => {
     })
 
     it('should fail if not found', async () => {
-      jest.mocked(repository.get).mockResolvedValue(null)
+      jest.mocked(repository.get).mockResolvedValueOnce(null)
 
       await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toEqual(
         Boom.notFound('File not found')
@@ -166,11 +178,139 @@ describe('Files service', () => {
         retrievalKey: 'test'
       }
 
-      jest.mocked(verify).mockResolvedValue(false)
-      jest.mocked(repository.get).mockResolvedValue(dummyData)
+      jest.mocked(verify).mockResolvedValueOnce(false)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
 
       await expect(getPresignedLink('123-456-789', 'test')).rejects.toEqual(
         Boom.forbidden('Retrieval key does not match')
+      )
+    })
+  })
+
+  describe('extendTtl', () => {
+    it('should move the file from staging to loaded and delete the old file', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      const expectedNewKey = 'loaded/dummy-file-123.txt'
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
+
+      await extendTtl(dummyData.fileId, dummyData.retrievalKey)
+
+      expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        CopySource: dummyData.s3Key,
+        Key: expectedNewKey
+      })
+
+      expect(repository.updateS3Key).toHaveBeenCalledWith(
+        successfulFile.fileId,
+        expectedNewKey
+      )
+
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: dummyData.s3Key
+      })
+    })
+
+    it('should handle nested input directories', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/extra-level/extra-level-two/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      const expectedNewKey = 'loaded/dummy-file-123.txt'
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
+
+      await extendTtl(dummyData.fileId, dummyData.retrievalKey)
+
+      expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        CopySource: dummyData.s3Key,
+        Key: expectedNewKey
+      })
+
+      expect(repository.updateS3Key).toHaveBeenCalledWith(
+        successfulFile.fileId,
+        expectedNewKey
+      )
+
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: dummyData.s3Key
+      })
+    })
+
+    it('should not allow a previously extended file to be extended again', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'loaded/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
+
+      await expect(
+        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+      ).rejects.toEqual(
+        Boom.badRequest(
+          `File ID ${dummyData.fileId} has already had its ttl extended`
+        )
+      )
+    })
+
+    it('should fail if the S3 bucket is missing', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'loaded/dummy-file-123.txt',
+        s3Bucket: undefined,
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
+
+      await expect(
+        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+      ).rejects.toEqual(
+        Boom.internal(
+          `S3 key/bucket is missing for file ID ${dummyData.fileId}`
+        )
+      )
+    })
+
+    it('should fail if the S3 key is missing', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: undefined,
+        s3Bucket: 'dummy',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.get).mockResolvedValueOnce(dummyData)
+
+      await expect(
+        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+      ).rejects.toEqual(
+        Boom.internal(
+          `S3 key/bucket is missing for file ID ${dummyData.fileId}`
+        )
       )
     })
   })
