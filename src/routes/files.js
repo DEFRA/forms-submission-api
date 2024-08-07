@@ -55,7 +55,7 @@ export default [
   },
   {
     method: 'POST',
-    path: '/file-link',
+    path: '/file/link',
     /**
      * @param {RequestFileLinkCreate} request
      */

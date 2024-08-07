@@ -75,14 +75,14 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing POST /file-link route returns an S3 link', async () => {
+    test('Testing POST /file/link route returns an S3 link', async () => {
       jest
         .mocked(getPresignedLink)
         .mockResolvedValue('https://s3.dummy.com/file.txt')
 
       const response = await server.inject({
         method: 'POST',
-        url: '/file-link',
+        url: '/file/link',
         auth,
         payload: {
           fileId: '1234',
@@ -170,10 +170,10 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing POST /file-link route returns Forbidden if auth missing', async () => {
+    test('Testing POST /file/link route returns Forbidden if auth missing', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/file-link',
+        url: '/file/link',
         payload: {
           fileId: '1234',
           retrievalKey: 'test'
@@ -183,10 +183,10 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
 
-    test('Testing POST /file-link route returns bad request if retrieval key missing', async () => {
+    test('Testing POST /file/link route returns bad request if retrieval key missing', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/file-link',
+        url: '/file/link',
         auth,
         payload: {
           fileId: '1234'
@@ -200,10 +200,10 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing POST /file-link route returns bad request if file ID is missing', async () => {
+    test('Testing POST /file/link route returns bad request if file ID is missing', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/file-link',
+        url: '/file/link',
         auth,
         payload: {
           retrievalKey: '1234'
