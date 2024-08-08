@@ -35,3 +35,9 @@ export const fileIngestPayloadSchema = Joi.object()
   })
   .required()
   .unknown(true)
+
+export const fileRetrievalParamsSchema = Joi.object()
+  .keys({
+    fileId: Joi.string().required()
+  })
+  .required()

@@ -4,7 +4,7 @@ import { db, COLLECTION_NAME } from '~/src/mongo.js'
 const logger = createLogger()
 
 /**
- * Adds a form to the Form Store
+ * Adds a file status to the database
  * @param {FormFileUploadStatus} fileStatus - file status
  */
 export async function create(fileStatus) {
@@ -17,6 +17,24 @@ export async function create(fileStatus) {
   await coll.insertOne(fileStatus)
 
   logger.info(`Created file status for file ID ${fileStatus.fileId}`)
+}
+
+/**
+ * Adds a form to the Form Store
+ * @param {string} fileId - file status
+ */
+export async function getByFileId(fileId) {
+  logger.info(`Retrieving file status for file ID ${fileId}`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  const value = coll.findOne({ fileId })
+
+  logger.info(`Found file status for file ID ${fileId}`)
+
+  return value
 }
 
 /**

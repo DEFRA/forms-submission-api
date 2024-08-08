@@ -8,7 +8,7 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 const logger = createLogger()
 
 /**
- * Accepts files into the forms-submission-api
+ * Accepts file status into the forms-submission-api
  * @param {UploadPayload} uploadPayload
  */
 export async function ingestFile(uploadPayload) {
@@ -29,6 +29,19 @@ export async function ingestFile(uploadPayload) {
     }
 
     throw err
+  }
+}
+
+/**
+ * Checks if a file status exists for a given upload ID. Throws an Not Found error if not in the database.
+ * @param {string} fileId
+ * @throws {Boom.notFound} - if the file status does not exist
+ */
+export async function checkExists(fileId) {
+  const fileStatus = await repository.getByFileId(fileId)
+
+  if (!fileStatus) {
+    throw Boom.notFound()
   }
 }
 

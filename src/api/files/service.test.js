@@ -1,9 +1,9 @@
 import Boom from '@hapi/boom'
-import { MongoServerError } from 'mongodb'
+import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
-import { ingestFile } from '~/src/api/files/service.js'
+import { checkExists, ingestFile } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
 jest.mock('~/src/api/files/repository.js')
@@ -119,6 +119,26 @@ describe('Files service', () => {
           `File ID '123456' for form ID '123-456-789' has already been ingested`
         )
       )
+    })
+  })
+
+  describe('checkExists', () => {
+    test('should return undefined if file is found', async () => {
+      const uploadedFile = {
+        ...successfulFile,
+        formId: '1234',
+        _id: new ObjectId()
+      }
+
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
+
+      await expect(checkExists('1234')).resolves.toBeUndefined()
+    })
+
+    test('should throw Not Found when the file does not exist', async () => {
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
+
+      await expect(checkExists('1234')).rejects.toEqual(Boom.notFound())
     })
   })
 })

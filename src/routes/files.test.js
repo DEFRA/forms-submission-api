@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { ingestFile } from '~/src/api/files/service.js'
+import { ingestFile , checkExists} from '~/src/api/files/service.js'
 import { createServer } from '~/src/api/server.js'
 
 jest.mock('~/src/mongo.js')
@@ -56,6 +56,20 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
         message: 'Ingestion completed'
+      })
+    })
+
+    test('Testing GET /file/{uploadId} route returns success', async () => {
+      jest.mocked(checkExists).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/file/12345'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Found'
       })
     })
   })
@@ -136,5 +150,5 @@ describe('Forms route', () => {
 
 /**
  * @import { Server } from '@hapi/hapi'
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus } from '~/src/api/types.js'
  */
