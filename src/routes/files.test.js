@@ -1,7 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { ingestFile } from '../api/files/service.js'
-
+import { ingestFile } from '~/src/api/files/service.js'
 import { createServer } from '~/src/api/server.js'
 
 jest.mock('~/src/mongo.js')

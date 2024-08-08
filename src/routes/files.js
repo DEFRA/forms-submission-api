@@ -1,5 +1,5 @@
-import { ingestFile } from '../api/files/service.js'
-import { fileIngestPayloadSchema } from '../models/files.js'
+import { ingestFile } from '~/src/api/files/service.js'
+import { fileIngestPayloadSchema } from '~/src/models/files.js'
 
 /**
  * @type {ServerRoute[]}

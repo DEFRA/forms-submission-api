@@ -1,7 +1,6 @@
 import Jwt from '@hapi/jwt'
 
-import { config } from '../config/index.js'
-
+import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 
 const oidcJwksUri = config.get('oidcJwksUri')

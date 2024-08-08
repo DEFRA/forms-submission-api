@@ -25,5 +25,5 @@ export async function create(fileStatus) {
  */
 
 /**
- * @import { FormFileUploadStatus } from '../types.js'
+ * @import { FormFileUploadStatus } from '~/src/api/types.js'
  */
