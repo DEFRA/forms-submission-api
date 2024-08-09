@@ -7,7 +7,6 @@ import {
   persistFile
 } from '../api/files/service.js'
 
-import { testRegex } from '~/jest.config.cjs'
 import { createServer } from '~/src/api/server.js'
 import { auth } from '~/test/fixtures/auth.js'
 

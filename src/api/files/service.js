@@ -2,7 +2,8 @@ import {
   S3Client,
   GetObjectCommand,
   CopyObjectCommand,
-  DeleteObjectCommand
+  DeleteObjectCommand,
+  NoSuchKey
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
@@ -26,6 +27,8 @@ export async function ingestFile(uploadPayload) {
   const { retrievalKey } = uploadPayload.metadata
   const { file: fileContainer } = uploadPayload.form
 
+  await assertFileExists(fileContainer)
+
   const hashed = await argon2.hash(retrievalKey)
 
   try {
@@ -39,6 +42,33 @@ export async function ingestFile(uploadPayload) {
       logger.error(error)
 
       throw Boom.badRequest(error)
+    }
+
+    throw err
+  }
+}
+
+/**
+ * Confirms a file exists in S3 by throwing Boom.badRequest if not.
+ * @param {FileUploadStatus} fileUploadStatus
+ */
+async function assertFileExists(fileUploadStatus) {
+  try {
+    const client = getS3Client()
+
+    const command = new GetObjectCommand({
+      Bucket: fileUploadStatus.s3Bucket,
+      Key: fileUploadStatus.s3Key
+    })
+
+    await client.send(command)
+  } catch (err) {
+    if (err instanceof NoSuchKey) {
+      logger.error(
+        err,
+        `Recieved request to ingest ${fileUploadStatus.s3Key}, but the file does not exist.`
+      )
+      throw Boom.badRequest('File does not exist in S3')
     }
 
     throw err
@@ -186,5 +216,5 @@ export async function checkExists(fileId) {
 }
 
 /**
- * @import { UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

@@ -2,6 +2,7 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  NoSuchKey,
   S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -77,6 +78,10 @@ describe('Files service', () => {
   }
 
   describe('ingestFile', () => {
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
     test('should upload the file in the payload', async () => {
       /**
        * @type {UploadPayload}
@@ -138,6 +143,33 @@ describe('Files service', () => {
         Boom.badRequest(`File ID '123456' has already been ingested`)
       )
     })
+
+    it('should reject an ingestion request if the file does not actually exist', async () => {
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 1,
+        uploadStatus: 'ready'
+      }
+
+      s3Mock.on(GetObjectCommand).rejectsOnce(
+        new NoSuchKey({
+          message: 'Not found',
+          $metadata: {}
+        })
+      )
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(
+        Boom.badRequest('File does not exist in S3')
+      )
+    })
   })
 
   describe('checkExists', () => {
@@ -157,7 +189,7 @@ describe('Files service', () => {
     test('should throw Not Found when the file does not exist', async () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
-      await expect(checkExists('1234')).rejects.toEqual(Boom.notFound())
+      await expect(checkExists('1234')).rejects.toThrow(Boom.notFound())
     })
   })
 
@@ -173,10 +205,12 @@ describe('Files service', () => {
         retrievalKey: 'test'
       }
 
-      jest.mocked(repository.getByFileId).mockResolvedValue(dummyData)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
       s3Mock.on(GetObjectCommand).resolvesOnce({})
-      jest.mocked(verify).mockResolvedValue(true)
-      jest.mocked(getSignedUrl).mockResolvedValue('https://s3.example/file.txt')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest
+        .mocked(getSignedUrl)
+        .mockResolvedValueOnce('https://s3.example/file.txt')
 
       await expect(getPresignedLink('123-456-789', 'test')).resolves.toBe(
         'https://s3.example/file.txt'
@@ -184,9 +218,9 @@ describe('Files service', () => {
     })
 
     it('should fail if not found', async () => {
-      jest.mocked(repository.getByFileId).mockResolvedValue(null)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
-      await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toEqual(
+      await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toThrow(
         Boom.notFound('File not found')
       )
     })
@@ -198,10 +232,10 @@ describe('Files service', () => {
         retrievalKey: 'test'
       }
 
-      jest.mocked(verify).mockResolvedValue(false)
-      jest.mocked(repository.getByFileId).mockResolvedValue(dummyData)
+      jest.mocked(verify).mockResolvedValueOnce(false)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await expect(getPresignedLink('123-456-789', 'test')).rejects.toEqual(
+      await expect(getPresignedLink('123-456-789', 'test')).rejects.toThrow(
         Boom.forbidden('Retrieval key does not match')
       )
     })
@@ -275,7 +309,7 @@ describe('Files service', () => {
 
       await expect(
         persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
-      ).rejects.toEqual(Boom.forbidden('Retrieval key does not match'))
+      ).rejects.toThrow(Boom.forbidden('Retrieval key does not match'))
 
       expect(s3Mock).not.toHaveReceivedAnyCommand()
       expect(repository.updateRetrievalKey).not.toHaveBeenCalled()
@@ -335,9 +369,9 @@ describe('Files service', () => {
           dummyData.retrievalKey,
           dummyData.retrievalKey
         )
-      ).rejects.toEqual(
+      ).rejects.toThrow(
         Boom.badRequest(
-          `File ID ${dummyData.fileId} has already has already been persisted`
+          `File ID ${dummyData.fileId} has already been persisted`
         )
       )
     })
@@ -360,7 +394,7 @@ describe('Files service', () => {
           dummyData.retrievalKey,
           dummyData.retrievalKey
         )
-      ).rejects.toEqual(
+      ).rejects.toThrow(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
         )
@@ -381,7 +415,7 @@ describe('Files service', () => {
 
       await expect(
         persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
-      ).rejects.toEqual(
+      ).rejects.toThrow(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
         )
@@ -397,5 +431,4 @@ describe('Files service', () => {
 
 /**
  * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
- * @import { FormMetadata, FormMetadataAuthor } from '@defra/forms-model'
  */
