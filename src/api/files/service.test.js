@@ -128,7 +128,7 @@ describe('Files service', () => {
       jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
 
       await expect(ingestFile(uploadPayload)).rejects.toThrow(
-        Boom.badRequest(`File ID '123456' has has already been ingested`)
+        Boom.badRequest(`File ID '123456' has already been ingested`)
       )
     })
   })

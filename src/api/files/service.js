@@ -29,7 +29,7 @@ export async function ingestFile(uploadPayload) {
     })
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
-      const error = `File ID '${fileContainer.fileId}' has has already been ingested`
+      const error = `File ID '${fileContainer.fileId}' has already been ingested`
       logger.error(error)
 
       throw Boom.badRequest(error)
