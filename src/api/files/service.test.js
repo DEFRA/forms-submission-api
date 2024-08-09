@@ -16,7 +16,7 @@ import {
   checkExists,
   ingestFile,
   getPresignedLink,
-  extendTtl
+  persistFile
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 import 'aws-sdk-client-mock-jest'
@@ -207,7 +207,9 @@ describe('Files service', () => {
     })
   })
 
-  describe('extendTtl', () => {
+  describe('persistFile', () => {
+    const newRetrievalKey = 'newKey'
+
     beforeEach(() => {
       s3Mock.reset()
     })
@@ -223,9 +225,25 @@ describe('Files service', () => {
       const expectedNewKey = 'loaded/dummy-file-123.txt'
 
       jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await extendTtl(dummyData.fileId, dummyData.retrievalKey)
+      await persistFile(
+        dummyData.fileId,
+        dummyData.retrievalKey,
+        newRetrievalKey
+      )
+
+      expect(hash).toHaveBeenCalledWith(newRetrievalKey)
+      expect(repository.updateRetrievalKey).toHaveBeenCalledWith(
+        dummyData.fileId,
+        'newKeyHash'
+      )
+
+      expect(repository.updateS3Key).toHaveBeenCalledWith(
+        successfulFile.fileId,
+        expectedNewKey
+      )
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
@@ -244,6 +262,25 @@ describe('Files service', () => {
       })
     })
 
+    it("should fail if the retrieval key doesn't match", async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(false)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      await expect(
+        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+      ).rejects.toEqual(Boom.forbidden('Retrieval key does not match'))
+
+      expect(s3Mock).not.toHaveReceivedAnyCommand()
+      expect(repository.updateRetrievalKey).not.toHaveBeenCalled()
+    })
+
     it('should handle nested input directories', async () => {
       /** @type {FormFileUploadStatus} */
       const dummyData = {
@@ -257,7 +294,11 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await extendTtl(dummyData.fileId, dummyData.retrievalKey)
+      await persistFile(
+        dummyData.fileId,
+        dummyData.retrievalKey,
+        dummyData.retrievalKey
+      )
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
@@ -289,10 +330,14 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+        persistFile(
+          dummyData.fileId,
+          dummyData.retrievalKey,
+          dummyData.retrievalKey
+        )
       ).rejects.toEqual(
         Boom.badRequest(
-          `File ID ${dummyData.fileId} has already had its TTL extended`
+          `File ID ${dummyData.fileId} has already has already been persisted`
         )
       )
     })
@@ -310,7 +355,11 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+        persistFile(
+          dummyData.fileId,
+          dummyData.retrievalKey,
+          dummyData.retrievalKey
+        )
       ).rejects.toEqual(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
@@ -331,7 +380,7 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        extendTtl(dummyData.fileId, dummyData.retrievalKey)
+        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
       ).rejects.toEqual(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`

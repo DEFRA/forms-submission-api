@@ -48,3 +48,11 @@ export const fileAccessPayloadSchema = Joi.object()
     retrievalKey: Joi.string().required()
   })
   .required()
+
+export const filePersistPayloadSchema = Joi.object()
+  .keys({
+    fileId: Joi.string().required(),
+    initiatedRetrievalKey: Joi.string().required(),
+    persistedRetrievalKey: Joi.string().required()
+  })
+  .required()

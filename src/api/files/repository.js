@@ -44,7 +44,26 @@ export async function getByFileId(fileId) {
  * @param {string} s3Key
  */
 export async function updateS3Key(fileId, s3Key) {
-  logger.info(`Updating S3 key for file ID ${fileId}`)
+  return updateField(fileId, 's3Key', s3Key)
+}
+
+/**
+ * Updates the retrievalKey for a given file ID.
+ * @param {string} fileId
+ * @param {string} retrievalKey
+ */
+export async function updateRetrievalKey(fileId, retrievalKey) {
+  return updateField(fileId, 'retrievalKey', retrievalKey)
+}
+
+/**
+ * Updates a single field for a given file ID.
+ * @param {string} fileId
+ * @param {string} fieldName
+ * @param {string} fieldValue
+ */
+async function updateField(fileId, fieldName, fieldValue) {
+  logger.info(`Updating ${fieldName} for file ID ${fileId}`)
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
     db.collection(COLLECTION_NAME)
@@ -54,16 +73,16 @@ export async function updateS3Key(fileId, s3Key) {
     { fileId },
     {
       $set: {
-        s3Key
+        [fieldName]: fieldValue
       }
     }
   )
 
   if (result.modifiedCount !== 1) {
-    throw new Error('Failed to update S3 key')
+    throw new Error(`Failed to update ${fieldName}`)
   }
 
-  logger.info(`Updated S3 key file for file ID ${fileId}`)
+  logger.info(`Updated ${fieldName} for file ID ${fileId}`)
 }
 
 /**

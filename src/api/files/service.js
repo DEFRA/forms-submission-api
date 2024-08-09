@@ -64,19 +64,24 @@ export async function getPresignedLink(fileId, retrievalKey) {
 }
 
 /**
- * Extends the time-to-live of a file to 30 days
+ * Extends the time-to-live of a file to 30 days and updates the retrieval key.
  * @param {string} fileId
- * @param {string} retrievalKey
+ * @param {string} initiatedRetrievalKey - retrieval key when initiated
+ * @param {string} persistedRetrievalKey - an updated retrieval key to persist the file
  */
-export async function extendTtl(fileId, retrievalKey) {
-  const fileStatus = await getAndVerify(fileId, retrievalKey)
+export async function persistFile(
+  fileId,
+  initiatedRetrievalKey,
+  persistedRetrievalKey
+) {
+  const fileStatus = await getAndVerify(fileId, initiatedRetrievalKey)
 
   if (!fileStatus.s3Key || !fileStatus.s3Bucket) {
     throw Boom.internal(`S3 key/bucket is missing for file ID ${fileId}`)
   }
 
   if (fileStatus.s3Key.startsWith(loadedPrefix)) {
-    throw Boom.badRequest(`File ID ${fileId} has already had its TTL extended`)
+    throw Boom.badRequest(`File ID ${fileId} has already been persisted`)
   }
 
   const client = getS3Client()
@@ -85,7 +90,13 @@ export async function extendTtl(fileId, retrievalKey) {
   const filename = oldS3Key.split('/').at(-1)
   const newS3Key = `${loadedPrefix}/${filename}`
 
-  return moveFile(fileId, client, fileStatus.s3Bucket, oldS3Key, newS3Key)
+  const persistedRetrievalKeyHashed = await argon2.hash(persistedRetrievalKey)
+
+  // The retrieval key may have been updated by a user in forms-designer.
+  // Update before persisting to ensure it can be retrieved using the expected value.
+  await repository.updateRetrievalKey(fileId, persistedRetrievalKeyHashed)
+
+  await moveFile(fileId, client, fileStatus.s3Bucket, oldS3Key, newS3Key)
 }
 
 /**
