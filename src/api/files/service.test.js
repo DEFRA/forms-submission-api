@@ -154,7 +154,7 @@ describe('Files service', () => {
     })
   })
 
-  describe('getFile', () => {
+  describe('getPresignedLink', () => {
     beforeEach(() => {
       s3Mock.reset()
     })
