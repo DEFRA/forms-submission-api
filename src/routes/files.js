@@ -1,11 +1,12 @@
 import {
   ingestFile,
   checkExists,
-  getPresignedLink
+  getPresignedLink,
+  extendTtl
 } from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
-  fileLinkCreatePayloadSchema,
+  fileAccessPayloadSchema,
   fileRetrievalParamsSchema
 } from '~/src/models/files.js'
 
@@ -75,7 +76,29 @@ export default [
     },
     options: {
       validate: {
-        payload: fileLinkCreatePayloadSchema
+        payload: fileAccessPayloadSchema
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/file/complete',
+    /**
+     * @param {RequestFileComplete} request
+     */
+    async handler(request) {
+      const { payload } = request
+      const { fileId, retrievalKey } = payload
+
+      await extendTtl(fileId, retrievalKey)
+
+      return {
+        message: 'TTL extended'
+      }
+    },
+    options: {
+      validate: {
+        payload: fileAccessPayloadSchema
       }
     }
   }
@@ -83,5 +106,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate } from '~/src/api/types.js'
+ * @import { RequestFileComplete, RequestFileCreate, RequestFileGet, RequestFileLinkCreate } from '~/src/api/types.js'
  */

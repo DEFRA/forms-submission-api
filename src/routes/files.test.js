@@ -3,7 +3,8 @@ import { StatusCodes } from 'http-status-codes'
 import {
   ingestFile,
   checkExists,
-  getPresignedLink
+  getPresignedLink,
+  extendTtl
 } from '../api/files/service.js'
 
 import { createServer } from '~/src/api/server.js'
@@ -100,6 +101,26 @@ describe('Forms route', () => {
         url: 'https://s3.dummy.com/file.txt'
       })
     })
+
+    test('Testing POST /file/complete route returns success', async () => {
+      jest.mocked(extendTtl).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/complete',
+        auth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        message: 'TTL extended'
+      })
+    })
   })
 
   describe('Error responses', () => {
@@ -174,52 +195,63 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing POST /file/link route returns Forbidden if auth missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file/link',
-        payload: {
-          fileId: '1234',
-          retrievalKey: 'test'
-        }
-      })
+    const accessFileEndpoints = ['/file/link', '/file/complete']
 
-      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
-    })
+    test.each(accessFileEndpoints)(
+      'Testing POST %s route returns Forbidden if auth missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          payload: {
+            fileId: '1234',
+            retrievalKey: 'test'
+          }
+        })
 
-    test('Testing POST /file/link route returns bad request if retrieval key missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file/link',
-        auth,
-        payload: {
-          fileId: '1234'
-        }
-      })
+        expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+      }
+    )
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
-      expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"retrievalKey" is required'
-      })
-    })
+    test.each(accessFileEndpoints)(
+      'Testing POST /file/link route returns bad request if retrieval key missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          auth,
+          payload: {
+            fileId: '1234'
+          }
+        })
 
-    test('Testing POST /file/link route returns bad request if file ID is missing', async () => {
-      const response = await server.inject({
-        method: 'POST',
-        url: '/file/link',
-        auth,
-        payload: {
-          retrievalKey: '1234'
-        }
-      })
+        expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+        expect(response.result).toMatchObject({
+          error: 'Bad Request',
+          message: '"retrievalKey" is required'
+        })
+      }
+    )
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
-      expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"fileId" is required'
-      })
-    })
+    test.each(accessFileEndpoints)(
+      'Testing POST %s route returns bad request if file ID is missing',
+      async (url) => {
+        const response = await server.inject({
+          method: 'POST',
+          url,
+          auth,
+          payload: {
+            retrievalKey: '1234'
+          }
+        })
+
+        expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+        expect(response.result).toMatchObject({
+          error: 'Bad Request',
+          message: '"fileId" is required'
+        })
+      }
+    )
   })
 })
 

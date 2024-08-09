@@ -2,6 +2,7 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileCreate
  * @typedef {Request<{ Server: { db: Db }, Params: { fileId: string } }>} RequestFileGet
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
+ * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileComplete
  */
 
 /**

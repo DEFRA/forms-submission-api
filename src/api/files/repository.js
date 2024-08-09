@@ -39,6 +39,34 @@ export async function getByFileId(fileId) {
 }
 
 /**
+ * Updates the S3 Key for a given file ID.
+ * @param {string} fileId
+ * @param {string} s3Key
+ */
+export async function updateS3Key(fileId, s3Key) {
+  logger.info(`Updating S3 key for file ID ${fileId}`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  const result = await coll.updateOne(
+    { fileId },
+    {
+      $set: {
+        s3Key
+      }
+    }
+  )
+
+  if (result.modifiedCount !== 1) {
+    throw new Error('Failed to update S3 key')
+  }
+
+  logger.info(`Updated S3 key file for file ID ${fileId}`)
+}
+
+/**
  * @template {object} Schema
  * @typedef {import('mongodb').Collection<Schema>} Collection
  */
