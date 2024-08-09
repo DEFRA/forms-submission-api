@@ -22,7 +22,7 @@ const fileUploadStatusSchema = Joi.object()
 export const fileIngestPayloadSchema = Joi.object()
   .keys({
     metadata: Joi.object({
-      formId: Joi.string().required()
+      retrievalKey: Joi.string().required()
     })
       .required()
       .unknown(true),
@@ -39,5 +39,12 @@ export const fileIngestPayloadSchema = Joi.object()
 export const fileRetrievalParamsSchema = Joi.object()
   .keys({
     fileId: Joi.string().required()
+  })
+  .required()
+
+export const fileLinkCreatePayloadSchema = Joi.object()
+  .keys({
+    fileId: Joi.string().required(),
+    retrievalKey: Joi.string().required()
   })
   .required()

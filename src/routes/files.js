@@ -1,6 +1,11 @@
-import { ingestFile, checkExists } from '~/src/api/files/service.js'
+import {
+  ingestFile,
+  checkExists,
+  getPresignedLink
+} from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
+  fileLinkCreatePayloadSchema,
   fileRetrievalParamsSchema
 } from '~/src/models/files.js'
 
@@ -51,10 +56,32 @@ export default [
         params: fileRetrievalParamsSchema
       }
     }
+  },
+  {
+    method: 'POST',
+    path: '/file/link',
+    /**
+     * @param {RequestFileLinkCreate} request
+     */
+    async handler(request) {
+      const { payload } = request
+      const { fileId, retrievalKey } = payload
+
+      const presignedLink = await getPresignedLink(fileId, retrievalKey)
+
+      return {
+        url: presignedLink
+      }
+    },
+    options: {
+      validate: {
+        payload: fileLinkCreatePayloadSchema
+      }
+    }
   }
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileCreate, RequestFileGet } from '~/src/api/types.js'
+ * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate } from '~/src/api/types.js'
  */

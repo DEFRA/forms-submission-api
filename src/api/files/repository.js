@@ -20,8 +20,9 @@ export async function create(fileStatus) {
 }
 
 /**
- * Adds a form to the Form Store
- * @param {string} fileId - file status
+ * Retrieves a file status
+ * @param {string} fileId
+ * @returns {Promise<FormFileUploadStatus | null>}
  */
 export async function getByFileId(fileId) {
   logger.info(`Retrieving file status for file ID ${fileId}`)

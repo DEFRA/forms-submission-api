@@ -1,7 +1,13 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { ingestFile, checkExists } from '~/src/api/files/service.js'
+import {
+  ingestFile,
+  checkExists,
+  getPresignedLink
+} from '../api/files/service.js'
+
 import { createServer } from '~/src/api/server.js'
+import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/api/files/service.js')
@@ -43,7 +49,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             'ignored-key': 'value',
@@ -72,6 +78,28 @@ describe('Forms route', () => {
         message: 'Found'
       })
     })
+
+    test('Testing POST /file/link route returns an S3 link', async () => {
+      jest
+        .mocked(getPresignedLink)
+        .mockResolvedValue('https://s3.dummy.com/file.txt')
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        auth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        url: 'https://s3.dummy.com/file.txt'
+      })
+    })
   })
 
   describe('Error responses', () => {
@@ -82,7 +110,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             'ignored-key': 'value',
@@ -109,7 +137,7 @@ describe('Forms route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            formId: '123-456-789'
+            retrievalKey: 'test'
           },
           form: {
             file: "this-shouldn't-be-a-string"
@@ -142,7 +170,54 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
       expect(response.result).toMatchObject({
         error: 'Bad Request',
-        message: '"metadata.formId" is required'
+        message: '"metadata.retrievalKey" is required'
+      })
+    })
+
+    test('Testing POST /file/link route returns Forbidden if auth missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+
+    test('Testing POST /file/link route returns bad request if retrieval key missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        auth,
+        payload: {
+          fileId: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"retrievalKey" is required'
+      })
+    })
+
+    test('Testing POST /file/link route returns bad request if file ID is missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        auth,
+        payload: {
+          retrievalKey: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"fileId" is required'
       })
     })
   })

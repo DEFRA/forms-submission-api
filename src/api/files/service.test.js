@@ -1,12 +1,24 @@
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
+import { hash, verify } from 'argon2'
+import { mockClient } from 'aws-sdk-client-mock'
 import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
-import { checkExists, ingestFile } from '~/src/api/files/service.js'
+import {
+  checkExists,
+  ingestFile,
+  getPresignedLink
+} from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
+const s3Mock = mockClient(S3Client)
+
 jest.mock('~/src/api/files/repository.js')
+jest.mock('@aws-sdk/s3-request-presigner')
+jest.mock('argon2')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -67,13 +79,14 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          formId: '123-456-789'
+          retrievalKey: 'test'
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
       }
 
       jest.mocked(repository.create).mockResolvedValueOnce()
+      jest.mocked(hash).mockResolvedValueOnce('dummy')
 
       const dbSpy = jest.spyOn(repository, 'create')
 
@@ -84,7 +97,7 @@ describe('Files service', () => {
       expect(dbSpy).toHaveBeenCalledTimes(1)
       expect(dbOperationArgs[0][0]).toMatchObject({
         filename: 'dummy.txt',
-        formId: uploadPayload.metadata.formId
+        retrievalKey: 'dummy'
       })
     })
 
@@ -97,7 +110,7 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          formId: '123-456-789'
+          retrievalKey: 'test'
         },
         numberOfRejectedFiles: 1,
         uploadStatus: 'ready'
@@ -115,9 +128,7 @@ describe('Files service', () => {
       jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
 
       await expect(ingestFile(uploadPayload)).rejects.toThrow(
-        Boom.badRequest(
-          `File ID '123456' for form ID '123-456-789' has already been ingested`
-        )
+        Boom.badRequest(`File ID '123456' has already been ingested`)
       )
     })
   })
@@ -127,6 +138,7 @@ describe('Files service', () => {
       const uploadedFile = {
         ...successfulFile,
         formId: '1234',
+        retrievalKey: 'test',
         _id: new ObjectId()
       }
 
@@ -141,6 +153,52 @@ describe('Files service', () => {
       await expect(checkExists('1234')).rejects.toEqual(Boom.notFound())
     })
   })
+
+  describe('getPresignedLink', () => {
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
+    it('should get the file previously uploaded', async () => {
+      const dummyData = {
+        ...successfulFile,
+        _id: new ObjectId(),
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(repository.getByFileId).mockResolvedValue(dummyData)
+      s3Mock.on(GetObjectCommand).resolvesOnce({})
+      jest.mocked(verify).mockResolvedValue(true)
+      jest.mocked(getSignedUrl).mockResolvedValue('https://s3.example/file.txt')
+
+      await expect(getPresignedLink('123-456-789', 'test')).resolves.toBe(
+        'https://s3.example/file.txt'
+      )
+    })
+
+    it('should fail if not found', async () => {
+      jest.mocked(repository.getByFileId).mockResolvedValue(null)
+
+      await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toEqual(
+        Boom.notFound('File not found')
+      )
+    })
+
+    it('should fail if the retrieval key does not match', async () => {
+      const dummyData = {
+        ...successfulFile,
+        _id: new ObjectId(),
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValue(false)
+      jest.mocked(repository.getByFileId).mockResolvedValue(dummyData)
+
+      await expect(getPresignedLink('123-456-789', 'test')).rejects.toEqual(
+        Boom.forbidden('Retrieval key does not match')
+      )
+    })
+  })
 })
 
 /**
@@ -149,5 +207,6 @@ describe('Files service', () => {
  */
 
 /**
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FormMetadata, FormMetadataAuthor } from '@defra/forms-model'
  */

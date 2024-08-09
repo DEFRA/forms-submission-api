@@ -97,19 +97,39 @@ services:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
       ME_CONFIG_BASICAUTH: false
 
-  forms-submission-api:
-    depends_on:
-      mongo:
-        condition: service_healthy
-    build:
-      context: .
-      dockerfile: Dockerfile
+  # Prefer to run the app using `npm run dev`, but if you experience Docker networking issues
+  # you may want to uncomment the below and run it all in Docker.
+  #
+  # forms-submission-api:
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 3002:3000
+  #   env_file:
+  #     - '.env'
+  #   environment:
+  #     MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
+
+  s3-manager:
+    image: cloudlena/s3manager
     ports:
-      - 3002:3000
-    env_file:
-      - '.env'
+      - 127.0.0.1:8082:8080
     environment:
-      MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
+      ENDPOINT: localhost.localstack.cloud:4566
+      USE_SSL: false
+      ACCESS_KEY_ID: dummy
+      SECRET_ACCESS_KEY: dummy
+    depends_on:
+      - localstack
+    dns:
+      # Set the DNS server to be the LocalStack container
+      - 10.0.2.20
+    networks:
+      - cdpuploader
 
 networks:
   cdpuploader:
