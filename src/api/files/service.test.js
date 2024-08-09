@@ -7,7 +7,11 @@ import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
-import { checkExists, ingestFile, getPresignedLink } from '~/src/api/files/service.js'
+import {
+  checkExists,
+  ingestFile,
+  getPresignedLink
+} from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 
 const s3Mock = mockClient(S3Client)
