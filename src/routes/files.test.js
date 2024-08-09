@@ -97,7 +97,7 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.headers['content-type']).toContain('application/json')
       expect(response.result).toMatchObject({
-        url: expect.any(String)
+        url: 'https://s3.dummy.com/file.txt'
       })
     })
   })
