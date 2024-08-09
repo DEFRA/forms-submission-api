@@ -52,16 +52,7 @@ export async function ingestFile(uploadPayload) {
  * @returns {Promise<string>} presigned url
  */
 export async function getPresignedLink(fileId, retrievalKey) {
-  const fileStatus = await repository.getByFileId(fileId)
-
-  if (!fileStatus) {
-    throw Boom.notFound('File not found')
-  }
-
-  if (!(await argon2.verify(fileStatus.retrievalKey, retrievalKey))) {
-    throw Boom.forbidden('Retrieval key does not match')
-  }
-
+  const fileStatus = await getAndVerify(fileId, retrievalKey)
   const client = getS3Client()
 
   const command = new GetObjectCommand({
@@ -78,15 +69,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
  * @param {string} retrievalKey
  */
 export async function extendTtl(fileId, retrievalKey) {
-  const fileStatus = await repository.getByFileId(fileId)
-
-  if (!fileStatus) {
-    throw Boom.notFound('File not found')
-  }
-
-  if (!(await argon2.verify(fileStatus.retrievalKey, retrievalKey))) {
-    throw Boom.forbidden('Retrieval key does not match')
-  }
+  const fileStatus = await getAndVerify(fileId, retrievalKey)
 
   if (!fileStatus.s3Key || !fileStatus.s3Bucket) {
     throw Boom.internal(`S3 key/bucket is missing for file ID ${fileId}`)
@@ -138,6 +121,30 @@ async function moveFile(fileId, client, bucket, oldS3Key, newS3Key) {
       Key: oldS3Key
     })
   )
+}
+
+/**
+ * Retrieves a file status from the database, verifying the retrieval key before returning.
+ * @param {string} fileId
+ * @param {string} retrievalKey
+ */
+async function getAndVerify(fileId, retrievalKey) {
+  const fileStatus = await repository.getByFileId(fileId)
+
+  if (!fileStatus) {
+    throw Boom.notFound('File not found')
+  }
+
+  const retrievalKeyCorrect = await argon2.verify(
+    fileStatus.retrievalKey,
+    retrievalKey
+  )
+
+  if (!retrievalKeyCorrect) {
+    throw Boom.forbidden('Retrieval key does not match')
+  }
+
+  return fileStatus
 }
 
 /**
