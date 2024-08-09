@@ -3,7 +3,8 @@ import { StatusCodes } from 'http-status-codes'
 import {
   ingestFile,
   checkExists,
-  getPresignedLink
+  getPresignedLink,
+  persistFile
 } from '../api/files/service.js'
 
 import { createServer } from '~/src/api/server.js'
@@ -98,6 +99,27 @@ describe('Forms route', () => {
       expect(response.headers['content-type']).toContain('application/json')
       expect(response.result).toMatchObject({
         url: 'https://s3.dummy.com/file.txt'
+      })
+    })
+
+    test('Testing POST /file/persist route returns success', async () => {
+      jest.mocked(persistFile).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/persist',
+        auth,
+        payload: {
+          fileId: '1234',
+          initiatedRetrievalKey: '1234',
+          persistedRetrievalKey: '5678'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        message: 'File persisted'
       })
     })
   })
@@ -204,6 +226,42 @@ describe('Forms route', () => {
       })
     })
 
+    test('Testing POST /file/persist route returns bad request if initiatedRetrievalKey is missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/persist',
+        auth,
+        payload: {
+          fileId: '1234',
+          persistedRetrievalKey: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"initiatedRetrievalKey" is required'
+      })
+    })
+
+    test('Testing POST /file/persist route returns bad request if persistedRetrievalKey is missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/persist',
+        auth,
+        payload: {
+          fileId: '1234',
+          initiatedRetrievalKey: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"persistedRetrievalKey" is required'
+      })
+    })
+
     test('Testing POST /file/link route returns bad request if file ID is missing', async () => {
       const response = await server.inject({
         method: 'POST',
@@ -211,6 +269,24 @@ describe('Forms route', () => {
         auth,
         payload: {
           retrievalKey: '1234'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"fileId" is required'
+      })
+    })
+
+    test('Testing POST /file/persist route returns bad request if file ID is missing', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/persist',
+        auth,
+        payload: {
+          initiatedRetrievalKey: '1234',
+          persistedRetrievalKey: '1234'
         }
       })
 

@@ -39,6 +39,53 @@ export async function getByFileId(fileId) {
 }
 
 /**
+ * Updates the S3 Key for a given file ID.
+ * @param {string} fileId
+ * @param {string} s3Key
+ */
+export async function updateS3Key(fileId, s3Key) {
+  return updateField(fileId, 's3Key', s3Key)
+}
+
+/**
+ * Updates the retrievalKey for a given file ID.
+ * @param {string} fileId
+ * @param {string} retrievalKey
+ */
+export async function updateRetrievalKey(fileId, retrievalKey) {
+  return updateField(fileId, 'retrievalKey', retrievalKey)
+}
+
+/**
+ * Updates a single field for a given file ID.
+ * @param {string} fileId
+ * @param {string} fieldName
+ * @param {string} fieldValue
+ */
+async function updateField(fileId, fieldName, fieldValue) {
+  logger.info(`Updating ${fieldName} for file ID ${fileId}`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  const result = await coll.updateOne(
+    { fileId },
+    {
+      $set: {
+        [fieldName]: fieldValue
+      }
+    }
+  )
+
+  if (result.modifiedCount !== 1) {
+    throw new Error(`Failed to update ${fieldName}`)
+  }
+
+  logger.info(`Updated ${fieldName} for file ID ${fileId}`)
+}
+
+/**
  * @template {object} Schema
  * @typedef {import('mongodb').Collection<Schema>} Collection
  */
