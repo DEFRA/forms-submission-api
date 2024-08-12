@@ -1,6 +1,8 @@
 # forms-submission-api
 
-Core delivery platform Node.js Backend Template.
+API to track form submissions. Currently tracks file submissions only.
+
+See [docs/](docs/) for documentation.
 
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
@@ -87,12 +89,13 @@ npm run
 
 ## API endpoints
 
-| Endpoint                       | Description       |
-| :----------------------------- | :---------------- |
-| `GET: /health`                 | Health            |
-| `GET: /v1/entities`            | Entities          |
-| `GET: /v1/entities/<entityId>` | Entity by ID      |
-| `PATCH: /forms/<id>`           | Update Form by ID |
+| Endpoint                       | Description                                                                                      |
+| :----------------------------- | :----------------------------------------------------------------------------------------------- |
+| `GET: /health`                 | Health                                                                                           |
+| `POST: /file`                  | Ingests a file with a 7 day expiry. Called by the CDP uploader as a callback (upon file upload)  |
+| `GET: /file/{fileId}`          | Checks that a file has been ingested.                                                            |
+| `POST: /file/link`             | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                  |
+| `POST: /file/persist`          | Extends the expiry to 30 days. Called upon form submission.                                      |
 
 ## Calling API endpoints
 
