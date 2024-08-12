@@ -34,13 +34,13 @@ The above URL is then shared with a user. An example approach is below, but ulti
 
     const { url } = formsSubmissionApi.createLink(fileId, submissionId)
 
-    return h.view('view', {{ downloadUrl }})
+    return h.view('view', { url })
   }
 }
 ```
 
 ```html
-<a href="{{ downloadUrl }}" download></a>
+<a href="{{ url }}" download>Download file</a>
 ```
 
 ## Handling expired files
