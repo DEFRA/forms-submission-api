@@ -5,6 +5,7 @@ has a form action of cdp-uploader (`<form action="cdp-uploader/upload">`). Once 
 callback to our forms-submission-api's `POST /file` endpoint to indicate success, before redirecting the user back to the
 forms-runner form journey. As part of this callback, CDP tells us details about the file (see `src/api/types.js`, type
 `UploadPayload` for the type definition), such as:
+
 - File name
 - File type
 - Path to the file in S3
@@ -26,6 +27,7 @@ File expiry is handled by AWS S3 through lifecycle configuration policies based 
 for 7 days by default (when uploaded by a user), however they can be extended to 30 days if a user submits the form and sends the data to Defra.
 
 For more information, see:
+
 - [S3 documentation](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-expire-general-considerations.html)
 - [S3 configuration](https://github.com/DEFRA/cdp-tf-svc-infra/blob/307bc350ab1baf5cd8ad9d2cdaaf9693cd9610de/environments/prod/resources/s3_bucket_names.json#L33)
 

@@ -40,7 +40,7 @@ The above URL is then shared with a user. An example approach is below, but ulti
 ```
 
 ```html
-<a href="{{ downloadUrl }}" download>
+<a href="{{ downloadUrl }}" download></a>
 ```
 
 ## Handling expired files
