@@ -3,7 +3,6 @@ import {
   GetObjectCommand,
   CopyObjectCommand,
   DeleteObjectCommand,
-  NoSuchKey,
   HeadObjectCommand,
   NotFound
 } from '@aws-sdk/client-s3'
