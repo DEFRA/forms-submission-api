@@ -12,8 +12,6 @@ See [docs/](docs/) for documentation.
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
 - [API endpoints](#api-endpoints)
-- [Calling API endpoints](#calling-api-endpoints)
-  - [Postman](#postman)
 - [Docker](#docker)
   - [Development Image](#development-image)
   - [Production Image](#production-image)
@@ -96,16 +94,6 @@ npm run
 | `GET: /file/{fileId}` | Checks that a file has been ingested.                                                           |
 | `POST: /file/link`    | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                 |
 | `POST: /file/persist` | Extends the expiry to 30 days. Called upon form submission.                                     |
-
-## Calling API endpoints
-
-### Postman
-
-A [Postman](https://www.postman.com/) collection and environment are available for making calls to the Teams and
-Repositories API. Simply import the collection and environment into Postman.
-
-- [CDP Node Backend Template Postman Collection](postman/forms-submission-api.postman_collection.json)
-- [CDP Node Backend Template Postman Environment](postman/forms-submission-api.postman_environment.json)
 
 ## Docker
 
