@@ -3,7 +3,9 @@ import {
   GetObjectCommand,
   CopyObjectCommand,
   DeleteObjectCommand,
-  NoSuchKey
+  NoSuchKey,
+  HeadObjectCommand,
+  NotFound
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
@@ -27,7 +29,10 @@ export async function ingestFile(uploadPayload) {
   const { retrievalKey } = uploadPayload.metadata
   const { file: fileContainer } = uploadPayload.form
 
-  await assertFileExists(fileContainer)
+  await assertFileExists(
+    fileContainer,
+    Boom.badRequest('File does not exist in S3')
+  )
 
   const hashed = await argon2.hash(retrievalKey)
 
@@ -51,24 +56,25 @@ export async function ingestFile(uploadPayload) {
 /**
  * Confirms a file exists in S3 by throwing Boom.badRequest if not.
  * @param {FileUploadStatus} fileUploadStatus
+ * @param {Error} errorToThrow
  */
-async function assertFileExists(fileUploadStatus) {
+async function assertFileExists(fileUploadStatus, errorToThrow) {
   try {
     const client = getS3Client()
 
-    const command = new GetObjectCommand({
+    const command = new HeadObjectCommand({
       Bucket: fileUploadStatus.s3Bucket,
       Key: fileUploadStatus.s3Key
     })
 
     await client.send(command)
   } catch (err) {
-    if (err instanceof NoSuchKey) {
+    if (err instanceof NotFound) {
       logger.error(
         err,
         `Recieved request to ingest ${fileUploadStatus.s3Key}, but the file does not exist.`
       )
-      throw Boom.badRequest('File does not exist in S3')
+      throw errorToThrow
     }
 
     throw err
@@ -84,6 +90,8 @@ async function assertFileExists(fileUploadStatus) {
 export async function getPresignedLink(fileId, retrievalKey) {
   const fileStatus = await getAndVerify(fileId, retrievalKey)
   const client = getS3Client()
+
+  await assertFileExists(fileStatus, Boom.resourceGone())
 
   const command = new GetObjectCommand({
     Bucket: fileStatus.s3Bucket,
@@ -113,6 +121,8 @@ export async function persistFile(
   if (fileStatus.s3Key.startsWith(loadedPrefix)) {
     throw Boom.badRequest(`File ID ${fileId} has already been persisted`)
   }
+
+  await assertFileExists(fileStatus, Boom.resourceGone())
 
   const client = getS3Client()
 

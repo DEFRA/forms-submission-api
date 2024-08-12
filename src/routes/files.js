@@ -98,6 +98,7 @@ export default [
       }
     },
     options: {
+      auth: false,
       validate: {
         payload: filePersistPayloadSchema
       }

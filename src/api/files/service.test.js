@@ -2,7 +2,8 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
-  NoSuchKey,
+  HeadObjectCommand,
+  NotFound,
   S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -113,7 +114,7 @@ describe('Files service', () => {
       })
     })
 
-    test('should reject when the file has already been ingested', async () => {
+    test('should throw 400 Bad Request when the file has already been ingested', async () => {
       /**
        * @type {UploadPayload}
        */
@@ -144,7 +145,7 @@ describe('Files service', () => {
       )
     })
 
-    it('should reject an ingestion request if the file does not actually exist', async () => {
+    it('should throw 400 Bad Request if the file does not actually exist', async () => {
       /**
        * @type {UploadPayload}
        */
@@ -159,8 +160,8 @@ describe('Files service', () => {
         uploadStatus: 'ready'
       }
 
-      s3Mock.on(GetObjectCommand).rejectsOnce(
-        new NoSuchKey({
+      s3Mock.on(HeadObjectCommand).rejectsOnce(
+        new NotFound({
           message: 'Not found',
           $metadata: {}
         })
@@ -222,6 +223,28 @@ describe('Files service', () => {
 
       await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toThrow(
         Boom.notFound('File not found')
+      )
+    })
+
+    it('should throw 410 Gone if file is missing', async () => {
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'dummy',
+        s3Bucket: 'dummy',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      s3Mock.on(HeadObjectCommand).rejectsOnce(
+        new NotFound({
+          message: 'Not found',
+          $metadata: {}
+        })
+      )
+
+      await expect(getPresignedLink('123-456-789', 'dummy')).rejects.toThrow(
+        Boom.resourceGone()
       )
     })
 
@@ -420,6 +443,29 @@ describe('Files service', () => {
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
         )
       )
+    })
+
+    it('should throw 410 Gone if the file is missing from S3', async () => {
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'dummy',
+        s3Bucket: 'dummy',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      s3Mock.on(HeadObjectCommand).rejectsOnce(
+        new NotFound({
+          message: 'Not found',
+          $metadata: {}
+        })
+      )
+
+      await expect(
+        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+      ).rejects.toThrow(Boom.resourceGone())
     })
   })
 })
