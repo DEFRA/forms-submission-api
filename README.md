@@ -1,6 +1,8 @@
 # forms-submission-api
 
-Core delivery platform Node.js Backend Template.
+API to track form submissions. Currently tracks file submissions only.
+
+See [docs/](docs/) for documentation.
 
 - [Requirements](#requirements)
   - [Node.js](#nodejs)
@@ -10,8 +12,6 @@ Core delivery platform Node.js Backend Template.
   - [Production](#production)
   - [Npm scripts](#npm-scripts)
 - [API endpoints](#api-endpoints)
-- [Calling API endpoints](#calling-api-endpoints)
-  - [Postman](#postman)
 - [Docker](#docker)
   - [Development Image](#development-image)
   - [Production Image](#production-image)
@@ -87,22 +87,13 @@ npm run
 
 ## API endpoints
 
-| Endpoint                       | Description       |
-| :----------------------------- | :---------------- |
-| `GET: /health`                 | Health            |
-| `GET: /v1/entities`            | Entities          |
-| `GET: /v1/entities/<entityId>` | Entity by ID      |
-| `PATCH: /forms/<id>`           | Update Form by ID |
-
-## Calling API endpoints
-
-### Postman
-
-A [Postman](https://www.postman.com/) collection and environment are available for making calls to the Teams and
-Repositories API. Simply import the collection and environment into Postman.
-
-- [CDP Node Backend Template Postman Collection](postman/forms-submission-api.postman_collection.json)
-- [CDP Node Backend Template Postman Environment](postman/forms-submission-api.postman_environment.json)
+| Endpoint              | Description                                                                                     |
+| :-------------------- | :---------------------------------------------------------------------------------------------- |
+| `GET: /health`        | Health                                                                                          |
+| `POST: /file`         | Ingests a file with a 7 day expiry. Called by the CDP uploader as a callback (upon file upload) |
+| `GET: /file/{fileId}` | Checks that a file has been ingested.                                                           |
+| `POST: /file/link`    | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                 |
+| `POST: /file/persist` | Extends the expiry to 30 days. Called upon form submission.                                     |
 
 ## Docker
 
