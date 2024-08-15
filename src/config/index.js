@@ -106,6 +106,12 @@ export const config = convict({
     format: String,
     default: '',
     env: 'S3_ENDPOINT'
+  },
+  loadedPrefix: {
+    doc: 'Prefix for loaded files in S3',
+    format: String,
+    default: 'loaded',
+    env: 'LOADED_PREFIX'
   }
 })
 

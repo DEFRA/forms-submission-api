@@ -1,12 +1,14 @@
 import {
   ingestFile,
   checkExists,
-  getPresignedLink
+  getPresignedLink,
+  persistFile
 } from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
-  fileLinkCreatePayloadSchema,
-  fileRetrievalParamsSchema
+  fileAccessPayloadSchema,
+  fileRetrievalParamsSchema,
+  filePersistPayloadSchema
 } from '~/src/models/files.js'
 
 /**
@@ -75,7 +77,30 @@ export default [
     },
     options: {
       validate: {
-        payload: fileLinkCreatePayloadSchema
+        payload: fileAccessPayloadSchema
+      }
+    }
+  },
+  {
+    method: 'POST',
+    path: '/file/persist',
+    /**
+     * @param {RequestFilePersist} request
+     */
+    async handler(request) {
+      const { payload } = request
+      const { fileId, initiatedRetrievalKey, persistedRetrievalKey } = payload
+
+      await persistFile(fileId, initiatedRetrievalKey, persistedRetrievalKey)
+
+      return {
+        message: 'File persisted'
+      }
+    },
+    options: {
+      auth: false,
+      validate: {
+        payload: filePersistPayloadSchema
       }
     }
   }
@@ -83,5 +108,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate } from '~/src/api/types.js'
+ * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate, RequestFilePersist } from '~/src/api/types.js'
  */
