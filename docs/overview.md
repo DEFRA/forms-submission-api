@@ -9,7 +9,7 @@ See https://dev.azure.com/defragovuk/DEFRA-CDP/_wiki/wikis/Digital%20Forms%20Acc
 forms-runner
 
 1. A call to `POST /file` is made via cdp-uploader to ingest the file into the database.
-2. After some time, the user submits the form. A call to `/file/persist` is made to extend the expiry time.
+2. After some time, the user submits the form. A call to `/files/persist` is made to extend the expiry time.
 3. A download link is sent to the internal user, but this link is NOT the result of `POST /file/link` but a permanent
    download page in forms-designer that allows the user to input the retrieval key.
 

@@ -51,8 +51,15 @@ export const fileAccessPayloadSchema = Joi.object()
 
 export const filePersistPayloadSchema = Joi.object()
   .keys({
-    fileId: Joi.string().required(),
-    initiatedRetrievalKey: Joi.string().required(),
+    files: Joi.array()
+      .items(
+        Joi.object({
+          fileId: Joi.string().required(),
+          initiatedRetrievalKey: Joi.string().required()
+        })
+      )
+      .max(1000) // to prevent any malicious users but not any legitimate users
+      .required(),
     persistedRetrievalKey: Joi.string().required()
   })
   .required()

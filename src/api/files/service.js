@@ -102,11 +102,25 @@ export async function getPresignedLink(fileId, retrievalKey) {
 
 /**
  * Extends the time-to-live of a file to 30 days and updates the retrieval key.
+ * @param {{fileId: string, initiatedRetrievalKey: string}[]} files
+ * @param {string} persistedRetrievalKey - an updated retrieval key to persist the file
+ */
+export async function persistFiles(files, persistedRetrievalKey) {
+  const persistOperations = files.map(
+    async ({ fileId, initiatedRetrievalKey }) =>
+      persistFile(fileId, initiatedRetrievalKey, persistedRetrievalKey)
+  )
+
+  await Promise.all(persistOperations)
+}
+
+/**
+ * Extends the time-to-live of a file to 30 days and updates the retrieval key.
  * @param {string} fileId
  * @param {string} initiatedRetrievalKey - retrieval key when initiated
  * @param {string} persistedRetrievalKey - an updated retrieval key to persist the file
  */
-export async function persistFile(
+async function persistFile(
   fileId,
   initiatedRetrievalKey,
   persistedRetrievalKey

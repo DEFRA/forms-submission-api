@@ -18,7 +18,7 @@ import {
   checkExists,
   ingestFile,
   getPresignedLink,
-  persistFile
+  persistFiles
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 import 'aws-sdk-client-mock-jest'
@@ -285,9 +285,13 @@ describe('Files service', () => {
       jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await persistFile(
-        dummyData.fileId,
-        dummyData.retrievalKey,
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
         newRetrievalKey
       )
 
@@ -331,7 +335,15 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
       ).rejects.toThrow(Boom.forbidden('Retrieval key does not match'))
 
       expect(s3Mock).not.toHaveReceivedAnyCommand()
@@ -351,9 +363,13 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await persistFile(
-        dummyData.fileId,
-        dummyData.retrievalKey,
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
         dummyData.retrievalKey
       )
 
@@ -387,9 +403,13 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(
-          dummyData.fileId,
-          dummyData.retrievalKey,
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
           dummyData.retrievalKey
         )
       ).rejects.toThrow(
@@ -412,9 +432,13 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(
-          dummyData.fileId,
-          dummyData.retrievalKey,
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
           dummyData.retrievalKey
         )
       ).rejects.toThrow(
@@ -437,7 +461,15 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
       ).rejects.toThrow(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
@@ -464,7 +496,15 @@ describe('Files service', () => {
       )
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
       ).rejects.toThrow(Boom.resourceGone())
     })
   })
