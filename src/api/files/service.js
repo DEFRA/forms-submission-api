@@ -169,10 +169,6 @@ export async function persistFiles(files, persistedRetrievalKey) {
  * @param {S3Client} client - S3 client
  */
 async function deleteOldFiles(keys, lookupKey, client) {
-  // Only delete the old files once the pointer update has succeeded. Handle this outside of the DB session as we don't
-  // want a failure here to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
-  // anyway, so this ultimately is just a cost issue not a functional one.
-
   // AWS do have the DeleteObjects command instead which would be preferable. However, S3 keys
   // are stored on a per-document basis not a global and so we can't batch these up in case of any
   // variation.
