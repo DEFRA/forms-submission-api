@@ -117,10 +117,12 @@ export async function persistFiles(files, persistedRetrievalKey) {
 
   try {
     await session.withTransaction(async () => {
+      logger.info(`Persisting ${files.length} files`)
       // Copy all the source files to the destination
       for (const { fileId, initiatedRetrievalKey } of files) {
         updateFiles.push(
           // Mongo doesn't support parallel transactions, so we have to await each one
+          // Copy each file and update the path in the database
           await copyFile(fileId, initiatedRetrievalKey, session, client)
         )
       }
@@ -137,28 +139,62 @@ export async function persistFiles(files, persistedRetrievalKey) {
         session
       )
     })
+
+    logger.info(`Finished persisting ${files.length} files`)
   } catch (err) {
     logger.error(err, 'Error persisting files')
+
+    // no point persisting part of a batch. clean it up.
+    await removeFiles(
+      updateFiles.map(({ s3Bucket, newS3Key }) => ({
+        s3Bucket,
+        s3Key: newS3Key
+      })),
+      client
+    )
+
     throw err
   } finally {
     await session.endSession()
   }
 
   if (updateFiles.length) {
+    logger.info(`Deleting ${updateFiles.length} old files in staging`)
+
     // Only delete the old files once the pointer update has succeeded. Handle this outside of the DB session as we don't
-    // want to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
+    // want a failure here to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
     // anyway, so this ultimately is just a cost issue not a functional one.
-    await Promise.all(
-      updateFiles.map(async ({ s3Bucket, oldS3Key }) => {
-        return client.send(
-          new DeleteObjectCommand({
-            Bucket: s3Bucket,
-            Key: oldS3Key
-          })
-        )
+    await removeFiles(
+      updateFiles.map(({ s3Bucket, oldS3Key }) => ({
+        s3Bucket,
+        s3Key: oldS3Key
+      })),
+      client
+    )
+
+    logger.info(`Deleted ${updateFiles.length} old files in staging`)
+  }
+}
+
+/**
+ *
+ * @param {{ s3Bucket: string; s3Key: string }[]} updateFiles
+ * @param {S3Client} client
+ */
+async function removeFiles(updateFiles, client) {
+  // AWS do have the DeleteObjects command instead which would be preferable. However, S3 keys
+  // are stored on a per-document basis not a global and so we can't batch these up in case of any
+  // variation.
+  const deleteOperations = updateFiles.map(({ s3Bucket, s3Key }) =>
+    client.send(
+      new DeleteObjectCommand({
+        Bucket: s3Bucket,
+        Key: s3Key
       })
     )
-  }
+  )
+
+  return Promise.all(deleteOperations)
 }
 
 /**

@@ -82,7 +82,7 @@ async function updateField(fileIds, fieldName, fieldValue, session) {
     { session }
   )
 
-  if (result.modifiedCount !== 1) {
+  if (!result.acknowledged) {
     throw new Error(`Failed to update ${fieldName}`)
   }
 

@@ -324,6 +324,68 @@ describe('Files service', () => {
         Bucket: successfulFile.s3Bucket,
         Key: dummyData.s3Key
       })
+
+      expect(s3Mock).toHaveReceivedCommandTimes(DeleteObjectCommand, 1)
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: dummyData.s3Key
+      })
+    })
+
+    it('should fail if one item in the batch fails', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      /** @type {FormFileUploadStatus} */
+      const dummyData2 = {
+        ...successfulFile,
+        s3Key: "staging/path-that-won't-exist.txt",
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      s3Mock
+        .on(CopyObjectCommand)
+        .resolvesOnce({}) // first file succeeds
+        .rejectsOnce(
+          // second file is not found so we expect a rollback
+          new NotFound({
+            message: 'Not found',
+            $metadata: {}
+          })
+        )
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            },
+            {
+              fileId: dummyData2.fileId,
+              initiatedRetrievalKey: dummyData2.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toBeDefined()
+
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
+
+      // test the cleanup worked
+      expect(s3Mock).toHaveReceivedCommandTimes(DeleteObjectCommand, 1)
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: 'loaded/dummy-file-123.txt'
+      })
     })
 
     it("should fail if the retrieval key doesn't match", async () => {
