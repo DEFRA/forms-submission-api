@@ -119,8 +119,12 @@ export async function persistFiles(files, persistedRetrievalKey) {
   try {
     await session.withTransaction(async () => {
       logger.info(`Persisting ${files.length} files`)
+      const fileIds = []
+
       // Copy all the source files to the destination
       for (const { fileId, initiatedRetrievalKey } of files) {
+        fileIds.push(fileId)
+
         updateFiles.push(
           // Mongo doesn't support parallel transactions, so we have to await each one
           // Copy each file and update the path in the database
@@ -129,7 +133,6 @@ export async function persistFiles(files, persistedRetrievalKey) {
       }
 
       // Once we know the files have copied successfully, we can update the database
-      const fileIds = files.map(({ fileId }) => fileId)
       const persistedRetrievalKeyHashed = await argon2.hash(
         persistedRetrievalKey
       )
