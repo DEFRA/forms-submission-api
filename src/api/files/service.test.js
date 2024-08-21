@@ -296,14 +296,16 @@ describe('Files service', () => {
       )
 
       expect(hash).toHaveBeenCalledWith(newRetrievalKey)
-      expect(repository.updateRetrievalKey).toHaveBeenCalledWith(
-        dummyData.fileId,
-        'newKeyHash'
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [dummyData.fileId],
+        'newKeyHash',
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
@@ -314,7 +316,8 @@ describe('Files service', () => {
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
@@ -347,7 +350,7 @@ describe('Files service', () => {
       ).rejects.toThrow(Boom.forbidden('Retrieval key does not match'))
 
       expect(s3Mock).not.toHaveReceivedAnyCommand()
-      expect(repository.updateRetrievalKey).not.toHaveBeenCalled()
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
     })
 
     it('should handle nested input directories', async () => {
@@ -382,7 +385,8 @@ describe('Files service', () => {
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
@@ -488,7 +492,7 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      s3Mock.on(HeadObjectCommand).rejectsOnce(
+      s3Mock.on(CopyObjectCommand).rejectsOnce(
         new NotFound({
           message: 'Not found',
           $metadata: {}

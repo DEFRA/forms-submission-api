@@ -42,47 +42,51 @@ export async function getByFileId(fileId) {
  * Updates the S3 Key for a given file ID.
  * @param {string} fileId
  * @param {string} s3Key
+ * @param {ClientSession} session
  */
-export async function updateS3Key(fileId, s3Key) {
-  return updateField(fileId, 's3Key', s3Key)
+export async function updateS3Key(fileId, s3Key, session) {
+  return updateField([fileId], 's3Key', s3Key, session)
 }
 
 /**
  * Updates the retrievalKey for a given file ID.
- * @param {string} fileId
+ * @param {string[]} fileIds
  * @param {string} retrievalKey
+ * @param {ClientSession} session
  */
-export async function updateRetrievalKey(fileId, retrievalKey) {
-  return updateField(fileId, 'retrievalKey', retrievalKey)
+export async function updateRetrievalKeys(fileIds, retrievalKey, session) {
+  return updateField(fileIds, 'retrievalKey', retrievalKey, session)
 }
 
 /**
  * Updates a single field for a given file ID.
- * @param {string} fileId
+ * @param {string[]} fileIds
  * @param {string} fieldName
  * @param {string} fieldValue
+ * @param {ClientSession} session
  */
-async function updateField(fileId, fieldName, fieldValue) {
-  logger.info(`Updating ${fieldName} for file ID ${fileId}`)
+async function updateField(fileIds, fieldName, fieldValue, session) {
+  logger.info(`Updating ${fieldName} for ${fileIds.length} file IDs`)
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
     db.collection(COLLECTION_NAME)
   )
 
-  const result = await coll.updateOne(
-    { fileId },
+  const result = await coll.updateMany(
+    { fileId: { $in: fileIds } },
     {
       $set: {
         [fieldName]: fieldValue
       }
-    }
+    },
+    { session }
   )
 
   if (result.modifiedCount !== 1) {
     throw new Error(`Failed to update ${fieldName}`)
   }
 
-  logger.info(`Updated ${fieldName} for file ID ${fileId}`)
+  logger.info(`Updated ${fieldName} for ${fileIds.length} file IDs`)
 }
 
 /**
@@ -92,4 +96,5 @@ async function updateField(fileId, fieldName, fieldValue) {
 
 /**
  * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { ClientSession } from 'mongodb'
  */

@@ -15,6 +15,7 @@ import * as repository from './repository.js'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
 const s3Region = config.get('s3Region')
@@ -106,25 +107,68 @@ export async function getPresignedLink(fileId, retrievalKey) {
  * @param {string} persistedRetrievalKey - an updated retrieval key to persist the file
  */
 export async function persistFiles(files, persistedRetrievalKey) {
-  const persistOperations = files.map(
-    async ({ fileId, initiatedRetrievalKey }) =>
-      persistFile(fileId, initiatedRetrievalKey, persistedRetrievalKey)
-  )
+  const client = getS3Client()
+  const session = mongoClient.startSession()
 
-  await Promise.all(persistOperations)
+  /**
+   * @type {{ s3Bucket: string; oldS3Key: string; newS3Key: string; }[]}
+   */
+  const updateFiles = []
+
+  try {
+    await session.withTransaction(async () => {
+      // Copy all the source files to the destination
+      for (const { fileId, initiatedRetrievalKey } of files) {
+        updateFiles.push(
+          // Mongo doesn't support parallel transactions, so we have to await each one
+          await copyFile(fileId, initiatedRetrievalKey, session, client)
+        )
+      }
+
+      // Once we know the files have copied successfully, we can update the database
+      const fileIds = files.map(({ fileId }) => fileId)
+      const persistedRetrievalKeyHashed = await argon2.hash(
+        persistedRetrievalKey
+      )
+
+      await repository.updateRetrievalKeys(
+        fileIds,
+        persistedRetrievalKeyHashed,
+        session
+      )
+    })
+  } catch (err) {
+    logger.error(err, 'Error persisting files')
+    throw err
+  } finally {
+    await session.endSession()
+  }
+
+  if (updateFiles.length) {
+    // Only delete the old files once the pointer update has succeeded. Handle this outside of the DB session as we don't
+    // want to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
+    // anyway, so this ultimately is just a cost issue not a functional one.
+    await Promise.all(
+      updateFiles.map(async ({ s3Bucket, oldS3Key }) => {
+        return client.send(
+          new DeleteObjectCommand({
+            Bucket: s3Bucket,
+            Key: oldS3Key
+          })
+        )
+      })
+    )
+  }
 }
 
 /**
- * Extends the time-to-live of a file to 30 days and updates the retrieval key.
+ * Copies a file document to the loaded S3 directory.
  * @param {string} fileId
  * @param {string} initiatedRetrievalKey - retrieval key when initiated
- * @param {string} persistedRetrievalKey - an updated retrieval key to persist the file
+ * @param {ClientSession} session - mongoDB session
+ * @param {S3Client} client - S3 client
  */
-async function persistFile(
-  fileId,
-  initiatedRetrievalKey,
-  persistedRetrievalKey
-) {
+async function copyFile(fileId, initiatedRetrievalKey, session, client) {
   const fileStatus = await getAndVerify(fileId, initiatedRetrievalKey)
 
   if (!fileStatus.s3Key || !fileStatus.s3Bucket) {
@@ -135,56 +179,31 @@ async function persistFile(
     throw Boom.badRequest(`File ID ${fileId} has already been persisted`)
   }
 
-  await assertFileExists(fileStatus, Boom.resourceGone())
-
-  const client = getS3Client()
-
   const oldS3Key = fileStatus.s3Key
   const filename = oldS3Key.split('/').at(-1)
   const newS3Key = `${loadedPrefix}/${filename}`
 
-  const persistedRetrievalKeyHashed = await argon2.hash(persistedRetrievalKey)
+  try {
+    await client.send(
+      new CopyObjectCommand({
+        Bucket: fileStatus.s3Bucket,
+        Key: newS3Key,
+        CopySource: `${fileStatus.s3Bucket}/${oldS3Key}`
+      })
+    )
+  } catch (err) {
+    if (err instanceof NotFound) {
+      throw Boom.resourceGone()
+    }
+  }
 
-  // The retrieval key may have been updated by a user in forms-designer.
-  // Update before persisting to ensure it can be retrieved using the expected value.
-  await repository.updateRetrievalKey(fileId, persistedRetrievalKeyHashed)
+  await repository.updateS3Key(fileId, newS3Key, session)
 
-  await moveFile(fileId, client, fileStatus.s3Bucket, oldS3Key, newS3Key)
-}
-
-/**
- * Moves a file from one location to another and updates the database.
- * @param {string} fileId
- * @param {S3Client} client
- * @param {string} bucket
- * @param {string} oldS3Key
- * @param {string} newS3Key
- */
-async function moveFile(fileId, client, bucket, oldS3Key, newS3Key) {
-  logger.info(`Copying file ${oldS3Key} to ${newS3Key}`)
-  // Copy the file to the loaded prefix, which has a 30 day expiry
-  await client.send(
-    new CopyObjectCommand({
-      Bucket: bucket,
-      Key: newS3Key,
-      CopySource: `${bucket}/${oldS3Key}`
-    })
-  )
-
-  logger.info(`Updating file ${fileId} with new S3 key '${newS3Key}'`)
-
-  // Now that the file transfer was successful, update the record in the DB
-  await repository.updateS3Key(fileId, newS3Key)
-
-  logger.info(`Deleting old file ${oldS3Key}`)
-
-  // We no longer need the old file
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: bucket,
-      Key: oldS3Key
-    })
-  )
+  return {
+    s3Bucket: fileStatus.s3Bucket,
+    oldS3Key,
+    newS3Key
+  }
 }
 
 /**
@@ -240,4 +259,5 @@ export async function checkExists(fileId) {
 
 /**
  * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { ClientSession } from 'mongodb'
  */
