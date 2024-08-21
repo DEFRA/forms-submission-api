@@ -259,8 +259,10 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(false)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await expect(getPresignedLink('123-456-789', 'test')).rejects.toThrow(
-        Boom.forbidden('Retrieval key does not match')
+      await expect(getPresignedLink(dummyData.fileId, 'test')).rejects.toThrow(
+        Boom.forbidden(
+          `Retrieval key for file ${dummyData.fileId} is incorrect`
+        )
       )
     })
   })
@@ -410,7 +412,11 @@ describe('Files service', () => {
           ],
           newRetrievalKey
         )
-      ).rejects.toThrow(Boom.forbidden('Retrieval key does not match'))
+      ).rejects.toThrow(
+        Boom.forbidden(
+          `Retrieval key for file ${dummyData.fileId} is incorrect`
+        )
+      )
 
       expect(s3Mock).not.toHaveReceivedAnyCommand()
       expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
@@ -572,7 +578,9 @@ describe('Files service', () => {
           ],
           newRetrievalKey
         )
-      ).rejects.toThrow(Boom.resourceGone())
+      ).rejects.toThrow(
+        Boom.resourceGone(`File ${dummyData.fileId} no longer exists`)
+      )
     })
   })
 })

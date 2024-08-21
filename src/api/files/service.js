@@ -230,7 +230,7 @@ async function copyFile(fileId, initiatedRetrievalKey, session, client) {
     )
   } catch (err) {
     if (err instanceof NoSuchKey) {
-      throw Boom.resourceGone()
+      throw Boom.resourceGone(`File ${fileId} no longer exists`)
     }
 
     throw err
@@ -263,7 +263,7 @@ async function getAndVerify(fileId, retrievalKey) {
   )
 
   if (!retrievalKeyCorrect) {
-    throw Boom.forbidden('Retrieval key does not match')
+    throw Boom.forbidden(`Retrieval key for file ${fileId} is incorrect`)
   }
 
   return fileStatus
