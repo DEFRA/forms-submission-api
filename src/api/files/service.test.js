@@ -15,7 +15,7 @@ import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
 import {
-  checkExists,
+  checkFileStatus,
   ingestFile,
   getPresignedLink,
   persistFile
@@ -184,13 +184,13 @@ describe('Files service', () => {
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
 
-      await expect(checkExists('1234')).resolves.toBeUndefined()
+      await expect(checkFileStatus('1234')).resolves.toBeUndefined()
     })
 
     test('should throw Not Found when the file does not exist', async () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
-      await expect(checkExists('1234')).rejects.toThrow(Boom.notFound())
+      await expect(checkFileStatus('1234')).rejects.toThrow(Boom.notFound())
     })
   })
 
