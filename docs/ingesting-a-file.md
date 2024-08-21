@@ -45,15 +45,15 @@ key as this value may have been updated between the form's file upload and form 
 ```json
 {
   "files": [
-		{
-			"fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b18",
-			"initiatedRetrievalKey": "the-retrieval-key-for-this-file"
-		},
-		{
-			"fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b19",
-			"initiatedRetrievalKey": "perhaps-a-different-retrieval-key"
-		}
-	],
-	"persistedRetrievalKey": "a-new-key-applied-to-all-files-in-the-batch"
+    {
+      "fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b18",
+      "initiatedRetrievalKey": "the-retrieval-key-for-this-file"
+    },
+    {
+      "fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b19",
+      "initiatedRetrievalKey": "perhaps-a-different-retrieval-key"
+    }
+  ],
+  "persistedRetrievalKey": "a-new-key-applied-to-all-files-in-the-batch"
 }
 ```

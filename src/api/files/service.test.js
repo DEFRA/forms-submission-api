@@ -3,6 +3,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  NoSuchKey,
   NotFound,
   S3Client
 } from '@aws-sdk/client-s3'
@@ -356,8 +357,8 @@ describe('Files service', () => {
         .resolvesOnce({}) // first file succeeds
         .rejectsOnce(
           // second file is not found so we expect a rollback
-          new NotFound({
-            message: 'Not found',
+          new NoSuchKey({
+            message: 'NoSuchKey',
             $metadata: {}
           })
         )
@@ -555,8 +556,8 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       s3Mock.on(CopyObjectCommand).rejectsOnce(
-        new NotFound({
-          message: 'Not found',
+        new NoSuchKey({
+          message: 'NoSuchKey',
           $metadata: {}
         })
       )
