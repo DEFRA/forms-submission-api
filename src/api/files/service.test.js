@@ -173,7 +173,11 @@ describe('Files service', () => {
     })
   })
 
-  describe('checkExists', () => {
+  describe('checkFileStatus', () => {
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
     test('should return undefined if file is found', async () => {
       const uploadedFile = {
         ...successfulFile,
@@ -191,6 +195,26 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
       await expect(checkFileStatus('1234')).rejects.toThrow(Boom.notFound())
+    })
+
+    test('should throw 410 Gone if file is missing', async () => {
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'dummy',
+        s3Bucket: 'dummy',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      s3Mock.on(HeadObjectCommand).rejectsOnce(
+        new NotFound({
+          message: 'Not found',
+          $metadata: {}
+        })
+      )
+
+      await expect(checkFileStatus('1234')).rejects.toThrow(Boom.resourceGone())
     })
   })
 
