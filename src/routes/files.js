@@ -94,7 +94,7 @@ export default [
       await persistFiles(files, persistedRetrievalKey)
 
       return {
-        message: 'File persisted'
+        message: 'Files persisted'
       }
     },
     options: {

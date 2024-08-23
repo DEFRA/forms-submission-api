@@ -123,7 +123,7 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.headers['content-type']).toContain('application/json')
       expect(response.result).toMatchObject({
-        message: 'File persisted'
+        message: 'Files persisted'
       })
     })
   })
