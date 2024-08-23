@@ -121,7 +121,7 @@ export async function persistFiles(files, persistedRetrievalKey) {
       logger.info(`Persisting ${files.length} files`)
 
       updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
-        copyS3File(fileId, initiatedRetrievalKey, session, client)
+        copyS3File(fileId, initiatedRetrievalKey, client)
       )
 
       for await (const { fileId, newS3Key } of updateFiles) {
@@ -183,14 +183,14 @@ async function deleteOldFiles(keys, lookupKey, client) {
     )
   )
 }
+
 /**
  * Copies a file document to the loaded S3 directory.
  * @param {string} fileId
  * @param {string} initiatedRetrievalKey - retrieval key when initiated
- * @param {ClientSession} session - mongoDB session
  * @param {S3Client} client - S3 client
  */
-async function copyS3File(fileId, initiatedRetrievalKey, session, client) {
+async function copyS3File(fileId, initiatedRetrievalKey, client) {
   const fileStatus = await getAndVerify(fileId, initiatedRetrievalKey)
 
   if (!fileStatus.s3Key || !fileStatus.s3Bucket) {
