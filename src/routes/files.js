@@ -2,7 +2,7 @@ import {
   ingestFile,
   checkExists,
   getPresignedLink,
-  persistFile
+  persistFiles
 } from '~/src/api/files/service.js'
 import {
   fileIngestPayloadSchema,
@@ -83,18 +83,18 @@ export default [
   },
   {
     method: 'POST',
-    path: '/file/persist',
+    path: '/files/persist',
     /**
      * @param {RequestFilePersist} request
      */
     async handler(request) {
       const { payload } = request
-      const { fileId, initiatedRetrievalKey, persistedRetrievalKey } = payload
+      const { files, persistedRetrievalKey } = payload
 
-      await persistFile(fileId, initiatedRetrievalKey, persistedRetrievalKey)
+      await persistFiles(files, persistedRetrievalKey)
 
       return {
-        message: 'File persisted'
+        message: 'Files persisted'
       }
     },
     options: {

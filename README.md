@@ -87,13 +87,13 @@ npm run
 
 ## API endpoints
 
-| Endpoint              | Description                                                                                     |
-| :-------------------- | :---------------------------------------------------------------------------------------------- |
-| `GET: /health`        | Health                                                                                          |
-| `POST: /file`         | Ingests a file with a 7 day expiry. Called by the CDP uploader as a callback (upon file upload) |
-| `GET: /file/{fileId}` | Checks that a file has been ingested.                                                           |
-| `POST: /file/link`    | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                 |
-| `POST: /file/persist` | Extends the expiry to 30 days. Called upon form submission.                                     |
+| Endpoint               | Description                                                                                     |
+| :--------------------- | :---------------------------------------------------------------------------------------------- |
+| `GET: /health`         | Health                                                                                          |
+| `POST: /file`          | Ingests a file with a 7 day expiry. Called by the CDP uploader as a callback (upon file upload) |
+| `GET: /file/{fileId}`  | Checks that a file has been ingested.                                                           |
+| `POST: /file/link`     | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                 |
+| `POST: /files/persist` | Extends the expiry to 30 days. Called upon form submission.                                     |
 
 ## Docker
 

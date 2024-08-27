@@ -3,6 +3,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  NoSuchKey,
   NotFound,
   S3Client
 } from '@aws-sdk/client-s3'
@@ -18,7 +19,7 @@ import {
   checkExists,
   ingestFile,
   getPresignedLink,
-  persistFile
+  persistFiles
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 import 'aws-sdk-client-mock-jest'
@@ -258,8 +259,10 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(false)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await expect(getPresignedLink('123-456-789', 'test')).rejects.toThrow(
-        Boom.forbidden('Retrieval key does not match')
+      await expect(getPresignedLink(dummyData.fileId, 'test')).rejects.toThrow(
+        Boom.forbidden(
+          `Retrieval key for file ${dummyData.fileId} is incorrect`
+        )
       )
     })
   })
@@ -285,21 +288,27 @@ describe('Files service', () => {
       jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await persistFile(
-        dummyData.fileId,
-        dummyData.retrievalKey,
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
         newRetrievalKey
       )
 
       expect(hash).toHaveBeenCalledWith(newRetrievalKey)
-      expect(repository.updateRetrievalKey).toHaveBeenCalledWith(
-        dummyData.fileId,
-        'newKeyHash'
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [dummyData.fileId],
+        'newKeyHash',
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
@@ -310,12 +319,75 @@ describe('Files service', () => {
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
         Bucket: successfulFile.s3Bucket,
         Key: dummyData.s3Key
+      })
+
+      expect(s3Mock).toHaveReceivedCommandTimes(DeleteObjectCommand, 1)
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: dummyData.s3Key
+      })
+    })
+
+    it('should fail if one item in the batch fails', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      /** @type {FormFileUploadStatus} */
+      const dummyData2 = {
+        ...successfulFile,
+        s3Key: "staging/path-that-won't-exist.txt",
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      s3Mock
+        .on(CopyObjectCommand)
+        .resolvesOnce({}) // first file succeeds
+        .rejectsOnce(
+          // second file is not found so we expect a rollback
+          new NoSuchKey({
+            message: 'NoSuchKey',
+            $metadata: {}
+          })
+        )
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            },
+            {
+              fileId: dummyData2.fileId,
+              initiatedRetrievalKey: dummyData2.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toBeDefined()
+
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
+
+      // test the cleanup worked
+      expect(s3Mock).toHaveReceivedCommandTimes(DeleteObjectCommand, 1)
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: 'loaded/dummy-file-123.txt'
       })
     })
 
@@ -331,11 +403,23 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
-      ).rejects.toThrow(Boom.forbidden('Retrieval key does not match'))
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toThrow(
+        Boom.forbidden(
+          `Retrieval key for file ${dummyData.fileId} is incorrect`
+        )
+      )
 
       expect(s3Mock).not.toHaveReceivedAnyCommand()
-      expect(repository.updateRetrievalKey).not.toHaveBeenCalled()
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
     })
 
     it('should handle nested input directories', async () => {
@@ -351,9 +435,13 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await persistFile(
-        dummyData.fileId,
-        dummyData.retrievalKey,
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
         dummyData.retrievalKey
       )
 
@@ -366,7 +454,8 @@ describe('Files service', () => {
 
       expect(repository.updateS3Key).toHaveBeenCalledWith(
         successfulFile.fileId,
-        expectedNewKey
+        expectedNewKey,
+        expect.any(Object) // the session which we aren't testing
       )
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
@@ -387,9 +476,13 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(
-          dummyData.fileId,
-          dummyData.retrievalKey,
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
           dummyData.retrievalKey
         )
       ).rejects.toThrow(
@@ -412,9 +505,13 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(
-          dummyData.fileId,
-          dummyData.retrievalKey,
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
           dummyData.retrievalKey
         )
       ).rejects.toThrow(
@@ -437,7 +534,15 @@ describe('Files service', () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
       ).rejects.toThrow(
         Boom.internal(
           `S3 key/bucket is missing for file ID ${dummyData.fileId}`
@@ -456,16 +561,26 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      s3Mock.on(HeadObjectCommand).rejectsOnce(
-        new NotFound({
-          message: 'Not found',
+      s3Mock.on(CopyObjectCommand).rejectsOnce(
+        new NoSuchKey({
+          message: 'NoSuchKey',
           $metadata: {}
         })
       )
 
       await expect(
-        persistFile(dummyData.fileId, dummyData.retrievalKey, newRetrievalKey)
-      ).rejects.toThrow(Boom.resourceGone())
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toThrow(
+        Boom.resourceGone(`File ${dummyData.fileId} no longer exists`)
+      )
     })
   })
 })
