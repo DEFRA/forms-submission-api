@@ -124,10 +124,9 @@ export async function persistFiles(files, persistedRetrievalKey) {
         copyS3File(fileId, initiatedRetrievalKey, client)
       )
 
-      for await (const { fileId, newS3Key } of updateFiles) {
-        // Mongo doesn't support parallel transactions, so we have to await each one
-        await repository.updateS3Key(fileId, newS3Key, session)
-      }
+      const res = await Promise.all(updateFiles)
+
+      await repository.updateS3Keys(res, session)
 
       // Once we know the files have copied successfully, we can update the database
       const persistedRetrievalKeyHashed = await argon2.hash(
