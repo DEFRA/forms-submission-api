@@ -18,11 +18,11 @@
  * @typedef {object} FileUploadStatus
  * @property {string} fileId - uuid of the file
  * @property {string} filename - filename of file uploaded, if present
- * @property {string} contentType - The mime type as declared in the multipart upload
+ * @property {string} [contentType] - The mime type as declared in the multipart upload
  * @property {('complete'|'rejected'|'pending')} fileStatus - complete or rejected if the virus scan has completed, pending if its still in progress
  * @property {number} contentLength - Size of file in bytes
- * @property {string} checksumSha256 - SHA256 check sum of file recieved by cdp-uploader before uploading to S3 bucket
- * @property {string} detectedContentType - The mime type as detected by the CDP-Uploader
+ * @property {string} [checksumSha256] - SHA256 check sum of file recieved by cdp-uploader before uploading to S3 bucket
+ * @property {string} [detectedContentType] - The mime type as detected by the CDP-Uploader
  * @property {string} [s3Key] - S3 bucket where scanned file is moved. Only set if file status is complete
  * @property {string} [s3Bucket] - S3 Path where scanned file is moved. Includes path prefix if set. Only set when fileStatus is complete
  * @property {boolean} [hasError] - true/false Only set to true if the file has been rejected or could not be delivered. Reason is supplied in errorMessage field.
