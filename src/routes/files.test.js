@@ -149,10 +149,9 @@ describe('Forms route', () => {
         }
       })
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"form.file.fileStatus" must be [complete]'
+        message: 'Ingestion failed'
       })
     })
 
@@ -172,10 +171,9 @@ describe('Forms route', () => {
         }
       })
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"form.file" must be of type object'
+        message: 'Ingestion failed'
       })
     })
 
@@ -193,10 +191,9 @@ describe('Forms route', () => {
         }
       })
 
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        error: 'Bad Request',
-        message: '"metadata.retrievalKey" is required'
+        message: 'Ingestion failed'
       })
     })
 
