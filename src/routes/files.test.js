@@ -5,8 +5,7 @@ import {
   checkFileStatus,
   getPresignedLink,
   persistFile
-} from '../api/files/service.js'
-
+} from '~/src/api/files/service.js'
 import { createServer } from '~/src/api/server.js'
 import { auth } from '~/test/fixtures/auth.js'
 
