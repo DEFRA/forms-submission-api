@@ -42,10 +42,7 @@ export default [
          * @param {Error} err
          */
         failAction: (request, h, err) => {
-          request.logger.info(
-            'Ingestion failed validation, returning 200 OK',
-            err
-          )
+          request.logger.info('Ingestion failed, returning 200 OK', err)
 
           return h
             .response({ message: 'Ingestion failed' })
