@@ -11,10 +11,10 @@ import {
   filePersistPayloadSchema
 } from '~/src/models/files.js'
 
-/**
- * @type {ServerRoute[]}
- */
 export default [
+  /**
+   * @satisfies {ServerRoute<{ Payload: RequestFileCreate }>}
+   */
   {
     method: 'POST',
     path: '/file',
@@ -33,11 +33,30 @@ export default [
     options: {
       auth: false,
       validate: {
-        payload: fileIngestPayloadSchema
+        payload: fileIngestPayloadSchema,
+        /**
+         * If the callback POST from CDP fails payload validation,
+         * we log the errors and return 200 OK to stop them retrying
+         * @param {RequestFileCreate} request
+         * @param {ResponseToolkit} h
+         * @param {Error} err
+         */
+        failAction: (request, h, err) => {
+          request.logger.info('Ingestion failed, returning 200 OK', err)
+
+          return h
+            .response({ message: 'Ingestion failed' })
+            .code(200)
+            .takeover()
+        }
       }
     }
   },
-  {
+
+  /**
+   * @satisfies {ServerRoute}
+   */
+  ({
     method: 'GET',
     path: '/file/{fileId}',
     /**
@@ -58,8 +77,12 @@ export default [
         params: fileRetrievalParamsSchema
       }
     }
-  },
-  {
+  }),
+
+  /**
+   * @satisfies {ServerRoute}
+   */
+  ({
     method: 'POST',
     path: '/file/link',
     /**
@@ -80,8 +103,12 @@ export default [
         payload: fileAccessPayloadSchema
       }
     }
-  },
-  {
+  }),
+
+  /**
+   * @satisfies {ServerRoute}
+   */
+  ({
     method: 'POST',
     path: '/files/persist',
     /**
@@ -103,10 +130,10 @@ export default [
         payload: filePersistPayloadSchema
       }
     }
-  }
+  })
 ]
 
 /**
- * @import { ServerRoute } from '@hapi/hapi'
+ * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
  * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate, RequestFilePersist } from '~/src/api/types.js'
  */

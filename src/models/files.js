@@ -4,11 +4,11 @@ const fileUploadStatusSchema = Joi.object()
   .keys({
     fileId: Joi.string().required(),
     filename: Joi.string().required(),
-    contentType: Joi.string().required(),
+    contentType: Joi.string().optional(),
     fileStatus: Joi.string().valid('complete').required(),
     contentLength: Joi.number().required(),
-    checksumSha256: Joi.string().required(),
-    detectedContentType: Joi.string().required(),
+    checksumSha256: Joi.string().optional(),
+    detectedContentType: Joi.string().optional(),
     s3Key: Joi.string().required(),
     s3Bucket: Joi.string().required(),
     hasError: Joi.boolean().optional(),
@@ -17,7 +17,7 @@ const fileUploadStatusSchema = Joi.object()
   .required()
   .unknown(true)
 
-// below wse use .unknown(true) as extras don't need to be a show stopper
+// below we use .unknown(true) as extras don't need to be a show stopper
 // just validate the bits we care about and let everything else through
 export const fileIngestPayloadSchema = Joi.object()
   .keys({
