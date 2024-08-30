@@ -34,7 +34,6 @@ updates:
       tools:
         patterns:
           - 'jest'
-          - 'nodemon'
           - 'tsx'
 
       types:

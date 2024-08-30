@@ -10,9 +10,8 @@
   "scripts": {
     "build": "npm run build:server",
     "build:server": "babel --delete-dir-on-start --ignore \"**/*.test.js\" --ignore \"src/__fixtures__\" --copy-files --no-copy-ignored --keep-file-extension --source-maps --out-dir ./.server ./src",
-    "docker:dev": "NODE_ENV=development npm run server:watch",
-    "dev": "npm run server:watch",
-    "dev:debug": "npm run server:debug",
+    "dev": "npm run server:watch:dev",
+    "dev:debug": "npm run server:watch:debug",
     "format": "prettier --write \"**/*.{cjs,js,json,md,mjs}\"",
     "format:check": "prettier --check \"**/*.{cjs,js,json,md,mjs}\"",
     "postinstall": "npm run setup:husky",
@@ -24,10 +23,11 @@
     "postversion": "git add package.json package-lock.json && git commit -m $npm_package_version",
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
-    "server:watch": "nodemon --exec tsx --enable-source-maps ./src",
-    "server:debug": "nodemon --exec tsx --enable-source-maps --inspect ./src",
+    "server:watch": "NODE_ENV=development tsx watch --clear-screen=false --enable-source-maps --exclude \"**/*.test.*\"",
+    "server:watch:dev": "npm run server:watch -- ./src/index.js",
+    "server:watch:debug": "npm run server:watch -- --inspect ./src/index.js",
     "prestart": "npm run build",
-    "start": "NODE_ENV=production node --enable-source-maps ./.server",
+    "start": "NODE_ENV=${NODE_ENV:-production} node --enable-source-maps ./.server",
     "setup:husky": "node -e \"try { (await import('husky')).default() } catch (e) { if (e.code !== 'ERR_MODULE_NOT_FOUND') throw e }\" --input-type module"
   },
   "dependencies": {
@@ -77,7 +77,6 @@
     "husky": "^9.1.1",
     "jest": "^29.7.0",
     "lint-staged": "^15.2.7",
-    "nodemon": "^3.1.4",
     "prettier": "^3.3.3",
     "tsx": "^4.19.0",
     "typescript": "^5.5.3"
