@@ -32,10 +32,28 @@ For more information, see:
 - [S3 configuration](https://github.com/DEFRA/cdp-tf-svc-infra/blob/307bc350ab1baf5cd8ad9d2cdaaf9693cd9610de/environments/prod/resources/s3_bucket_names.json#L33)
 
 cdp-uploader will upload the files with a prefix of `staging/`, which per the above link has a 7 day expiry. Upon form submission,
-all files within the form submission need to be accessible for 30 days. `forms-runner` would then call the `POST /file/persist`
-for each file to load it into the `/loaded` directory which has a 30 day expiry on it.
+all files within the form submission need to be accessible for 30 days. `forms-runner` would then call the `POST /files/persist`
+with each file to load it into the `/loaded` directory which has a 30 day expiry on it.
 
 ## Persisting a file for 30 days
 
-In addition to `POST /file/persist` moving the file into the prefix with a 30 day expiry, the endpoint takes an updated retrieval
+In addition to `POST /files/persist` moving files into the prefix with a 30 day expiry, the endpoint takes an updated retrieval
 key as this value may have been updated between the form's file upload and form submission.
+
+`/files/persist` is designed to be called on form submission, so it can take a batch of files to update in one transaction. For example:
+
+```json
+{
+  "files": [
+    {
+      "fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b18",
+      "initiatedRetrievalKey": "the-retrieval-key-for-this-file"
+    },
+    {
+      "fileId": "9fcaabe5-77ec-44db-8356-3a6e8dc51b19",
+      "initiatedRetrievalKey": "perhaps-a-different-retrieval-key"
+    }
+  ],
+  "persistedRetrievalKey": "a-new-key-applied-to-all-files-in-the-batch"
+}
+```
