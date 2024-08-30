@@ -16,7 +16,7 @@ import { pino } from 'pino'
 
 import * as repository from '~/src/api/files/repository.js'
 import {
-  checkExists,
+  checkFileStatus,
   ingestFile,
   getPresignedLink,
   persistFiles
@@ -174,7 +174,11 @@ describe('Files service', () => {
     })
   })
 
-  describe('checkExists', () => {
+  describe('checkFileStatus', () => {
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
     test('should return undefined if file is found', async () => {
       const uploadedFile = {
         ...successfulFile,
@@ -185,13 +189,33 @@ describe('Files service', () => {
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
 
-      await expect(checkExists('1234')).resolves.toBeUndefined()
+      await expect(checkFileStatus('1234')).resolves.toBeUndefined()
     })
 
     test('should throw Not Found when the file does not exist', async () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
-      await expect(checkExists('1234')).rejects.toThrow(Boom.notFound())
+      await expect(checkFileStatus('1234')).rejects.toThrow(Boom.notFound())
+    })
+
+    test('should throw 410 Gone if file is missing', async () => {
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'dummy',
+        s3Bucket: 'dummy',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      s3Mock.on(HeadObjectCommand).rejectsOnce(
+        new NotFound({
+          message: 'Not found',
+          $metadata: {}
+        })
+      )
+
+      await expect(checkFileStatus('1234')).rejects.toThrow(Boom.resourceGone())
     })
   })
 

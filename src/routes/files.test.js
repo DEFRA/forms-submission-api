@@ -2,11 +2,10 @@ import { StatusCodes } from 'http-status-codes'
 
 import {
   ingestFile,
-  checkExists,
+  checkFileStatus,
   getPresignedLink,
   persistFiles
-} from '../api/files/service.js'
-
+} from '~/src/api/files/service.js'
 import { createServer } from '~/src/api/server.js'
 import { auth } from '~/test/fixtures/auth.js'
 
@@ -67,7 +66,7 @@ describe('Forms route', () => {
     })
 
     test('Testing GET /file/{uploadId} route returns success', async () => {
-      jest.mocked(checkExists).mockResolvedValue()
+      jest.mocked(checkFileStatus).mockResolvedValue()
 
       const response = await server.inject({
         method: 'GET',

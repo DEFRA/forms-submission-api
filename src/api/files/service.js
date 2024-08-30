@@ -272,12 +272,14 @@ function getS3Client() {
  * @param {string} fileId
  * @throws {Boom.notFound} - if the file status does not exist
  */
-export async function checkExists(fileId) {
+export async function checkFileStatus(fileId) {
   const fileStatus = await repository.getByFileId(fileId)
 
   if (!fileStatus) {
     throw Boom.notFound()
   }
+
+  await assertFileExists(fileStatus, Boom.resourceGone())
 }
 
 /**

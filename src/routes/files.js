@@ -1,6 +1,6 @@
 import {
   ingestFile,
-  checkExists,
+  checkFileStatus,
   getPresignedLink,
   persistFiles
 } from '~/src/api/files/service.js'
@@ -65,7 +65,7 @@ export default [
     async handler(request) {
       const { fileId } = request.params
 
-      await checkExists(fileId)
+      await checkFileStatus(fileId)
 
       return {
         message: 'Found'
