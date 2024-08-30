@@ -18,7 +18,7 @@ RUN npm ci
 COPY --chown=node:node . .
 RUN npm run build
 
-CMD [ "npm", "run", "docker:dev" ]
+CMD [ "npm", "run", "dev" ]
 
 FROM defradigital/node:${PARENT_VERSION} AS production
 ARG PARENT_VERSION
