@@ -168,15 +168,20 @@ export async function persistFiles(files, persistedRetrievalKey) {
  * @param {S3Client} client - S3 client
  */
 async function deleteOldFiles(keys, lookupKey, client) {
+  const settledKeys = await Promise.allSettled(keys)
+  const filteredKeys = settledKeys
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value)
+
   // AWS do have the DeleteObjects command instead which would be preferable. However, S3 keys
   // are stored on a per-document basis not a global and so we can't batch these up in case of any
   // variation.
   return Promise.all(
-    keys.map(async (obj) =>
+    filteredKeys.map((obj) =>
       client.send(
         new DeleteObjectCommand({
-          Bucket: (await obj).s3Bucket,
-          Key: (await obj)[lookupKey]
+          Bucket: obj.s3Bucket,
+          Key: obj[lookupKey]
         })
       )
     )

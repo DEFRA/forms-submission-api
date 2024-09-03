@@ -39,16 +39,6 @@ export async function getByFileId(fileId) {
 }
 
 /**
- * Updates the S3 Key for a given file ID.
- * @param {string} fileId
- * @param {string} s3Key
- * @param {ClientSession} session
- */
-export async function updateS3Key(fileId, s3Key, session) {
-  return updateField([fileId], 's3Key', s3Key, session)
-}
-
-/**
  * Updates the S3 Keys for a given set of files
  * @param {{ fileId: string; s3Bucket: string; oldS3Key: string; newS3Key: string; }[]} updateFiles
  * @param {ClientSession} session

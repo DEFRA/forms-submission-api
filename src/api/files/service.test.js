@@ -329,9 +329,13 @@ describe('Files service', () => {
         expect.any(Object) // the session which we aren't testing
       )
 
-      expect(repository.updateS3Key).toHaveBeenCalledWith(
-        successfulFile.fileId,
-        expectedNewKey,
+      expect(repository.updateS3Keys).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fileId: successfulFile.fileId,
+            newS3Key: expectedNewKey
+          })
+        ]),
         expect.any(Object) // the session which we aren't testing
       )
 
@@ -340,12 +344,6 @@ describe('Files service', () => {
         Key: expectedNewKey,
         CopySource: 'dummy-bucket/staging/dummy-file-123.txt'
       })
-
-      expect(repository.updateS3Key).toHaveBeenCalledWith(
-        successfulFile.fileId,
-        expectedNewKey,
-        expect.any(Object) // the session which we aren't testing
-      )
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
         Bucket: successfulFile.s3Bucket,
@@ -476,9 +474,13 @@ describe('Files service', () => {
           'dummy-bucket/staging/extra-level/extra-level-two/dummy-file-123.txt'
       })
 
-      expect(repository.updateS3Key).toHaveBeenCalledWith(
-        successfulFile.fileId,
-        expectedNewKey,
+      expect(repository.updateS3Keys).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            fileId: successfulFile.fileId,
+            newS3Key: expectedNewKey
+          })
+        ]),
         expect.any(Object) // the session which we aren't testing
       )
 
