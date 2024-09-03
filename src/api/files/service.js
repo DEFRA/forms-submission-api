@@ -12,8 +12,7 @@ import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import { MongoServerError } from 'mongodb'
 
-import * as repository from './repository.js'
-
+import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { client as mongoClient } from '~/src/mongo.js'
