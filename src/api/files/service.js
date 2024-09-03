@@ -96,7 +96,8 @@ export async function getPresignedLink(fileId, retrievalKey) {
 
   const command = new GetObjectCommand({
     Bucket: fileStatus.s3Bucket,
-    Key: fileStatus.s3Key
+    Key: fileStatus.s3Key,
+    ResponseContentDisposition: `attachment;filename="${fileStatus.filename}"`
   })
 
   return getSignedUrl(client, command, { expiresIn: 3600 })
