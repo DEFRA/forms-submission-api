@@ -117,14 +117,14 @@ export async function persistFiles(files, persistedRetrievalKey) {
   let updateFiles = []
 
   try {
+    updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
+      copyS3File(fileId, initiatedRetrievalKey, client)
+    )
+
+    const res = await Promise.all(updateFiles)
+
     await session.withTransaction(async () => {
       logger.info(`Persisting ${files.length} files`)
-
-      updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
-        copyS3File(fileId, initiatedRetrievalKey, client)
-      )
-
-      const res = await Promise.all(updateFiles)
 
       await repository.updateS3Keys(res, session)
 
