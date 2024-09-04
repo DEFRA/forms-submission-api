@@ -39,13 +39,25 @@ export async function getByFileId(fileId) {
 }
 
 /**
- * Updates the S3 Key for a given file ID.
- * @param {string} fileId
- * @param {string} s3Key
+ * Updates the S3 Keys for a given set of files
+ * @param {{ fileId: string; s3Bucket: string; oldS3Key: string; newS3Key: string; }[]} updateFiles
  * @param {ClientSession} session
  */
-export async function updateS3Key(fileId, s3Key, session) {
-  return updateField([fileId], 's3Key', s3Key, session)
+export async function updateS3Keys(updateFiles, session) {
+  const ops = updateFiles.map(({ fileId, newS3Key: s3Key }) => {
+    return {
+      updateOne: {
+        filter: { fileId },
+        update: [{ $set: { s3Key } }]
+      }
+    }
+  })
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
+    db.collection(COLLECTION_NAME)
+  )
+
+  return coll.bulkWrite(ops, { session })
 }
 
 /**

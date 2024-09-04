@@ -12,8 +12,7 @@ import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import { MongoServerError } from 'mongodb'
 
-import * as repository from './repository.js'
-
+import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { client as mongoClient } from '~/src/mongo.js'
@@ -118,17 +117,16 @@ export async function persistFiles(files, persistedRetrievalKey) {
   let updateFiles = []
 
   try {
+    updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
+      copyS3File(fileId, initiatedRetrievalKey, client)
+    )
+
+    const res = await Promise.all(updateFiles)
+
     await session.withTransaction(async () => {
       logger.info(`Persisting ${files.length} files`)
 
-      updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
-        copyS3File(fileId, initiatedRetrievalKey, client)
-      )
-
-      for await (const { fileId, newS3Key } of updateFiles) {
-        // Mongo doesn't support parallel transactions, so we have to await each one
-        await repository.updateS3Key(fileId, newS3Key, session)
-      }
+      await repository.updateS3Keys(res, session)
 
       // Once we know the files have copied successfully, we can update the database
       const persistedRetrievalKeyHashed = await argon2.hash(
@@ -170,15 +168,20 @@ export async function persistFiles(files, persistedRetrievalKey) {
  * @param {S3Client} client - S3 client
  */
 async function deleteOldFiles(keys, lookupKey, client) {
+  const settledKeys = await Promise.allSettled(keys)
+  const filteredKeys = settledKeys
+    .filter((result) => result.status === 'fulfilled')
+    .map((result) => result.value)
+
   // AWS do have the DeleteObjects command instead which would be preferable. However, S3 keys
   // are stored on a per-document basis not a global and so we can't batch these up in case of any
   // variation.
   return Promise.all(
-    keys.map(async (obj) =>
+    filteredKeys.map((obj) =>
       client.send(
         new DeleteObjectCommand({
-          Bucket: (await obj).s3Bucket,
-          Key: (await obj)[lookupKey]
+          Bucket: obj.s3Bucket,
+          Key: obj[lookupKey]
         })
       )
     )
