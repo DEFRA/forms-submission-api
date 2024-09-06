@@ -42,16 +42,18 @@ export const auth = {
             }
           }
 
-          const { preferred_username: preferredUsername } = user
+          const { oid } = user
 
-          if (!preferredUsername) {
-            logger.error('Authentication error: Missing preferred_username')
+          if (!oid || typeof oid !== 'string') {
+            logger.error(
+              'Authentication error: user.oid is not a string or is missing'
+            )
             return {
               isValid: false
             }
           }
 
-          logger.debug(`User ${preferredUsername}: passed authentication`)
+          logger.debug(`User ${oid}: passed authentication`)
 
           return {
             isValid: true,
