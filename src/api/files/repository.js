@@ -102,11 +102,6 @@ async function updateField(fileIds, fieldName, fieldValue, session) {
 }
 
 /**
- * @template {object} Schema
- * @typedef {import('mongodb').Collection<Schema>} Collection
- */
-
-/**
  * @import { FormFileUploadStatus } from '~/src/api/types.js'
- * @import { ClientSession } from 'mongodb'
+ * @import { ClientSession, Collection } from 'mongodb'
  */

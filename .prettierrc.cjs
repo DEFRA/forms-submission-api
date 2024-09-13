@@ -1,5 +1,5 @@
 /**
- * @type {import('prettier').Config}
+ * @type {Config}
  */
 module.exports = {
   tabWidth: 2,
@@ -7,3 +7,7 @@ module.exports = {
   singleQuote: true,
   trailingComma: 'none'
 }
+
+/**
+ * @import { Config } from 'prettier'
+ */

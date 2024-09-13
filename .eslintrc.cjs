@@ -1,5 +1,5 @@
 /**
- * @type {import('eslint').ESLint.ConfigData}
+ * @type {ESLint.ConfigData}
  */
 module.exports = {
   ignorePatterns: ['.server', 'src/__fixtures__', 'coverage'],
@@ -168,3 +168,7 @@ module.exports = {
   ],
   root: true
 }
+
+/**
+ * @import { ESLint } from 'eslint'
+ */

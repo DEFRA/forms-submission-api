@@ -1,6 +1,6 @@
 /**
  * Log and throw and error
- * @type {Method}
+ * @type {Lifecycle.Method}
  */
 export function failAction(request, h, error) {
   request.logger.error(error, error?.message)
@@ -9,5 +9,5 @@ export function failAction(request, h, error) {
 }
 
 /**
- * @typedef {import('@hapi/hapi').Lifecycle.Method} Method
+ * @import { Lifecycle } from '@hapi/hapi'
  */
