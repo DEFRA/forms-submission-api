@@ -612,10 +612,5 @@ describe('Files service', () => {
 })
 
 /**
- * @template {object} Schema
- * @typedef {import('mongodb').WithId<Schema>} WithId
- */
-
-/**
  * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

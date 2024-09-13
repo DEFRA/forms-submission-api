@@ -67,15 +67,7 @@ export const auth = {
 }
 
 /**
- * @template {object | void} [PluginOptions=void]
- * @typedef {import('@hapi/hapi').ServerRegisterPluginObject<PluginOptions>} ServerRegisterPluginObject
- */
-
-/**
- * @template {object} Payload
- * @typedef {import('@hapi/jwt').HapiJwt.Artifacts<{ JwtPayload?: Payload }>} Artifacts
- */
-
-/**
- * @typedef {import('oidc-client-ts').UserProfile & { groups?: string[] }} UserProfile
+ * @import { ServerRegisterPluginObject } from '@hapi/hapi'
+ * @import { HapiJwt } from '@hapi/jwt'
+ * @import { Artifacts, UserProfile } from '~/src/plugins/auth/types.js'
  */

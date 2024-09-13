@@ -1,6 +1,6 @@
 /**
  * Jest config
- * @type {import('@jest/types').Config.InitialOptions}
+ * @type {Config}
  */
 module.exports = {
   verbose: true,
@@ -21,3 +21,7 @@ module.exports = {
   setupFiles: ['<rootDir>/jest.setup.js'],
   transformIgnorePatterns: ['<rootDir>/node_modules/(?!@defra/forms-model/)']
 }
+
+/**
+ * @import { Config } from 'jest'
+ */

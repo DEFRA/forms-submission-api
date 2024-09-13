@@ -6,15 +6,6 @@
  */
 
 /**
- * @template {import('@hapi/hapi').ReqRef} [ReqRef=import('@hapi/hapi').ReqRefDefaults]
- * @typedef {import('@hapi/hapi').Request<ReqRef>} Request
- */
-
-/**
- * @typedef {import('mongodb').Db} Db
- */
-
-/**
  * @typedef {object} FileUploadStatus
  * @property {string} fileId - uuid of the file
  * @property {string} filename - filename of file uploaded, if present
@@ -37,4 +28,9 @@
  * @property {{retrievalKey: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
  * @property {Record<string, FileUploadStatus>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
  * @property {number} numberOfRejectedFiles - Total number of files that have been rejected by the uploader
+ */
+
+/**
+ * @import { Request } from '@hapi/hapi'
+ * @import { Db } from 'mongodb'
  */

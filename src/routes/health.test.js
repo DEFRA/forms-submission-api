@@ -33,5 +33,5 @@ describe('Health route', () => {
 })
 
 /**
- * @typedef {import('@hapi/hapi').Server} Server
+ * @import { Server } from '@hapi/hapi'
  */

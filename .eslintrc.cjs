@@ -1,5 +1,5 @@
 /**
- * @type {import('eslint').ESLint.ConfigData}
+ * @type {ESLint.ConfigData}
  */
 module.exports = {
   ignorePatterns: ['.server', 'src/__fixtures__', 'coverage'],
@@ -21,7 +21,7 @@ module.exports = {
       parser: '@typescript-eslint/parser',
       parserOptions: {
         ecmaVersion: 'latest',
-        project: ['./tsconfig.json'],
+        projectService: true,
         tsconfigRootDir: __dirname
       },
       plugins: ['@typescript-eslint', 'import', 'jsdoc', 'n', 'promise'],
@@ -49,6 +49,7 @@ module.exports = {
         'import/extensions': 'off',
         'import/named': 'off',
         'import/namespace': 'off',
+        'import/no-named-as-default': 'off',
         'import/no-named-as-default-member': 'off',
         'import/no-unresolved': 'off',
 
@@ -167,3 +168,7 @@ module.exports = {
   ],
   root: true
 }
+
+/**
+ * @import { ESLint } from 'eslint'
+ */
