@@ -77,7 +77,7 @@ async function assertFileExists(
     if (err instanceof NotFound) {
       logger[logAsError ? 'error' : 'info'](
         err,
-        `Recieved request for ${fileUploadStatus.s3Key}, but the file does not exist.`
+        `Received request for ${fileUploadStatus.s3Key}, but the file does not exist.`
       )
 
       throw errorToThrow
