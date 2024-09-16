@@ -57,8 +57,13 @@ export async function ingestFile(uploadPayload) {
  * Confirms a file exists in S3 by throwing Boom.badRequest if not.
  * @param {FileUploadStatus} fileUploadStatus
  * @param {Error} errorToThrow
+ * @param {boolean} [logAsError] - whether to log the error
  */
-async function assertFileExists(fileUploadStatus, errorToThrow) {
+async function assertFileExists(
+  fileUploadStatus,
+  errorToThrow,
+  logAsError = true
+) {
   try {
     const client = getS3Client()
 
@@ -70,10 +75,11 @@ async function assertFileExists(fileUploadStatus, errorToThrow) {
     await client.send(command)
   } catch (err) {
     if (err instanceof NotFound) {
-      logger.error(
+      logger[logAsError ? 'error' : 'info'](
         err,
-        `Recieved request to ingest ${fileUploadStatus.s3Key}, but the file does not exist.`
+        `Received request for ${fileUploadStatus.s3Key}, but the file does not exist.`
       )
+
       throw errorToThrow
     }
 
@@ -283,7 +289,7 @@ export async function checkFileStatus(fileId) {
     throw Boom.notFound()
   }
 
-  await assertFileExists(fileStatus, Boom.resourceGone())
+  await assertFileExists(fileStatus, Boom.resourceGone(), false)
 }
 
 /**

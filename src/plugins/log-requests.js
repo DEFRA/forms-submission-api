@@ -19,11 +19,8 @@ export const logRequests = {
       if (isAuthenticated && credentials.user) {
         const { user } = credentials
 
-        if (
-          'preferred_username' in user &&
-          typeof user.preferred_username === 'string'
-        ) {
-          userPrefix = ` [${user.preferred_username}] `
+        if (user.oid) {
+          userPrefix = ` [${user.oid}] `
         }
       }
 

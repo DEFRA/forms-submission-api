@@ -7,7 +7,3 @@
  * @template {object} Payload
  * @typedef {HapiJwt.Artifacts<{ JwtPayload?: Payload }>} Artifacts
  */
-
-/**
- * @typedef {IdTokenClaims & { groups?: string[] }} UserProfile
- */

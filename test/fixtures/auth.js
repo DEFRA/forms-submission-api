@@ -9,7 +9,8 @@ export const auth = {
       groups: ['7049296f-2156-4d61-8ac3-349276438ef9'],
       name: 'Enrique Chase (Defra)',
       scp: 'forms.user',
-      sub: 'hgtL_1p2Me5JkBB6JeB20PyU3YDuP9PjEZwi7m1QGng'
+      sub: 'hgtL_1p2Me5JkBB6JeB20PyU3YDuP9PjEZwi7m1QGng',
+      oid: '86758ba9-92e7-4287-9751-7705e449688e'
     }
   }
 }
