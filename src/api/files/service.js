@@ -57,7 +57,7 @@ export async function ingestFile(uploadPayload) {
  * Confirms a file exists in S3 by throwing Boom.badRequest if not.
  * @param {FileUploadStatus} fileUploadStatus
  * @param {Error} errorToThrow
- * @param {boolean} logAsError - whether to log the error
+ * @param {boolean} [logAsError] - whether to log the error
  */
 async function assertFileExists(
   fileUploadStatus,
