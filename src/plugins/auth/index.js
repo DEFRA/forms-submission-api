@@ -30,7 +30,7 @@ export const auth = {
           exp: true
         },
         /**
-         * @param {Artifacts<UserProfile>} artifacts
+         * @param {Artifacts<UserCredentials>} artifacts
          */
         validate(artifacts) {
           const user = artifacts.decoded.payload
@@ -44,7 +44,7 @@ export const auth = {
 
           const { oid } = user
 
-          if (!oid || typeof oid !== 'string') {
+          if (!oid) {
             logger.error(
               'Authentication error: user.oid is not a string or is missing'
             )
@@ -69,7 +69,6 @@ export const auth = {
 }
 
 /**
- * @import { ServerRegisterPluginObject } from '@hapi/hapi'
- * @import { HapiJwt } from '@hapi/jwt'
- * @import { Artifacts, UserProfile } from '~/src/plugins/auth/types.js'
+ * @import { ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */

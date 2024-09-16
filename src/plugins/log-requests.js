@@ -19,7 +19,7 @@ export const logRequests = {
       if (isAuthenticated && credentials.user) {
         const { user } = credentials
 
-        if ('oid' in user && typeof user.oid === 'string') {
+        if (user.oid) {
           userPrefix = ` [${user.oid}] `
         }
       }
