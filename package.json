@@ -62,7 +62,7 @@
     "@typescript-eslint/eslint-plugin": "^8.8.0",
     "@typescript-eslint/parser": "^8.8.0",
     "aws-sdk-client-mock": "^4.0.1",
-    "aws-sdk-client-mock-jest": "^4.0.1",
+    "aws-sdk-client-mock-jest": "^4.0.2",
     "babel-jest": "^29.7.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "babel-plugin-transform-import-meta": "^2.2.1",
