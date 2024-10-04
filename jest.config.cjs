@@ -1,3 +1,5 @@
+const { CI } = process.env
+
 /**
  * Jest config
  * @type {Config}
@@ -10,7 +12,9 @@ module.exports = {
   clearMocks: true,
   silent: true,
   testMatch: ['**/*.test.{cjs,js}'],
-  reporters: ['default', ['github-actions', { silent: false }], 'summary'],
+  reporters: CI
+    ? [['github-actions', { silent: false }], 'summary']
+    : ['default', 'summary'],
   collectCoverageFrom: ['src/**/*.js'],
   coveragePathIgnorePatterns: [
     '<rootDir>/node_modules/',
