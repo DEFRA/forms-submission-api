@@ -24,12 +24,7 @@ module.exports = {
       }
     ],
     '@babel/plugin-syntax-import-attributes'
-  ],
-  env: {
-    test: {
-      plugins: ['babel-plugin-transform-import-meta']
-    }
-  }
+  ]
 }
 
 /**

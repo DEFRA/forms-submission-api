@@ -23,6 +23,15 @@ module.exports = {
   ],
   coverageDirectory: '<rootDir>/coverage',
   setupFiles: ['<rootDir>/jest.setup.js'],
+  transform: {
+    '^.+\\.(cjs|js|mjs)$': [
+      'babel-jest',
+      {
+        plugins: ['transform-import-meta'],
+        rootMode: 'upward'
+      }
+    ]
+  },
   transformIgnorePatterns: ['<rootDir>/node_modules/(?!@defra/forms-model/)']
 }
 
