@@ -1,5 +1,5 @@
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { db, COLLECTION_NAME } from '~/src/mongo.js'
+import { COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 

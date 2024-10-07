@@ -1,11 +1,11 @@
 import {
-  S3Client,
-  GetObjectCommand,
   CopyObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
+  NoSuchKey,
   NotFound,
-  NoSuchKey
+  S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'

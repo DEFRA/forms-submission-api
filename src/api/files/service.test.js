@@ -17,8 +17,8 @@ import { pino } from 'pino'
 import * as repository from '~/src/api/files/repository.js'
 import {
   checkFileStatus,
-  ingestFile,
   getPresignedLink,
+  ingestFile,
   persistFiles
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
