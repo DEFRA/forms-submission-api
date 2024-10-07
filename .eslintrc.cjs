@@ -58,6 +58,7 @@ module.exports = {
           'error',
           {
             alphabetize: { order: 'asc' },
+            named: true,
             'newlines-between': 'always'
           }
         ],
