@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto'
+
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
@@ -5,11 +7,13 @@ import {
   HeadObjectCommand,
   NoSuchKey,
   NotFound,
+  PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
+import { stringify } from 'csv-stringify'
 import { MongoServerError } from 'mongodb'
 
 import * as repository from '~/src/api/files/repository.js'
@@ -19,6 +23,7 @@ import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
 const s3Region = config.get('s3Region')
+const s3Bucket = config.get('s3Bucket')
 const loadedPrefix = config.get('loadedPrefix')
 
 /**
@@ -51,6 +56,125 @@ export async function ingestFile(uploadPayload) {
 
     throw err
   }
+}
+
+/**
+ * Accepts submissions into the forms-submission-api
+ * @param {SubmitPayload} submitPayload
+ */
+export async function submit(submitPayload) {
+  const { sessionId, retrievalKey, main, repeaters } = submitPayload
+  const hashed = await argon2.hash(retrievalKey)
+  const contentType = 'text/csv'
+
+  /**
+   * Create the main CSV file
+   */
+  async function createMain() {
+    const headers = main.map((rec) => rec.title)
+    const values = main.map((rec) => rec.value)
+    const csv = await createCsv([headers, values])
+    const fileId = randomUUID()
+    const fileKey = `${loadedPrefix}/${fileId}`
+
+    await createS3File(fileKey, csv, contentType, getS3Client())
+
+    await repository.create({
+      fileId,
+      filename: fileId,
+      contentType,
+      fileStatus: 'complete',
+      contentLength: 0,
+      detectedContentType: contentType,
+      s3Key: fileKey,
+      s3Bucket,
+      retrievalKey: hashed
+    })
+
+    return fileId
+  }
+
+  /**
+   * @param {SubmitRecordset} repeater
+   */
+  async function createRepeater(repeater) {
+    /**
+     * @type {string[]}
+     */
+    const headers = []
+    const values = repeater.value.map((value, index) => {
+      if (index === 0) {
+        headers.push(...value.map((val) => val.title))
+      }
+      return value.map((val) => val.value)
+    })
+
+    const csv = await createCsv([headers, ...values])
+    const fileId = randomUUID()
+    const fileKey = `${loadedPrefix}/${fileId}`
+
+    await createS3File(fileKey, csv, contentType, getS3Client())
+
+    await repository.create({
+      fileId,
+      filename: fileId,
+      contentType,
+      fileStatus: 'complete',
+      contentLength: 0,
+      detectedContentType: contentType,
+      s3Key: fileKey,
+      s3Bucket,
+      retrievalKey: hashed
+    })
+
+    return { name: repeater.name, fileId }
+  }
+
+  try {
+    const mainFileId = await createMain()
+
+    const repeaterResult = await Promise.allSettled(
+      repeaters.map(createRepeater)
+    )
+    const fullfilled = repeaterResult.filter(
+      (result) => result.status === 'fulfilled'
+    )
+
+    if (fullfilled.length !== repeaterResult.length) {
+      throw Boom.badRequest('Failed to save repeater files')
+    }
+
+    return {
+      main: mainFileId,
+      repeaters: Object.fromEntries(
+        fullfilled.map((result) => [result.value.name, result.value.fileId])
+      )
+    }
+  } catch (err) {
+    logger.error(err)
+
+    throw Boom.badRequest(`Failed to save files for session ID '${sessionId}'.`)
+  }
+}
+
+/**
+ * @param {Input} input
+ * @returns {Promise<string>}
+ */
+function createCsv(input) {
+  return new Promise((resolve, reject) => {
+    stringify(
+      input,
+      /** @type {Callback} */ function (err, output) {
+        if (err) {
+          reject(err)
+          return
+        }
+
+        resolve(output)
+      }
+    )
+  })
 }
 
 /**
@@ -165,6 +289,26 @@ export async function persistFiles(files, persistedRetrievalKey) {
     // anyway, so this ultimately is just a cost issue not a functional one.
     await deleteOldFiles(updateFiles, 'oldS3Key', client)
   }
+}
+
+/**
+ * Create a file in S3.
+ * @param {string} key - the key of the file
+ * @param {string} body - file body
+ * @param {string} contentType - content type
+ * @param {S3Client} client - S3 client
+ */
+async function createS3File(key, body, contentType, client) {
+  const result = await client.send(
+    new PutObjectCommand({
+      Bucket: s3Bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType
+    })
+  )
+
+  return result
 }
 
 /**
@@ -293,6 +437,6 @@ export async function checkFileStatus(fileId) {
 }
 
 /**
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
- * @import { ClientSession } from 'mongodb'
+ * @import { Input, Callback } from 'csv-stringify'
+ * @import { FileUploadStatus, SubmitPayload, SubmitRecordset, UploadPayload } from '~/src/api/types.js'
  */

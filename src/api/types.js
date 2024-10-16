@@ -3,6 +3,29 @@
  * @typedef {Request<{ Server: { db: Db }, Params: { fileId: string } }>} RequestFileGet
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
+ * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
+ */
+
+/**
+ * @typedef {object} SubmitRecord
+ * @property {string} name - field name
+ * @property {string} title - field title
+ * @property {string} value - field display value
+ */
+
+/**
+ * @typedef {object} SubmitRecordset
+ * @property {string} name - name of the recordset
+ * @property {string} title - title of the recordset
+ * @property {SubmitRecord[][]} value - record items
+ */
+
+/**
+ * @typedef {object} SubmitPayload
+ * @property {string} retrievalKey - The retrieval key for files created in the submission
+ * @property {string} sessionId - The id of the user session
+ * @property {SubmitRecord[]} main - The main form anwsers
+ * @property {SubmitRecordset[]} repeaters - The repeaters form answers
  */
 
 /**
