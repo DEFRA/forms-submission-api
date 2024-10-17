@@ -5,7 +5,7 @@ export default [
   /**
    * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
    */
-  {
+  ({
     method: 'POST',
     path: '/submit',
     /**
@@ -27,7 +27,7 @@ export default [
         payload: formSubmitPayloadSchema
       }
     }
-  }
+  })
 ]
 
 /**
