@@ -12,7 +12,7 @@ import { auth } from '~/test/fixtures/auth.js'
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/api/files/service.js')
 
-describe('Forms route', () => {
+describe('Files route', () => {
   /** @type {Server} */
   let server
 

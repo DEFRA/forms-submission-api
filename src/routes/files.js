@@ -15,7 +15,7 @@ export default [
   /**
    * @satisfies {ServerRoute<{ Payload: RequestFileCreate }>}
    */
-  ({
+  {
     method: 'POST',
     path: '/file',
     /**
@@ -51,7 +51,7 @@ export default [
         }
       }
     }
-  }),
+  },
 
   /**
    * @satisfies {ServerRoute}

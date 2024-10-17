@@ -5,6 +5,7 @@ import {
   HeadObjectCommand,
   NoSuchKey,
   NotFound,
+  PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -19,7 +20,8 @@ import {
   checkFileStatus,
   getPresignedLink,
   ingestFile,
-  persistFiles
+  persistFiles,
+  submit
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
 import 'aws-sdk-client-mock-jest'
@@ -59,6 +61,15 @@ jest.mock('~/src/mongo.js', () => {
     }
   }
 })
+
+/**
+ * @type {MongoServerError}
+ */
+const mongoErrorMock = Object.create(MongoServerError.prototype)
+mongoErrorMock.errorResponse = {
+  code: 11000
+}
+mongoErrorMock.toString = () => 'dummy'
 
 describe('Files service', () => {
   beforeAll(async () => {
@@ -129,15 +140,6 @@ describe('Files service', () => {
         numberOfRejectedFiles: 1,
         uploadStatus: 'ready'
       }
-
-      /**
-       * @type {MongoServerError}
-       */
-      const mongoErrorMock = Object.create(MongoServerError.prototype)
-      mongoErrorMock.errorResponse = {
-        code: 11000
-      }
-      mongoErrorMock.toString = () => 'dummy'
 
       jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
 
@@ -609,8 +611,164 @@ describe('Files service', () => {
       )
     })
   })
+
+  describe('submit', () => {
+    /**
+     * @type {SubmitPayload}
+     */
+    const submitPayload = {
+      sessionId: '7c675a34-a887-49fc-a1eb-c21006c72a1d',
+      retrievalKey: 'enrique.chase@defra.gov.uk',
+      main: [
+        {
+          name: 'DfrtG',
+          title: 'Do you have any food allergies?',
+          value: 'Peanuts'
+        },
+        {
+          name: 'XIPMNK',
+          title: 'Telephone number field',
+          value: '07800 100200'
+        }
+      ],
+      repeaters: [
+        {
+          name: 'w3E5gf',
+          title: 'Pizza',
+          value: [
+            [
+              {
+                name: 'dyLdCy',
+                title: 'Select a drink',
+                value: 'Coke'
+              },
+              {
+                name: 'sQsXKK',
+                title: 'Toppings',
+                value: 'Pepperoni'
+              },
+              {
+                name: 'VcmoiL',
+                title: 'Quantity',
+                value: '2'
+              }
+            ],
+            [
+              {
+                name: 'dyLdCy',
+                title: 'Select a drink',
+                value: 'Fanta'
+              },
+              {
+                name: 'sQsXKK',
+                title: 'Toppings',
+                value: 'Ham'
+              },
+              {
+                name: 'VcmoiL',
+                title: 'Quantity',
+                value: '3'
+              }
+            ]
+          ]
+        },
+        {
+          name: 'hYbDko',
+          title: 'Pet',
+          value: [
+            [
+              {
+                name: 'rxZZVr',
+                title: 'Name',
+                value: 'Sooty'
+              },
+              {
+                name: 'oOExDF',
+                title: 'Age of pet',
+                value: '1'
+              },
+              {
+                name: 'hSKXzi',
+                title: 'Address',
+                value: '1 Home Street, Ashford, AB10 1AB'
+              },
+              {
+                name: 'mDHsye',
+                title: 'Favourite drink',
+                value: 'Coke, Fanta'
+              }
+            ]
+          ]
+        }
+      ]
+    }
+
+    beforeEach(() => {
+      s3Mock.reset()
+    })
+
+    test('should create main and repeater file', async () => {
+      jest.mocked(hash).mockResolvedValue('dummy')
+
+      const dbSpy = jest.spyOn(repository, 'create')
+
+      await submit(submitPayload)
+
+      expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
+        Bucket: expect.anything(),
+        Key: expect.anything(),
+        Body: 'Do you have any food allergies?,Telephone number field\nPeanuts,07800 100200\n',
+        ContentType: 'text/csv'
+      })
+
+      expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
+        Bucket: expect.anything(),
+        Key: expect.anything(),
+        Body: 'Select a drink,Toppings,Quantity\nCoke,Pepperoni,2\nFanta,Ham,3\n',
+        ContentType: 'text/csv'
+      })
+
+      expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
+        Bucket: expect.anything(),
+        Key: expect.anything(),
+        Body: 'Name,Age of pet,Address,Favourite drink\nSooty,1,"1 Home Street, Ashford, AB10 1AB","Coke, Fanta"\n',
+        ContentType: 'text/csv'
+      })
+
+      expect(dbSpy).toHaveBeenCalledTimes(3)
+
+      const dbCreateMatch = {
+        fileId: expect.anything(),
+        filename: expect.anything(),
+        contentType: 'text/csv',
+        fileStatus: 'complete',
+        contentLength: 0,
+        detectedContentType: 'text/csv',
+        s3Key: expect.stringContaining('loaded/'),
+        s3Bucket: expect.anything(),
+        retrievalKey: 'dummy'
+      }
+      const dbOperationArgs = dbSpy.mock.calls
+      expect(dbOperationArgs[0][0]).toMatchObject(dbCreateMatch)
+      expect(dbOperationArgs[1][0]).toMatchObject(dbCreateMatch)
+      expect(dbOperationArgs[2][0]).toMatchObject(dbCreateMatch)
+    })
+
+    it('should throw 400 Bad Request if repeater save fails', async () => {
+      jest
+        .mocked(repository.create)
+        .mockResolvedValueOnce()
+        .mockRejectedValueOnce(mongoErrorMock)
+
+      await expect(submit(submitPayload)).rejects.toThrow(
+        Boom.badRequest(
+          "Failed to save files for session ID '7c675a34-a887-49fc-a1eb-c21006c72a1d'."
+        )
+      )
+    })
+  })
 })
 
 /**
- * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, FormFileUploadStatus, SubmitPayload, UploadPayload } from '~/src/api/types.js'
  */
