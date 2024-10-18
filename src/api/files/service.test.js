@@ -754,16 +754,24 @@ describe('Files service', () => {
       expect(dbOperationArgs[2][0]).toMatchObject(dbCreateMatch)
     })
 
-    it('should throw 400 Bad Request if repeater save fails', async () => {
+    it('should throw 400 Bad Request if main save fails', async () => {
+      jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
+
+      await expect(submit(submitPayload)).rejects.toThrow(
+        Boom.internal(
+          "Failed to save files for session ID '7c675a34-a887-49fc-a1eb-c21006c72a1d'."
+        )
+      )
+    })
+
+    it('should throw 500 internal server error if repeater save fails', async () => {
       jest
         .mocked(repository.create)
         .mockResolvedValueOnce()
         .mockRejectedValueOnce(mongoErrorMock)
 
       await expect(submit(submitPayload)).rejects.toThrow(
-        Boom.badRequest(
-          "Failed to save files for session ID '7c675a34-a887-49fc-a1eb-c21006c72a1d'."
-        )
+        Boom.internal('Failed to save repeater files')
       )
     })
   })

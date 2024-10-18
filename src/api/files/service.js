@@ -157,7 +157,7 @@ export async function submit(submitPayload) {
       throw err
     }
 
-    throw Boom.badRequest(`Failed to save files for session ID '${sessionId}'.`)
+    throw new Error(`Failed to save files for session ID '${sessionId}'.`)
   }
 }
 
