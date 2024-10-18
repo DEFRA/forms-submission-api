@@ -95,6 +95,12 @@ export const config = convict({
       'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/v2.0',
     env: 'OIDC_VERIFY_ISS'
   },
+  s3Bucket: {
+    doc: 'S3 bucket name',
+    format: String,
+    default: '',
+    env: 'S3_BUCKET'
+  },
   s3Region: {
     doc: 'S3 region for the app on CDP',
     format: String,
