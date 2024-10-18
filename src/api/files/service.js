@@ -298,8 +298,8 @@ export async function persistFiles(files, persistedRetrievalKey) {
  * @param {string} contentType - content type
  * @param {S3Client} client - S3 client
  */
-async function createS3File(key, body, contentType, client) {
-  const result = await client.send(
+function createS3File(key, body, contentType, client) {
+  return client.send(
     new PutObjectCommand({
       Bucket: s3Bucket,
       Key: key,
@@ -307,8 +307,6 @@ async function createS3File(key, body, contentType, client) {
       ContentType: contentType
     })
   )
-
-  return result
 }
 
 /**
