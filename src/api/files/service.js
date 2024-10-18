@@ -141,7 +141,7 @@ export async function submit(submitPayload) {
     )
 
     if (fullfilled.length !== repeaterResult.length) {
-      throw Boom.badRequest('Failed to save repeater files')
+      throw Boom.internal('Failed to save repeater files')
     }
 
     return {
@@ -152,6 +152,10 @@ export async function submit(submitPayload) {
     }
   } catch (err) {
     logger.error(err)
+
+    if (Boom.isBoom(err)) {
+      throw err
+    }
 
     throw Boom.badRequest(`Failed to save files for session ID '${sessionId}'.`)
   }
