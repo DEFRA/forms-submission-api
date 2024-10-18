@@ -754,7 +754,7 @@ describe('Files service', () => {
       expect(dbOperationArgs[2][0]).toMatchObject(dbCreateMatch)
     })
 
-    it('should throw 400 Bad Request if main save fails', async () => {
+    it('should throw 500 internal server error if main save fails', async () => {
       jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
 
       await expect(submit(submitPayload)).rejects.toThrow(
