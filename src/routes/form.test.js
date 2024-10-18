@@ -129,7 +129,7 @@ describe('Forms route', () => {
 })
 
 /**
+ * @import { SubmitPayload } from '@defra/forms-model'
  * @import { Server } from '@hapi/hapi'
  * @import { UUID } from 'crypto'
- * @import { SubmitPayload } from '~/src/api/types.js'
  */

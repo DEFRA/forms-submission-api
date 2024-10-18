@@ -770,5 +770,6 @@ describe('Files service', () => {
 })
 
 /**
- * @import { FileUploadStatus, FormFileUploadStatus, SubmitPayload, UploadPayload } from '~/src/api/types.js'
+ * @import { SubmitPayload } from '@defra/forms-model'
+ * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

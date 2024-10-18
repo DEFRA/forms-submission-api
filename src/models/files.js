@@ -63,26 +63,3 @@ export const filePersistPayloadSchema = Joi.object()
     persistedRetrievalKey: Joi.string().required()
   })
   .required()
-
-export const formSubmitRecordSchema = Joi.object({
-  name: Joi.string().required(),
-  title: Joi.string().required(),
-  value: Joi.string().required()
-})
-
-export const formSubmitRecordsetSchema = Joi.object({
-  name: Joi.string().required(),
-  title: Joi.string().required(),
-  value: Joi.array()
-    .items(Joi.array().items(formSubmitRecordSchema).required())
-    .required()
-})
-
-export const formSubmitPayloadSchema = Joi.object()
-  .keys({
-    retrievalKey: Joi.string().required(),
-    sessionId: Joi.string().required(),
-    main: Joi.array().items(formSubmitRecordSchema).required(),
-    repeaters: Joi.array().items(formSubmitRecordsetSchema).required()
-  })
-  .required()

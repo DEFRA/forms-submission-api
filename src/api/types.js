@@ -7,28 +7,6 @@
  */
 
 /**
- * @typedef {object} SubmitRecord
- * @property {string} name - field name
- * @property {string} title - field title
- * @property {string} value - field display value
- */
-
-/**
- * @typedef {object} SubmitRecordset
- * @property {string} name - name of the recordset
- * @property {string} title - title of the recordset
- * @property {SubmitRecord[][]} value - record items
- */
-
-/**
- * @typedef {object} SubmitPayload
- * @property {string} retrievalKey - The retrieval key for files created in the submission
- * @property {string} sessionId - The id of the user session
- * @property {SubmitRecord[]} main - The main form anwsers
- * @property {SubmitRecordset[]} repeaters - The repeaters form answers
- */
-
-/**
  * @typedef {object} FileUploadStatus
  * @property {string} fileId - uuid of the file
  * @property {string} filename - filename of file uploaded, if present
@@ -54,6 +32,7 @@
  */
 
 /**
+ * @import { SubmitPayload } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */
