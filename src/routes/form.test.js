@@ -35,6 +35,11 @@ describe('Forms route', () => {
             name: 'XIPMNK',
             title: 'Telephone number field',
             value: '07836 148379'
+          },
+          {
+            name: 'AdGTh',
+            title: 'Optional field',
+            value: ''
           }
         ],
         repeaters: [
