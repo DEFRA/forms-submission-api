@@ -81,7 +81,7 @@ export async function submit(submitPayload) {
 
     await repository.create({
       fileId,
-      filename: fileId,
+      filename: `${fileId}.csv`,
       contentType,
       fileStatus: 'complete',
       contentLength: 0,
@@ -117,7 +117,7 @@ export async function submit(submitPayload) {
 
     await repository.create({
       fileId,
-      filename: fileId,
+      filename: `${fileId}.csv`,
       contentType,
       fileStatus: 'complete',
       contentLength: 0,
