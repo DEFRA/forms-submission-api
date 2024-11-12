@@ -44,7 +44,8 @@ export async function ingestFile(uploadPayload) {
   try {
     await repository.create({
       ...fileContainer,
-      retrievalKey: hashed
+      retrievalKey: hashed,
+      emailIsCaseInsensitive: true
     })
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
@@ -424,8 +425,10 @@ function getS3Client() {
 }
 
 /**
- * Checks if a file status exists for a given upload ID. Throws an Not Found error if not in the database.
+ * Checks if a file status exists for a given upload ID.
+ * Throws a Not Found error if not in the database.
  * @param {string} fileId
+ * @returns {Promise<FormFileUploadStatus>} Returns the file status object
  * @throws {Boom.notFound} - if the file status does not exist
  */
 export async function checkFileStatus(fileId) {
@@ -436,10 +439,12 @@ export async function checkFileStatus(fileId) {
   }
 
   await assertFileExists(fileStatus, Boom.resourceGone(), false)
+
+  return fileStatus
 }
 
 /**
  * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
  * @import { Input, Callback } from 'csv-stringify'
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
