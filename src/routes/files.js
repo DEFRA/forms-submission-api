@@ -69,7 +69,7 @@ export default [
 
       return {
         message: 'Found',
-        emailIsCaseInsensitive: !!fileStatus.emailIsCaseInsensitive
+        retrievalKeyIsCaseSensitive: fileStatus.retrievalKeyIsCaseSensitive
       }
     },
     options: {

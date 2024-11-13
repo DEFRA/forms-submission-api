@@ -21,7 +21,7 @@
  * @property {string} [errorMessage] - Reason why file was rejected. Error message is based on GDS design guidelines and can be show directly to the end-user.
  */
 
-/** @typedef {{retrievalKey: string, emailIsCaseInsensitive?: boolean} & FileUploadStatus} FormFileUploadStatus */
+/** @typedef {{retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean} & FileUploadStatus} FormFileUploadStatus */
 
 /**
  * @typedef {object} UploadPayload

@@ -181,17 +181,19 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    test('should return undefined if file is found', async () => {
+    test('should return file status object', async () => {
       const uploadedFile = {
         ...successfulFile,
         formId: '1234',
         retrievalKey: 'test',
+        retrievalKeyIsCaseSensitive: true,
         _id: new ObjectId()
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
 
-      await expect(checkFileStatus('1234')).resolves.toBeUndefined()
+      const result = await checkFileStatus('1234')
+      expect(result).toEqual(uploadedFile)
     })
 
     test('should throw Not Found when the file does not exist', async () => {
@@ -707,7 +709,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    test('should create main and repeater file', async () => {
+    test('should create main and repeater file with case sensitivity check', async () => {
       jest.mocked(hash).mockResolvedValue('dummy')
 
       const dbSpy = jest.spyOn(repository, 'create')
@@ -742,16 +744,20 @@ describe('Files service', () => {
         filename: expect.anything(),
         contentType: 'text/csv',
         fileStatus: 'complete',
-        contentLength: 0,
         detectedContentType: 'text/csv',
         s3Key: expect.stringContaining('loaded/'),
         s3Bucket: expect.anything(),
-        retrievalKey: 'dummy'
+        retrievalKey: 'dummy',
+        retrievalKeyIsCaseSensitive: true
       }
+
       const dbOperationArgs = dbSpy.mock.calls
       expect(dbOperationArgs[0][0]).toMatchObject(dbCreateMatch)
+      expect(dbOperationArgs[0][0].contentLength).toBeGreaterThan(0)
       expect(dbOperationArgs[1][0]).toMatchObject(dbCreateMatch)
+      expect(dbOperationArgs[1][0].contentLength).toBeGreaterThan(0)
       expect(dbOperationArgs[2][0]).toMatchObject(dbCreateMatch)
+      expect(dbOperationArgs[2][0].contentLength).toBeGreaterThan(0)
     })
 
     it('should throw 500 internal server error if main save fails', async () => {

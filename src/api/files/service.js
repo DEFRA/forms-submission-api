@@ -19,6 +19,7 @@ import { MongoServerError } from 'mongodb'
 import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
@@ -39,13 +40,15 @@ export async function ingestFile(uploadPayload) {
     Boom.badRequest('File does not exist in S3')
   )
 
+  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
+
   const hashed = await argon2.hash(retrievalKey)
 
   try {
     await repository.create({
       ...fileContainer,
       retrievalKey: hashed,
-      emailIsCaseInsensitive: true
+      retrievalKeyIsCaseSensitive
     })
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
@@ -65,6 +68,9 @@ export async function ingestFile(uploadPayload) {
  */
 export async function submit(submitPayload) {
   const { sessionId, retrievalKey, main, repeaters } = submitPayload
+
+  const retrievalKeyIsCaseSensitive = !isRetrievalKeyCaseSensitive(retrievalKey)
+
   const hashed = await argon2.hash(retrievalKey)
   const contentType = 'text/csv'
 
@@ -85,11 +91,12 @@ export async function submit(submitPayload) {
       filename: `${fileId}.csv`,
       contentType,
       fileStatus: 'complete',
-      contentLength: 0,
+      contentLength: Buffer.byteLength(csv),
       detectedContentType: contentType,
       s3Key: fileKey,
       s3Bucket,
-      retrievalKey: hashed
+      retrievalKey: hashed,
+      retrievalKeyIsCaseSensitive
     })
 
     return fileId
@@ -121,11 +128,12 @@ export async function submit(submitPayload) {
       filename: `${fileId}.csv`,
       contentType,
       fileStatus: 'complete',
-      contentLength: 0,
+      contentLength: Buffer.byteLength(csv),
       detectedContentType: contentType,
       s3Key: fileKey,
       s3Bucket,
-      retrievalKey: hashed
+      retrievalKey: hashed,
+      retrievalKeyIsCaseSensitive
     })
 
     return { name: repeater.name, fileId }
