@@ -705,6 +705,38 @@ describe('Files service', () => {
         'Failed to update retrievalKey, retrievalKeyIsCaseSensitive'
       )
     })
+
+    it('should handle unacknowledged database updates', async () => {
+      /** @type {FormFileUploadStatus} */
+      const mockData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'some-key'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+
+      jest.mocked(repository.updateRetrievalKeys).mockImplementationOnce(() => {
+        throw new Error(
+          'Failed to update retrievalKey, retrievalKeyIsCaseSensitive'
+        )
+      })
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: mockData.fileId,
+              initiatedRetrievalKey: 'someEmail@gov.uk'
+            }
+          ],
+          'someEmail@gov.uk'
+        )
+      ).rejects.toThrow(
+        'Failed to update retrievalKey, retrievalKeyIsCaseSensitive'
+      )
+    })
   })
 
   describe('submit', () => {
