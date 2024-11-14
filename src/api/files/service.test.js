@@ -672,6 +672,39 @@ describe('Files service', () => {
         expect.any(Object)
       )
     })
+
+    it('should handle errors when updating multiple fields', async () => {
+      /** @type {FormFileUploadStatus} */
+      const mockData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'some-key'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+
+      // Mock updateMany to return unacknowledged result
+      jest.mocked(repository.updateRetrievalKeys).mockImplementationOnce(() => {
+        throw new Error(
+          'Failed to update retrievalKey, retrievalKeyIsCaseSensitive'
+        )
+      })
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: mockData.fileId,
+              initiatedRetrievalKey: 'someEmail@gov.uk'
+            }
+          ],
+          'someEmail@gov.uk'
+        )
+      ).rejects.toThrow(
+        'Failed to update retrievalKey, retrievalKeyIsCaseSensitive'
+      )
+    })
   })
 
   describe('submit', () => {

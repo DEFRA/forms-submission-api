@@ -90,7 +90,7 @@ async function updateFields(fileIds, fieldsToUpdate, session) {
   const fieldNames = Object.keys(fieldsToUpdate).join(', ')
   logger.info(`Updating ${fieldNames} for ${fileIds.length} file IDs`)
 
-  const coll = /** @type {Collection<FormFileUploadStatus>} */ (
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
     db.collection(COLLECTION_NAME)
   )
 
