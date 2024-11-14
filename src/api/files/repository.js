@@ -61,44 +61,52 @@ export async function updateS3Keys(updateFiles, session) {
 }
 
 /**
- * Updates the retrievalKey for a given file ID.
+ * Updates the retrievalKey and retrievalKeyIsCaseSensitive for given file IDs.
  * @param {string[]} fileIds
  * @param {string} retrievalKey
+ * @param {boolean} retrievalKeyIsCaseSensitive
  * @param {ClientSession} session
  */
-export async function updateRetrievalKeys(fileIds, retrievalKey, session) {
-  return updateField(fileIds, 'retrievalKey', retrievalKey, session)
+export async function updateRetrievalKeys(
+  fileIds,
+  retrievalKey,
+  retrievalKeyIsCaseSensitive,
+  session
+) {
+  return updateFields(
+    fileIds,
+    { retrievalKey, retrievalKeyIsCaseSensitive },
+    session
+  )
 }
 
 /**
- * Updates a single field for a given file ID.
+ * Updates multiple fields for given file IDs.
  * @param {string[]} fileIds
- * @param {string} fieldName
- * @param {string} fieldValue
+ * @param {Partial<FormFileUploadStatus>} fieldsToUpdate
  * @param {ClientSession} session
  */
-async function updateField(fileIds, fieldName, fieldValue, session) {
-  logger.info(`Updating ${fieldName} for ${fileIds.length} file IDs`)
+async function updateFields(fileIds, fieldsToUpdate, session) {
+  const fieldNames = Object.keys(fieldsToUpdate).join(', ')
+  logger.info(`Updating ${fieldNames} for ${fileIds.length} file IDs`)
 
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
+  const coll = /** @type {Collection<FormFileUploadStatus>} */ (
     db.collection(COLLECTION_NAME)
   )
 
   const result = await coll.updateMany(
     { fileId: { $in: fileIds } },
     {
-      $set: {
-        [fieldName]: fieldValue
-      }
+      $set: fieldsToUpdate
     },
     { session }
   )
 
   if (!result.acknowledged) {
-    throw new Error(`Failed to update ${fieldName}`)
+    throw new Error(`Failed to update ${fieldNames}`)
   }
 
-  logger.info(`Updated ${fieldName} for ${fileIds.length} file IDs`)
+  logger.info(`Updated ${fieldNames} for ${fileIds.length} file IDs`)
 }
 
 /**

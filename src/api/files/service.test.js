@@ -302,6 +302,38 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
+    it('should correctly handle case sensitivity for the retrieval key', async () => {
+      /** @type {FormFileUploadStatus} */
+      const mockData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'some-key'
+      }
+
+      const caseSensitiveKey = 'Some.Name@gov.uk'
+      jest.mocked(hash).mockResolvedValueOnce('caseSensitiveHash')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+
+      await persistFiles(
+        [
+          {
+            fileId: mockData.fileId,
+            initiatedRetrievalKey: caseSensitiveKey
+          }
+        ],
+        caseSensitiveKey
+      )
+
+      expect(hash).toHaveBeenCalledWith(caseSensitiveKey)
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [mockData.fileId],
+        'caseSensitiveHash',
+        true,
+        expect.any(Object)
+      )
+    })
+
     it('should move the file from staging to loaded and delete the old file', async () => {
       /** @type {FormFileUploadStatus} */
       const dummyData = {
@@ -330,6 +362,7 @@ describe('Files service', () => {
       expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
         [dummyData.fileId],
         'newKeyHash',
+        true,
         expect.any(Object) // the session which we aren't testing
       )
 
@@ -748,7 +781,7 @@ describe('Files service', () => {
         s3Key: expect.stringContaining('loaded/'),
         s3Bucket: expect.anything(),
         retrievalKey: 'dummy',
-        retrievalKeyIsCaseSensitive: true
+        retrievalKeyIsCaseSensitive: false
       }
 
       const dbOperationArgs = dbSpy.mock.calls

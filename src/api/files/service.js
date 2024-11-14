@@ -69,7 +69,7 @@ export async function ingestFile(uploadPayload) {
 export async function submit(submitPayload) {
   const { sessionId, retrievalKey, main, repeaters } = submitPayload
 
-  const retrievalKeyIsCaseSensitive = !isRetrievalKeyCaseSensitive(retrievalKey)
+  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
 
   const hashed = await argon2.hash(retrievalKey)
   const contentType = 'text/csv'
@@ -276,9 +276,13 @@ export async function persistFiles(files, persistedRetrievalKey) {
         persistedRetrievalKey
       )
 
+      const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(
+        persistedRetrievalKey
+      )
       await repository.updateRetrievalKeys(
         files.map(({ fileId }) => fileId),
         persistedRetrievalKeyHashed,
+        retrievalKeyIsCaseSensitive,
         session
       )
     })
@@ -405,6 +409,10 @@ async function getAndVerify(fileId, retrievalKey) {
   if (!fileStatus) {
     throw Boom.notFound('File not found')
   }
+
+  logger.info(
+    `Comparing retrieval keys - incoming: ${retrievalKey}, stored: ${fileStatus.retrievalKey}`
+  )
 
   const retrievalKeyCorrect = await argon2.verify(
     fileStatus.retrievalKey,
