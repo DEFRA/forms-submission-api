@@ -645,6 +645,33 @@ describe('Files service', () => {
         Boom.resourceGone(`File ${dummyData.fileId} no longer exists`)
       )
     })
+
+    it('should update both retrievalKey and retrievalKeyIsCaseSensitive fields', async () => {
+      /** @type {FormFileUploadStatus} */
+      const mockData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'some-key'
+      }
+
+      jest.mocked(hash).mockResolvedValueOnce('hashedKey')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+
+      await persistFiles(
+        [
+          { fileId: mockData.fileId, initiatedRetrievalKey: 'someEmail@gov.uk' }
+        ],
+        'someEmail@gov.uk'
+      )
+
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [mockData.fileId],
+        'hashedKey',
+        true,
+        expect.any(Object)
+      )
+    })
   })
 
   describe('submit', () => {
