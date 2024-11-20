@@ -442,5 +442,5 @@ export async function checkFileStatus(fileId) {
 /**
  * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
  * @import { Input, Callback } from 'csv-stringify'
- * @import { FormFileUploadStatus, S3FileIdentifier, UploadPayload } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
