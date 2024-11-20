@@ -41,11 +41,18 @@ export async function ingestFile(uploadPayload) {
 
   const hashed = await argon2.hash(retrievalKey)
 
+  /** @type {FormFileUploadStatus} */
+  const dataToSave = {
+    fileId: fileContainer.fileId,
+    filename: fileContainer.filename,
+    contentType: fileContainer.contentType,
+    s3Key: fileContainer.s3Key,
+    s3Bucket: fileContainer.s3Bucket,
+    retrievalKey: hashed
+  }
+
   try {
-    await repository.create({
-      ...fileContainer,
-      retrievalKey: hashed
-    })
+    await repository.create(dataToSave)
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
@@ -83,9 +90,6 @@ export async function submit(submitPayload) {
       fileId,
       filename: `${fileId}.csv`,
       contentType,
-      fileStatus: 'complete',
-      contentLength: 0,
-      detectedContentType: contentType,
       s3Key: fileKey,
       s3Bucket,
       retrievalKey: hashed
@@ -119,9 +123,6 @@ export async function submit(submitPayload) {
       fileId,
       filename: `${fileId}.csv`,
       contentType,
-      fileStatus: 'complete',
-      contentLength: 0,
-      detectedContentType: contentType,
       s3Key: fileKey,
       s3Bucket,
       retrievalKey: hashed
@@ -183,12 +184,12 @@ function createCsv(input) {
 
 /**
  * Confirms a file exists in S3 by throwing Boom.badRequest if not.
- * @param {FileUploadStatus} fileUploadStatus
+ * @param {{s3Bucket?: string, s3Key?: string}} fileIdentifier - Object containing S3 bucket and key information
  * @param {Error} errorToThrow
  * @param {boolean} [logAsError] - whether to log the error
  */
 async function assertFileExists(
-  fileUploadStatus,
+  fileIdentifier,
   errorToThrow,
   logAsError = true
 ) {
@@ -196,8 +197,8 @@ async function assertFileExists(
     const client = getS3Client()
 
     const command = new HeadObjectCommand({
-      Bucket: fileUploadStatus.s3Bucket,
-      Key: fileUploadStatus.s3Key
+      Bucket: fileIdentifier.s3Bucket,
+      Key: fileIdentifier.s3Key
     })
 
     await client.send(command)
@@ -205,7 +206,7 @@ async function assertFileExists(
     if (err instanceof NotFound) {
       logger[logAsError ? 'error' : 'info'](
         err,
-        `Received request for ${fileUploadStatus.s3Key}, but the file does not exist.`
+        `Received request for ${fileIdentifier.s3Key}, but the file does not exist.`
       )
 
       throw errorToThrow
@@ -441,5 +442,5 @@ export async function checkFileStatus(fileId) {
 /**
  * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
  * @import { Input, Callback } from 'csv-stringify'
- * @import { FileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, S3FileIdentifier, UploadPayload } from '~/src/api/types.js'
  */
