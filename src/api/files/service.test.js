@@ -78,16 +78,13 @@ describe('Files service', () => {
 
   /** @type {FileUploadStatus} */
   const successfulFile = {
-    s3Key: 'dummy.txt',
-    s3Bucket: 'dummy-bucket',
-    checksumSha256: 'dummy',
-    contentLength: 1,
-    contentType: 'text/plain',
-    detectedContentType: 'text/plain',
     fileId: '123456',
     filename: 'dummy.txt',
-    fileStatus: 'complete',
-    hasError: false
+    contentType: 'text/plain',
+    s3Key: 'dummy.txt',
+    s3Bucket: 'dummy',
+    hasError: false,
+    fileStatus: 'complete'
   }
 
   describe('ingestFile', () => {
@@ -95,7 +92,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    test('should upload the file in the payload', async () => {
+    it('should upload the file in the payload', async () => {
       /**
        * @type {UploadPayload}
        */
@@ -121,12 +118,16 @@ describe('Files service', () => {
 
       expect(dbSpy).toHaveBeenCalledTimes(1)
       expect(dbOperationArgs[0][0]).toMatchObject({
+        fileId: '123456',
         filename: 'dummy.txt',
+        contentType: 'text/plain',
+        s3Key: 'dummy.txt',
+        s3Bucket: 'dummy',
         retrievalKey: 'dummy'
       })
     })
 
-    test('should throw 400 Bad Request when the file has already been ingested', async () => {
+    it('should throw 400 Bad Request when the file has already been ingested', async () => {
       /**
        * @type {UploadPayload}
        */
@@ -174,6 +175,146 @@ describe('Files service', () => {
         Boom.badRequest('File does not exist in S3')
       )
     })
+
+    it('should rethrow unexpected errors from repository.create', async () => {
+      const unexpectedError = new Error('Unexpected database error')
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockRejectedValueOnce(unexpectedError)
+      jest.mocked(hash).mockResolvedValueOnce('hashedKey')
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(unexpectedError)
+    })
+
+    it('should rethrow unexpected errors from assertFileExists', async () => {
+      const unexpectedError = new Error('S3 access error')
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      s3Mock.on(HeadObjectCommand).rejectsOnce(unexpectedError)
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(unexpectedError)
+    })
+
+    it('should rethrow errors from argon2.hash', async () => {
+      const hashError = new Error('Hashing error')
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(hash).mockRejectedValueOnce(hashError)
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(hashError)
+    })
+
+    it('should handle ingestion when optional fields are present', async () => {
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: {
+            ...successfulFile,
+            hasError: true,
+            errorMessage: 'Sample error message'
+          }
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockResolvedValueOnce()
+      jest.mocked(hash).mockResolvedValueOnce('dummy')
+
+      await ingestFile(uploadPayload)
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileId: '123456',
+          filename: 'dummy.txt',
+          contentType: 'text/plain',
+          s3Key: 'dummy.txt',
+          s3Bucket: 'dummy',
+          retrievalKey: 'dummy'
+        })
+      )
+    })
+
+    it('should handle ingestion with empty strings as valid values', async () => {
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: {
+            ...successfulFile,
+            filename: '',
+            contentType: '',
+            s3Key: '',
+            s3Bucket: ''
+          }
+        },
+        metadata: {
+          retrievalKey: ''
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockResolvedValueOnce()
+      jest.mocked(hash).mockResolvedValueOnce('hashedEmptyString')
+
+      await ingestFile(uploadPayload)
+
+      expect(repository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filename: '',
+          contentType: '',
+          s3Key: '',
+          s3Bucket: '',
+          retrievalKey: 'hashedEmptyString'
+        })
+      )
+    })
   })
 
   describe('checkFileStatus', () => {
@@ -181,7 +322,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    test('should return undefined if file is found', async () => {
+    it('should return undefined if file is found', async () => {
       const uploadedFile = {
         ...successfulFile,
         formId: '1234',
@@ -194,13 +335,13 @@ describe('Files service', () => {
       await expect(checkFileStatus('1234')).resolves.toBeUndefined()
     })
 
-    test('should throw Not Found when the file does not exist', async () => {
+    it('should throw Not Found when the file does not exist', async () => {
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(null)
 
       await expect(checkFileStatus('1234')).rejects.toThrow(Boom.notFound())
     })
 
-    test('should throw 410 Gone if file is missing', async () => {
+    it('should throw 410 Gone if file is missing', async () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'dummy',
@@ -344,7 +485,7 @@ describe('Files service', () => {
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
         Key: expectedNewKey,
-        CopySource: 'dummy-bucket/staging/dummy-file-123.txt'
+        CopySource: `${successfulFile.s3Bucket}/staging/dummy-file-123.txt`
       })
 
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
@@ -472,8 +613,7 @@ describe('Files service', () => {
       expect(s3Mock).toHaveReceivedCommandWith(CopyObjectCommand, {
         Bucket: successfulFile.s3Bucket,
         Key: expectedNewKey,
-        CopySource:
-          'dummy-bucket/staging/extra-level/extra-level-two/dummy-file-123.txt'
+        CopySource: `${successfulFile.s3Bucket}/staging/extra-level/extra-level-two/dummy-file-123.txt`
       })
 
       expect(repository.updateS3Keys).toHaveBeenCalledWith(
@@ -707,7 +847,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    test('should create main and repeater file', async () => {
+    it('should create main and repeater file', async () => {
       jest.mocked(hash).mockResolvedValue('dummy')
 
       const dbSpy = jest.spyOn(repository, 'create')
@@ -741,9 +881,6 @@ describe('Files service', () => {
         fileId: expect.anything(),
         filename: expect.anything(),
         contentType: 'text/csv',
-        fileStatus: 'complete',
-        contentLength: 0,
-        detectedContentType: 'text/csv',
         s3Key: expect.stringContaining('loaded/'),
         s3Bucket: expect.anything(),
         retrievalKey: 'dummy'
