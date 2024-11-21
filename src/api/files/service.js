@@ -410,10 +410,6 @@ async function getAndVerify(fileId, retrievalKey) {
     throw Boom.notFound('File not found')
   }
 
-  logger.info(
-    `Comparing retrieval keys - incoming: ${retrievalKey}, stored: ${fileStatus.retrievalKey}`
-  )
-
   const retrievalKeyCorrect = await argon2.verify(
     fileStatus.retrievalKey,
     retrievalKey
