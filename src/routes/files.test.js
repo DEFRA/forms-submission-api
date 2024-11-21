@@ -29,14 +29,10 @@ describe('Files route', () => {
   const successfulFile = {
     s3Key: 'dummy.txt',
     s3Bucket: 'dummy',
-    checksumSha256: 'dummy',
-    contentLength: 1,
-    contentType: 'text/plain',
-    detectedContentType: 'text/plain',
     fileId: '123456',
     filename: 'dummy.txt',
-    fileStatus: 'complete',
-    hasError: false
+    hasError: false,
+    fileStatus: 'complete'
   }
 
   describe('Success responses', () => {
@@ -70,8 +66,6 @@ describe('Files route', () => {
         retrievalKeyIsCaseSensitive: true,
         fileId: '12345',
         filename: 'test.txt',
-        contentLength: 0,
-        fileStatus: 'complete',
         retrievalKey: 'test-key'
       })
 
@@ -149,6 +143,8 @@ describe('Files route', () => {
             'ignored-key': 'value',
             file: {
               ...successfulFile,
+              hasError: true,
+              errorMessage: 'File type not allowed',
               fileStatus: 'rejected'
             }
           },
