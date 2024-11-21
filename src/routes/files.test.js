@@ -66,8 +66,6 @@ describe('Files route', () => {
         retrievalKeyIsCaseSensitive: true,
         fileId: '12345',
         filename: 'test.txt',
-        contentLength: 0,
-        fileStatus: 'complete',
         retrievalKey: 'test-key'
       })
 
