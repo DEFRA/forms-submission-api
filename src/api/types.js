@@ -1,12 +1,4 @@
 /**
- * Utility type that creates a new type by picking all properties from T except those in K
- * Example: Omit<Form, 'checksumSha256'> creates a new type with all Form properties except 'checksumSha256'
- * @template T - The source type
- * @template K - The property keys to exclude
- * @typedef {Pick<T, Exclude<keyof T, K>>} Omit<T, K>
- */
-
-/**
  * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileCreate
  * @typedef {Request<{ Server: { db: Db }, Params: { fileId: string } }>} RequestFileGet
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
