@@ -65,10 +65,11 @@ export default [
     async handler(request) {
       const { fileId } = request.params
 
-      await checkFileStatus(fileId)
+      const fileStatus = await checkFileStatus(fileId)
 
       return {
-        message: 'Found'
+        message: 'Found',
+        retrievalKeyIsCaseSensitive: fileStatus.retrievalKeyIsCaseSensitive
       }
     },
     options: {

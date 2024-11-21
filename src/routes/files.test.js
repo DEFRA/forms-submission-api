@@ -62,7 +62,14 @@ describe('Files route', () => {
     })
 
     test('Testing GET /file/{uploadId} route returns success', async () => {
-      jest.mocked(checkFileStatus).mockResolvedValue()
+      jest.mocked(checkFileStatus).mockResolvedValue({
+        retrievalKeyIsCaseSensitive: true,
+        fileId: '12345',
+        filename: 'test.txt',
+        contentLength: 0,
+        fileStatus: 'complete',
+        retrievalKey: 'test-key'
+      })
 
       const response = await server.inject({
         method: 'GET',
@@ -71,7 +78,8 @@ describe('Files route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Found'
+        message: 'Found',
+        retrievalKeyIsCaseSensitive: true
       })
     })
 

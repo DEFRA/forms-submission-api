@@ -19,7 +19,7 @@
  */
 
 /**
- * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string }} FormFileUploadStatus
+ * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
  */
 
 /**

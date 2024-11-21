@@ -19,6 +19,7 @@ import { MongoServerError } from 'mongodb'
 import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
@@ -39,6 +40,8 @@ export async function ingestFile(uploadPayload) {
     Boom.badRequest('File does not exist in S3')
   )
 
+  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
+
   const hashed = await argon2.hash(retrievalKey)
 
   /** @type {FormFileUploadStatus} */
@@ -48,7 +51,8 @@ export async function ingestFile(uploadPayload) {
     contentType: fileContainer.contentType,
     s3Key: fileContainer.s3Key,
     s3Bucket: fileContainer.s3Bucket,
-    retrievalKey: hashed
+    retrievalKey: hashed,
+    retrievalKeyIsCaseSensitive
   }
 
   try {
@@ -71,6 +75,9 @@ export async function ingestFile(uploadPayload) {
  */
 export async function submit(submitPayload) {
   const { sessionId, retrievalKey, main, repeaters } = submitPayload
+
+  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
+
   const hashed = await argon2.hash(retrievalKey)
   const contentType = 'text/csv'
 
@@ -92,7 +99,8 @@ export async function submit(submitPayload) {
       contentType,
       s3Key: fileKey,
       s3Bucket,
-      retrievalKey: hashed
+      retrievalKey: hashed,
+      retrievalKeyIsCaseSensitive
     })
 
     return fileId
@@ -125,7 +133,8 @@ export async function submit(submitPayload) {
       contentType,
       s3Key: fileKey,
       s3Bucket,
-      retrievalKey: hashed
+      retrievalKey: hashed,
+      retrievalKeyIsCaseSensitive
     })
 
     return { name: repeater.name, fileId }
@@ -268,9 +277,13 @@ export async function persistFiles(files, persistedRetrievalKey) {
         persistedRetrievalKey
       )
 
+      const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(
+        persistedRetrievalKey
+      )
       await repository.updateRetrievalKeys(
         files.map(({ fileId }) => fileId),
         persistedRetrievalKeyHashed,
+        retrievalKeyIsCaseSensitive,
         session
       )
     })
@@ -425,8 +438,10 @@ function getS3Client() {
 }
 
 /**
- * Checks if a file status exists for a given upload ID. Throws an Not Found error if not in the database.
+ * Checks if a file status exists for a given upload ID.
+ * Throws a Not Found error if not in the database.
  * @param {string} fileId
+ * @returns {Promise<FormFileUploadStatus>} Returns the file status object
  * @throws {Boom.notFound} - if the file status does not exist
  */
 export async function checkFileStatus(fileId) {
@@ -437,6 +452,8 @@ export async function checkFileStatus(fileId) {
   }
 
   await assertFileExists(fileStatus, Boom.resourceGone(), false)
+
+  return fileStatus
 }
 
 /**
