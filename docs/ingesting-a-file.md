@@ -15,8 +15,13 @@ property. This key is then used to access the file after ingestion (e.g. for ret
 by the initiator (forms-runner) but sent to us by the cdp-uploader. As of writing this documentation, the `retrievalKey` is the
 submission output email address at the time of file upload. Without this key, a file cannot be accessed or modified again.
 
-Upon ingestion, we create a record in the database so that the file can be tracked. As part of this ingestion, we securely hash
-and store the retrievalKey using argon2id.
+Upon ingestion, we create a record in the database so that the file can be tracked. As part of this ingestion:
+
+- The retrievalKey is securely hashed using argon2id
+- A case sensitivity check is performed on the retrievalKey
+- A `retrievalKeyIsCaseSensitive` flag is stored alongside the hash, indicating whether the key contains uppercase letters
+
+This case sensitivity information is crucial for file retrieval, as it determines whether retrieval key matching should be case-sensitive or not, ensuring backward compatibility with existing records while promoting consistent lowercase usage for new submissions.
 
 ## File expiry
 

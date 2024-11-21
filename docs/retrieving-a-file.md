@@ -5,7 +5,10 @@ is a presigned link to the object in S3, but the ultimate destination shouldn't 
 needs to load it in a web browser. This has a key advantage in that we're not loading large files into memory, we're just
 facilitating the sharing of a public link which can be accessed by anybody (internal staff, citizen, etc).
 
-Files can only be accessed with a matching retrievalKey, which was the key at the time of `POST /files/persist` being called.
+Files can only be accessed with a matching retrievalKey, which was the key at the time of `POST /files/persist` being called. The matching process considers case sensitivity based on how the file was originally stored:
+
+- For files marked with `retrievalKeyIsCaseSensitive: true`, the retrieval key must match exactly
+- For files marked with `retrievalKeyIsCaseSensitive: false`, the comparison is case-insensitive
 
 ```
 POST /file/link
