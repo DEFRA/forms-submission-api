@@ -61,9 +61,28 @@ describe('Files route', () => {
       })
     })
 
-    test('Testing GET /file/{uploadId} route returns success', async () => {
+    test('Testing GET /file/{uploadId} route returns explicit retrievalKeyIsCaseSensitive value', async () => {
       jest.mocked(checkFileStatus).mockResolvedValue({
         retrievalKeyIsCaseSensitive: true,
+        fileId: '12345',
+        filename: 'test.txt',
+        retrievalKey: 'test-key'
+      })
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/file/12345'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Found',
+        retrievalKeyIsCaseSensitive: true
+      })
+    })
+
+    test('Testing GET /file/{uploadId} route defaults retrievalKeyIsCaseSensitive to true when undefined', async () => {
+      jest.mocked(checkFileStatus).mockResolvedValue({
         fileId: '12345',
         filename: 'test.txt',
         retrievalKey: 'test-key'
