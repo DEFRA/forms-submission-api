@@ -46,7 +46,7 @@
     "http-status-codes": "^2.3.0",
     "https-proxy-agent": "^7.0.5",
     "joi": "^17.13.3",
-    "mongodb": "^6.8.0",
+    "mongodb": "^6.11.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
     "proxy-agent": "^6.4.0"
