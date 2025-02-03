@@ -60,7 +60,7 @@ services:
       - 'compose/aws.env'
     environment:
       VIRTUAL_HOST: uploader.127.0.0.1.sslip.io
-      VIRTUAL_PATH: /
+      # VIRTUAL_PATH: /
       VIRTUAL_PORT: 7337
       PORT: 7337
       NODE_ENV: development
