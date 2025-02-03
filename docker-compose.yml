@@ -1,6 +1,19 @@
-# make sure you enable host.docker.internal in your docker desktop settings
-
+version: '3.4'
 services:
+  proxy:
+    image: nginxproxy/nginx-proxy:1.4
+    ports:
+      - '7300:80' # Exposes port 7300 on your host and maps it to port 80 in the proxy container.
+    environment:
+      - ENABLE_IPV6=true
+      - DEFAULT_ROOT="418"
+      - DEFAULT_HOST=uploader.127.0.0.1.sslip.io
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx-vhosts:/etc/nginx/vhost.d
+    networks:
+      - cdpuploader
+
   localstack:
     image: localstack/localstack:3.0.2
     ports:
@@ -46,7 +59,7 @@ services:
     env_file:
       - 'compose/aws.env'
     environment:
-      VIRTUAL_HOST: ~^uploader\..*\.sslip\.io
+      VIRTUAL_HOST: uploader.127.0.0.1.sslip.io
       VIRTUAL_PATH: /
       VIRTUAL_PORT: 7337
       PORT: 7337
@@ -58,6 +71,9 @@ services:
       USE_SINGLE_INSTANCE_CACHE: true
       MOCK_VIRUS_SCAN_ENABLED: true
       MOCK_VIRUS_RESULT_DELAY: 3
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+      - 'cdp.127.0.0.1.sslip.io:host-gateway'
     dns:
       # Set the DNS server to be the LocalStack container
       - 10.0.2.20
@@ -74,7 +90,7 @@ services:
     # WARNING: do not turn on authentication, otherwise will need to deal with generating key pairs and sharing them between
     # the replicaset nodes. For local development this is overkill, so just turn off auth and connect to Mongo without creds.
     image: mongo:6.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
     restart: unless-stopped
     ports:
       - 27017:27017
@@ -100,19 +116,19 @@ services:
   # Prefer to run the app using `npm run dev`, but if you experience Docker networking issues
   # you may want to uncomment the below and run it all in Docker.
   #
-  # forms-submission-api:
-  #   depends_on:
-  #     mongo:
-  #       condition: service_healthy
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - 3002:3000
-  #   env_file:
-  #     - '.env'
-  #   environment:
-  #     MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
+  forms-submission-api:
+    depends_on:
+      mongo:
+        condition: service_healthy
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 3002:3000
+    env_file:
+      - '.env'
+    environment:
+      MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
 
   s3-manager:
     image: cloudlena/s3manager
