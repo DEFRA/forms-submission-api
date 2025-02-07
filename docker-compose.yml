@@ -1,19 +1,6 @@
-version: '3.4'
-services:
-  proxy:
-    image: nginxproxy/nginx-proxy:1.4
-    ports:
-      - '7300:80' # Exposes port 7300 on your host and maps it to port 80 in the proxy container.
-    environment:
-      - ENABLE_IPV6=true
-      - DEFAULT_ROOT="418"
-      - DEFAULT_HOST=uploader.127.0.0.1.sslip.io
-    volumes:
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./nginx-vhosts:/etc/nginx/vhost.d
-    networks:
-      - cdpuploader
+version: '3.8'
 
+services:
   localstack:
     image: localstack/localstack:3.0.2
     ports:
@@ -23,12 +10,12 @@ services:
       - 'compose/aws.env'
     environment:
       DEBUG: ${DEBUG:-1}
-      LS_LOG: WARN # Localstack DEBUG Level
+      LS_LOG: WARN
       SERVICES: s3,sqs,sns,firehose
       LOCALSTACK_HOST: 127.0.0.1
     volumes:
       - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
-      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - './compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh'
     healthcheck:
       test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s
@@ -59,8 +46,8 @@ services:
     env_file:
       - 'compose/aws.env'
     environment:
-      VIRTUAL_HOST: uploader.127.0.0.1.sslip.io
-      # VIRTUAL_PATH: /
+      VIRTUAL_HOST: ~^uploader\..*\.sslip\.io
+      VIRTUAL_PATH: /
       VIRTUAL_PORT: 7337
       PORT: 7337
       NODE_ENV: development
@@ -71,12 +58,28 @@ services:
       USE_SINGLE_INSTANCE_CACHE: true
       MOCK_VIRUS_SCAN_ENABLED: true
       MOCK_VIRUS_RESULT_DELAY: 3
+      FORMS_SUBMISSION_API_URL: 'http://host.docker.internal:3002'
+      CALLBACK_URL: 'http://host.docker.internal:3002/file'
     extra_hosts:
       - 'host.docker.internal:host-gateway'
       - 'cdp.127.0.0.1.sslip.io:host-gateway'
     dns:
       # Set the DNS server to be the LocalStack container
       - 10.0.2.20
+    networks:
+      - cdpuploader
+
+  proxy:
+    image: nginxproxy/nginx-proxy:1.4
+    ports:
+      - '7300:80'
+    environment:
+      - ENABLE_IPV6=true
+      - DEFAULT_ROOT=418
+      - DEFAULT_HOST=~^uploader\..*\.sslip\.io
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./cors.conf:/etc/nginx/conf.d/cors.conf:ro
     networks:
       - cdpuploader
 
