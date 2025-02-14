@@ -8,6 +8,7 @@ import {
   NoSuchKey,
   NotFound,
   PutObjectCommand,
+  PutObjectRetentionCommand,
   S3Client
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
@@ -404,7 +405,7 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
  * @param {string} fileId
  * @param {string} retrievalKey
  */
-async function getAndVerify(fileId, retrievalKey) {
+export async function getAndVerify(fileId, retrievalKey) {
   const fileStatus = await repository.getByFileId(fileId)
 
   if (!fileStatus) {
@@ -454,6 +455,94 @@ export async function checkFileStatus(fileId) {
   await assertFileExists(fileStatus, Boom.resourceGone(), false)
 
   return fileStatus
+}
+
+/**
+ * Updates the retention policy of a file to extend it by 7 days.
+ * @param {FormFileUploadStatus} file
+ * @returns {Promise<string>} the new expiration date in ISO format.
+ */
+export async function updateFileRetention(file) {
+  if (!file.s3Key || !file.s3Bucket) {
+    throw new Error(`Missing S3 key or bucket for file ${file.fileId || ''}`)
+  }
+  const s3Client = getS3Client()
+
+  const expirationDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+  const newRetentionDate = expirationDate.toISOString()
+
+  await s3Client.send(
+    new PutObjectRetentionCommand({
+      Bucket: file.s3Bucket,
+      Key: file.s3Key,
+      Retention: {
+        Mode: 'GOVERNANCE',
+        RetainUntilDate: expirationDate
+      }
+    })
+  )
+
+  // update the object's tags to reflect the new expiration date (TBC)
+  // await s3Client.send(
+  //   new PutObjectTaggingCommand({
+  //     Bucket: file.s3Bucket,
+  //     Key: file.s3Key,
+  //     Tagging: {
+  //       TagSet: [
+  //         { Key: 'expires-at', Value: newRetentionDate }
+  //       ]
+  //     }
+  //   })
+  // );
+
+  await s3Client.send(
+    new HeadObjectCommand({
+      Bucket: file.s3Bucket,
+      Key: file.s3Key
+    })
+  )
+
+  return newRetentionDate
+}
+
+/**
+ * Verifies the retrieval key for the file and then updates its retention policy.
+ * @param {{ fileId: string }} file - An object with at least the fileId property.
+ * @param {string} retrievalKey - The retrieval key provided by the caller.
+ * @returns {Promise<string>} The new expiration date.
+ */
+export async function updateFileRetentionWithVerification(file, retrievalKey) {
+  const fileStatus = await getAndVerify(file.fileId, retrievalKey)
+
+  return updateFileRetention(fileStatus)
+}
+
+/**
+ * Updates the retention policy for multiple files.
+ * @param {Array<{ fileId: string, s3Key: string, s3Bucket: string }>} files - File objects.
+ * @param {string} retrievalKey - The retrieval key provided by the client.
+ * @returns {Promise<Array<{ fileId: string, status: string, newExpiration?: string, message?: string }>>}
+ */
+export async function updateFilesRetention(files, retrievalKey) {
+  return Promise.all(
+    files.map(async (file) => {
+      try {
+        const newExpiration = await updateFileRetentionWithVerification(
+          file,
+          retrievalKey
+        )
+        return { fileId: file.fileId, status: 'extended', newExpiration }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error)
+        logger.error(
+          `Error extending retention for file ${file.fileId}: ${errorMessage}`,
+          error
+        )
+        return { fileId: file.fileId, status: 'error', message: errorMessage }
+      }
+    })
+  )
 }
 
 /**

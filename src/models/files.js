@@ -60,3 +60,15 @@ export const filePersistPayloadSchema = Joi.object()
     persistedRetrievalKey: Joi.string().required()
   })
   .required()
+
+export const fileExtendPayloadSchema = Joi.object({
+  retrievalKey: Joi.string().required(),
+  files: Joi.array()
+    .min(1)
+    .items(
+      Joi.object({
+        fileId: Joi.string().required()
+      })
+    )
+    .required()
+}).required()

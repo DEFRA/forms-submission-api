@@ -2,10 +2,12 @@ import {
   checkFileStatus,
   getPresignedLink,
   ingestFile,
-  persistFiles
+  persistFiles,
+  updateFilesRetention
 } from '~/src/api/files/service.js'
 import {
   fileAccessPayloadSchema,
+  fileExtendPayloadSchema,
   fileIngestPayloadSchema,
   filePersistPayloadSchema,
   fileRetrievalParamsSchema
@@ -132,10 +134,32 @@ export default [
         payload: filePersistPayloadSchema
       }
     }
+  }),
+
+  /**
+   * @satisfies {ServerRoute<{ Payload: RequestFileExtend['payload'] }>}
+   */
+  ({
+    method: 'POST',
+    path: '/file/extend',
+    async handler(request, h) {
+      const { payload } = request
+      const { retrievalKey, files } = payload
+
+      const results = await updateFilesRetention(files, retrievalKey)
+
+      return h.response({ success: true, results }).code(200)
+    },
+    options: {
+      auth: false,
+      validate: {
+        payload: fileExtendPayloadSchema
+      }
+    }
   })
 ]
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
- * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate, RequestFilePersist } from '~/src/api/types.js'
+ * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate, RequestFilePersist, RequestFileExtend } from '~/src/api/types.js'
  */

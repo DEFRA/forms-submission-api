@@ -4,6 +4,7 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
+ * @typedef {Request<{ Server: { db: Db }, Payload: { retrievalKey: string, files: { fileId: string, s3Key: string, s3Bucket: string }[] } }>} RequestFileExtend
  */
 
 /**
