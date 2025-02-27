@@ -1,3 +1,5 @@
+# make sure you enable host.docker.internal in your docker desktop settings
+
 services:
   localstack:
     image: localstack/localstack:3.0.2
@@ -8,7 +10,7 @@ services:
       - 'compose/aws.env'
     environment:
       DEBUG: ${DEBUG:-1}
-      LS_LOG: WARN
+      LS_LOG: WARN # Localstack DEBUG Level
       SERVICES: s3,sqs,sns,firehose
       LOCALSTACK_HOST: 127.0.0.1
     volumes:
@@ -116,19 +118,19 @@ services:
   # Prefer to run the app using `npm run dev`, but if you experience Docker networking issues
   # you may want to uncomment the below and run it all in Docker.
   #
-  forms-submission-api:
-    depends_on:
-      mongo:
-        condition: service_healthy
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - 3002:3000
-    env_file:
-      - '.env'
-    environment:
-      MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
+  # forms-submission-api:
+  #   depends_on:
+  #     mongo:
+  #       condition: service_healthy
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 3002:3000
+  #   env_file:
+  #     - '.env'
+  #   environment:
+  #     MONGO_URI: mongodb://mongo:27017/?replicaSet=rs0&directConnection=true
 
   s3-manager:
     image: cloudlena/s3manager
