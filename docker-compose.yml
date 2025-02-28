@@ -15,7 +15,7 @@ services:
       LOCALSTACK_HOST: 127.0.0.1
     volumes:
       - '${TMPDIR:-/tmp}/localstack:/var/lib/localstack'
-      - ./compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh
+      - './compose/start-localstack.sh:/etc/localstack/init/ready.d/start-localstack.sh'
     healthcheck:
       test: ['CMD', 'curl', 'localhost:4566']
       interval: 5s
@@ -58,9 +58,27 @@ services:
       USE_SINGLE_INSTANCE_CACHE: true
       MOCK_VIRUS_SCAN_ENABLED: true
       MOCK_VIRUS_RESULT_DELAY: 3
+      FORMS_SUBMISSION_API_URL: 'http://host.docker.internal:3002'
+      CALLBACK_URL: 'http://host.docker.internal:3002/file'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+      - 'cdp.127.0.0.1.sslip.io:host-gateway'
     dns:
       # Set the DNS server to be the LocalStack container
       - 10.0.2.20
+    networks:
+      - cdpuploader
+
+  proxy:
+    image: nginxproxy/nginx-proxy:1.4
+    ports:
+      - '7300:80'
+    environment:
+      - ENABLE_IPV6=true
+      - DEFAULT_ROOT=418
+      - DEFAULT_HOST=~^uploader\..*\.sslip\.io
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
     networks:
       - cdpuploader
 
@@ -74,7 +92,7 @@ services:
     # WARNING: do not turn on authentication, otherwise will need to deal with generating key pairs and sharing them between
     # the replicaset nodes. For local development this is overkill, so just turn off auth and connect to Mongo without creds.
     image: mongo:6.0
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
     restart: unless-stopped
     ports:
       - 27017:27017
