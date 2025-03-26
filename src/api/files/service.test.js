@@ -24,6 +24,7 @@ import {
   submit
 } from '~/src/api/files/service.js'
 import { prepareDb } from '~/src/mongo.js'
+
 import 'aws-sdk-client-mock-jest'
 
 const s3Mock = mockClient(S3Client)
@@ -432,6 +433,34 @@ describe('Files service', () => {
         Boom.forbidden(
           `Retrieval key for file ${dummyData.fileId} is incorrect`
         )
+      )
+    })
+
+    it('handles both UTF-8 and ISO-8859-1 filenames', async () => {
+      const dummyData = {
+        ...successfulFile,
+        _id: new ObjectId(),
+        retrievalKey: 'test'
+      }
+
+      dummyData.filename = 'my – filenäme.txt'
+
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest.mocked(verify).mockResolvedValueOnce(true)
+
+      const expectedFilename = 'my – filenäme.txt'
+      const expectedAsciiFilename = 'my%20%E2%80%93%20filen%C3%A4me.txt'
+
+      await getPresignedLink(dummyData.fileId, dummyData.retrievalKey)
+
+      expect(getSignedUrl).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({
+          input: expect.objectContaining({
+            ResponseContentDisposition: `attachment;filename*="${expectedFilename}",filename="${expectedAsciiFilename}"`
+          })
+        }),
+        expect.objectContaining({ expiresIn: 3600 })
       )
     })
   })
