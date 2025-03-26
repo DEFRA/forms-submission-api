@@ -15,6 +15,7 @@ import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import { stringify } from 'csv-stringify'
 import { MongoServerError } from 'mongodb'
+import { transliterate } from 'transliteration'
 
 import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'
@@ -237,7 +238,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
 
   await assertFileExists(fileStatus, Boom.resourceGone())
 
-  const asciiFilename = encodeURIComponent(fileStatus.filename)
+  const asciiFilename = transliterate(fileStatus.filename)
 
   const command = new GetObjectCommand({
     Bucket: fileStatus.s3Bucket,
