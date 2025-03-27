@@ -37,8 +37,10 @@
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/hapi": "^21.3.12",
     "@hapi/jwt": "^3.2.0",
+    "@types/content-disposition": "^0.5.8",
     "argon2": "^0.41.1",
     "aws4": "^1.13.2",
+    "content-disposition": "^0.5.4",
     "convict": "^6.2.4",
     "csv-stringify": "^6.5.2",
     "dotenv": "^16.4.7",
@@ -48,8 +50,7 @@
     "mongodb": "^6.8.0",
     "pino": "^9.5.0",
     "pino-pretty": "^13.0.0",
-    "proxy-agent": "^6.5.0",
-    "transliteration": "^2.3.5"
+    "proxy-agent": "^6.5.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.26.4",

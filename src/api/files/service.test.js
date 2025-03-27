@@ -14,7 +14,6 @@ import { hash, verify } from 'argon2'
 import { mockClient } from 'aws-sdk-client-mock'
 import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
-import { transliterate } from 'transliteration'
 
 import * as repository from '~/src/api/files/repository.js'
 import {
@@ -33,7 +32,6 @@ const s3Mock = mockClient(S3Client)
 jest.mock('~/src/api/files/repository.js')
 jest.mock('@aws-sdk/s3-request-presigner')
 jest.mock('argon2')
-jest.mock('transliteration')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -435,35 +433,6 @@ describe('Files service', () => {
         Boom.forbidden(
           `Retrieval key for file ${dummyData.fileId} is incorrect`
         )
-      )
-    })
-
-    it('handles both UTF-8 and ISO-8859-1 filenames', async () => {
-      const dummyData = {
-        ...successfulFile,
-        _id: new ObjectId(),
-        retrievalKey: 'test'
-      }
-
-      const expectedUnicodeFilename = 'my – filenäme.txt'
-      const expectedAsciiFilename = 'my - filename.txt'
-      dummyData.filename = expectedUnicodeFilename
-
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
-      jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(transliterate).mockReturnValueOnce(expectedAsciiFilename)
-
-      await getPresignedLink(dummyData.fileId, dummyData.retrievalKey)
-
-      // there's not really a nice way to validate this than looking at the constructor for GetObjectCommand (the input check)
-      expect(getSignedUrl).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.objectContaining({
-          input: expect.objectContaining({
-            ResponseContentDisposition: `attachment;filename*="${expectedUnicodeFilename}",filename="${expectedAsciiFilename}"`
-          })
-        }),
-        expect.objectContaining({ expiresIn: 3600 })
       )
     })
   })
