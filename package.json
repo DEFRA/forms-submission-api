@@ -60,7 +60,7 @@
     "@types/convict": "^6.1.6",
     "@types/eslint": "^9.6.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.2",
+    "@types/node": "^22.13.14",
     "@types/slug": "^5.0.9",
     "@typescript-eslint/eslint-plugin": "^8.19.0",
     "@typescript-eslint/parser": "^8.19.0",
@@ -82,7 +82,7 @@
     "husky": "^9.1.7",
     "jest": "^29.7.0",
     "lint-staged": "^15.3.0",
-    "oidc-client-ts": "^3.1.0",
+    "oidc-client-ts": "^3.2.0",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
