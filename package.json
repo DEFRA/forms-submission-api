@@ -33,7 +33,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.679.0",
     "@aws-sdk/s3-request-presigner": "^3.679.0",
-    "@defra/forms-model": "^3.0.383",
+    "@defra/forms-model": "^3.0.440",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/hapi": "^21.3.12",
     "@hapi/jwt": "^3.2.0",
