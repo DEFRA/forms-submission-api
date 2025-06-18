@@ -63,12 +63,11 @@ export async function ingestFile(uploadPayload) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
       logger.error(
         {
-          mongoError: err.errorResponse,
-          fileId: fileContainer.fileId,
-          context: 'duplicateFileIngestion',
-          message: error
+          'error.message': error,
+          'error.code': '11000',
+          'error.type': 'MongoServerError'
         },
-        `File ID '${fileContainer.fileId}' has already been ingested`
+        `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId}`
       )
 
       throw Boom.badRequest(error)
@@ -173,12 +172,11 @@ export async function submit(submitPayload) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
       {
-        err: error,
-        sessionId,
-        message: error.message,
-        stack: error.stack
+        'error.message': error.message,
+        'error.stack_trace': error.stack,
+        'error.type': error.name
       },
-      `Failed to save files for session ID '${sessionId}'`
+      `[submitFiles] Failed to save files for sessionId: ${sessionId} - ${error.message}`
     )
 
     if (Boom.isBoom(err)) {
@@ -231,16 +229,20 @@ async function assertFileExists(
     await client.send(command)
   } catch (err) {
     if (err instanceof NotFound) {
-      logger[logAsError ? 'error' : 'info'](
-        {
-          err,
-          s3Key: fileIdentifier.s3Key,
-          s3Bucket: fileIdentifier.s3Bucket,
-          message: `Received request for ${fileIdentifier.s3Key}, but the file does not exist.`,
-          stack: err.stack
-        },
-        `File not found in S3: ${fileIdentifier.s3Key}`
-      )
+      if (logAsError) {
+        logger.error(
+          {
+            'error.message': `File does not exist: ${fileIdentifier.s3Key}`,
+            'error.stack_trace': err.stack,
+            'error.type': err.name
+          },
+          `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
+        )
+      } else {
+        logger.info(
+          `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
+        )
+      }
 
       throw errorToThrow
     }
@@ -319,12 +321,11 @@ export async function persistFiles(files, persistedRetrievalKey) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
       {
-        err: error,
-        filesCount: files.length,
-        message: error.message,
-        stack: error.stack
+        'error.message': error.message,
+        'error.stack_trace': error.stack,
+        'error.type': error.name
       },
-      'Error persisting files'
+      `[persistFiles] Error persisting ${files.length} files - ${error.message}`
     )
 
     // no point persisting part of a batch. clean it up.
@@ -427,16 +428,11 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     const error = err instanceof Error ? err : new Error('Unknown S3 error')
     logger.error(
       {
-        err: error,
-        fileId,
-        oldS3Key,
-        newS3Key,
-        bucket: fileStatus.s3Bucket,
-        context: 's3CopyFailure',
-        message: error.message,
-        stack: error.stack
+        'error.message': error.message,
+        'error.stack_trace': error.stack,
+        'error.type': error.name
       },
-      `Failed to copy file ${fileId} in S3`
+      `[s3CopyFailure] Failed to copy file ${fileId} from ${oldS3Key} to ${newS3Key} in bucket ${fileStatus.s3Bucket} - ${error.message}`
     )
 
     throw err
@@ -469,27 +465,14 @@ async function getAndVerify(fileId, retrievalKey) {
 
   if (!retrievalKeyCorrect) {
     logger.info(
-      {
-        fileId,
-        attemptedAuth: 'failed',
-        reason: 'incorrectRetrievalKey',
-        filename: fileStatus.filename,
-        s3Key: fileStatus.s3Key
-      },
-      `Failed authentication attempt for file ${fileId} - incorrect retrieval key provided`
+      `[authFailed] Failed authentication attempt for fileId: ${fileId} - incorrect retrieval key - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
     )
 
     throw Boom.forbidden(`Retrieval key for file ${fileId} is incorrect`)
   }
 
   logger.info(
-    {
-      fileId,
-      attemptedAuth: 'success',
-      filename: fileStatus.filename,
-      s3Key: fileStatus.s3Key
-    },
-    `Successful authentication for file ${fileId}`
+    `[authSuccess] Successful authentication for fileId: ${fileId} - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
   )
 
   return fileStatus

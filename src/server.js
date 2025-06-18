@@ -9,12 +9,11 @@ process.on('unhandledRejection', (error) => {
   logger.info('Unhandled rejection')
   logger.error(
     {
-      err,
-      context: 'unhandledRejection',
-      message: err.message,
-      stack: err.stack
+      'error.message': err.message,
+      'error.stack_trace': err.stack,
+      'error.type': err.name
     },
-    'Unhandled promise rejection occurred'
+    `[unhandledRejection] Unhandled promise rejection: ${err.message}`
   )
   throw error
 })

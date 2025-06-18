@@ -8,7 +8,7 @@ import { loggerOptions } from '~/src/helpers/logging/logger-options.js'
 export const logRequests = {
   plugin: hapiPino,
   options: {
-    ...loggerOptions,
+    .../** @type {any} */ (loggerOptions),
     log4xxResponseErrors: true,
     logRequestComplete: true,
     customRequestCompleteMessage(request, responseTime) {
