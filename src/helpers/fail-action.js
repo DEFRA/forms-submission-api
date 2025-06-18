@@ -6,9 +6,9 @@ export function failAction(request, h, error) {
   const err = error instanceof Error ? error : new Error('Unknown error')
   request.logger.error(
     {
-      'error.message': err.message,
-      'error.stack_trace': err.stack,
-      'error.type': err.name
+      message: err.message,
+      stack_trace: err.stack,
+      type: err.name
     },
     `[validationFailed] Request validation failed for ${request.method} ${request.url.pathname} - ${err.message}`
   )

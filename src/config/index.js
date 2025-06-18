@@ -78,15 +78,17 @@ export const config = convict({
     format: {
       doc: 'Format to output logs in',
       format: ['ecs', 'pino-pretty'],
-      default: isProduction ? 'ecs' : 'pino-pretty',
+      default: 'ecs',
       env: 'LOG_FORMAT'
     },
     redact: {
       doc: 'Log paths to redact',
       format: Array,
-      default: isProduction
-        ? ['req.headers.authorization', 'req.headers.cookie', 'res.headers']
-        : ['req', 'res', 'responseTime']
+      default: [
+        'req.headers.authorization',
+        'req.headers.cookie',
+        'res.headers'
+      ]
     }
   },
   logLevel: {

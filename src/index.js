@@ -15,9 +15,9 @@ import('~/src/server.js')
     logger.info('Server failed to start :(')
     logger.error(
       {
-        'error.message': err.message,
-        'error.stack_trace': err.stack,
-        'error.type': err.name
+        message: err.message,
+        stack_trace: err.stack,
+        type: err.name
       },
       `[serverStartup] Server failed to start: ${err.message}`
     )

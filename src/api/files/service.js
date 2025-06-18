@@ -61,9 +61,9 @@ export async function ingestFile(uploadPayload) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
       logger.error(
         {
-          'error.message': error,
-          'error.code': '11000',
-          'error.type': 'MongoServerError'
+          message: error,
+          code: '11000',
+          type: 'MongoServerError'
         },
         `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId}`
       )
@@ -100,9 +100,9 @@ async function assertFileExists(
       if (logAsError) {
         logger.error(
           {
-            'error.message': `File does not exist: ${fileIdentifier.s3Key}`,
-            'error.stack_trace': err.stack,
-            'error.type': err.name
+            message: `File does not exist: ${fileIdentifier.s3Key}`,
+            stack_trace: err.stack,
+            type: err.name
           },
           `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
         )
@@ -189,9 +189,9 @@ export async function persistFiles(files, persistedRetrievalKey) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
       {
-        'error.message': error.message,
-        'error.stack_trace': error.stack,
-        'error.type': error.name
+        message: error.message,
+        stack_trace: error.stack,
+        type: error.name
       },
       `[persistFiles] Error persisting ${files.length} files - ${error.message}`
     )
@@ -278,9 +278,9 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     const error = err instanceof Error ? err : new Error('Unknown S3 error')
     logger.error(
       {
-        'error.message': error.message,
-        'error.stack_trace': error.stack,
-        'error.type': error.name
+        message: error.message,
+        stack_trace: error.stack,
+        type: error.name
       },
       `[s3CopyFailure] Failed to copy file ${fileId} from ${oldS3Key} to ${newS3Key} in bucket ${fileStatus.s3Bucket} - ${error.message}`
     )
@@ -376,9 +376,9 @@ export async function submit(submitPayload) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
       {
-        'error.message': error.message,
-        'error.stack_trace': error.stack,
-        'error.type': error.name
+        message: error.message,
+        stack_trace: error.stack,
+        type: error.name
       },
       `[submitFiles] Failed to save files for sessionId: ${sessionId} - ${error.message}`
     )

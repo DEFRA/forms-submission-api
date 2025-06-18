@@ -9,9 +9,9 @@ process.on('unhandledRejection', (error) => {
   logger.info('Unhandled rejection')
   logger.error(
     {
-      'error.message': err.message,
-      'error.stack_trace': err.stack,
-      'error.type': err.name
+      message: err.message,
+      stack_trace: err.stack,
+      type: err.name
     },
     `[unhandledRejection] Unhandled promise rejection: ${err.message}`
   )
