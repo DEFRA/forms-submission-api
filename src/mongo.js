@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb'
 
 import { config } from '~/src/config/index.js'
+import { secureContext } from '~/src/secure-context.js'
 
 export const COLLECTION_NAME = 'file-upload-status'
 
@@ -21,11 +22,19 @@ export let client
 export async function prepareDb(logger) {
   const mongoUri = config.get('mongo.uri')
   const databaseName = config.get('mongo.databaseName')
+  const isSecureContextEnabled = config.get('isSecureContextEnabled')
 
   logger.info('Setting up mongodb')
 
-  client = new MongoClient(mongoUri)
-  await client.connect()
+  client = await MongoClient.connect(
+    mongoUri,
+    /** @type {any} */ ({
+      retryWrites: false,
+      readPreference: 'secondary',
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- secureContext can be undefined in non-production
+      ...(isSecureContextEnabled && secureContext && { secureContext })
+    })
+  )
 
   db = client.db(databaseName)
 
@@ -37,6 +46,8 @@ export async function prepareDb(logger) {
   await coll.createIndex({ fileId: 1 }, { unique: true })
 
   logger.info(`Mongodb connected to ${databaseName}`)
+
+  return db
 }
 
 /**
