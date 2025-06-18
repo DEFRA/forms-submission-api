@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 
 import Boom from '@hapi/boom'
 
-import { createCsv, createS3File, getS3Client } from './service.js'
+import { createCsv, createS3File, getS3Client } from './utils.js'
 
 import * as repository from '~/src/api/files/repository.js'
 import { config } from '~/src/config/index.js'

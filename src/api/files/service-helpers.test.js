@@ -6,13 +6,9 @@ import {
   createRepeaterCsvFile,
   processRepeaterFiles
 } from '~/src/api/files/service-helpers.js'
-import {
-  createCsv,
-  createS3File,
-  getS3Client
-} from '~/src/api/files/service.js'
+import { createCsv, createS3File, getS3Client } from '~/src/api/files/utils.js'
 
-jest.mock('./service.js')
+jest.mock('~/src/api/files/utils.js')
 jest.mock('~/src/api/files/repository.js')
 
 describe('Service Helpers', () => {

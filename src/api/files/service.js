@@ -4,15 +4,12 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   NoSuchKey,
-  NotFound,
-  PutObjectCommand,
-  S3Client
+  NotFound
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import contentDisposition from 'content-disposition'
-import { stringify } from 'csv-stringify'
 import { MongoServerError } from 'mongodb'
 
 import * as repository from '~/src/api/files/repository.js'
@@ -20,14 +17,13 @@ import {
   createMainCsvFile,
   processRepeaterFiles
 } from '~/src/api/files/service-helpers.js'
+import { getS3Client } from '~/src/api/files/utils.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
-const s3Region = config.get('s3Region')
-const s3Bucket = config.get('s3Bucket')
 const loadedPrefix = config.get('loadedPrefix')
 
 /**
@@ -77,26 +73,6 @@ export async function ingestFile(uploadPayload) {
 
     throw err
   }
-}
-
-/**
- * @param {Input} input
- * @returns {Promise<string>}
- */
-export function createCsv(input) {
-  return new Promise((resolve, reject) => {
-    stringify(
-      input,
-      /** @type {Callback} */ function (err, output) {
-        if (err) {
-          reject(err instanceof Error ? err : new Error('CSV stringify error'))
-          return
-        }
-
-        resolve(output)
-      }
-    )
-  })
 }
 
 /**
@@ -238,24 +214,6 @@ export async function persistFiles(files, persistedRetrievalKey) {
 }
 
 /**
- * Create a file in S3.
- * @param {string} key - the key of the file
- * @param {string} body - file body
- * @param {string} contentType - content type
- * @param {S3Client} client - S3 client
- */
-export function createS3File(key, body, contentType, client) {
-  return client.send(
-    new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType
-    })
-  )
-}
-
-/**
  * Deletes old files in staging based on the provided keys.
  * @param {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string; newS3Key: string; }>[]} keys - an array of files to handle
  * @param {('oldS3Key'|'newS3Key')} lookupKey - the key to use to look up the S3 key
@@ -371,20 +329,6 @@ async function getAndVerify(fileId, retrievalKey) {
 }
 
 /**
- * Retrieves an S3 client
- * @returns
- */
-export function getS3Client() {
-  return new S3Client({
-    region: s3Region,
-    ...(config.get('s3Endpoint') && {
-      endpoint: config.get('s3Endpoint'),
-      forcePathStyle: true
-    })
-  })
-}
-
-/**
  * Checks if a file status exists for a given upload ID.
  * Throws a Not Found error if not in the database.
  * @param {string} fileId
@@ -449,6 +393,6 @@ export async function submit(submitPayload) {
 
 /**
  * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
- * @import { Input, Callback } from 'csv-stringify'
+ * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
