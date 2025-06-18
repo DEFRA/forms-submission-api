@@ -89,24 +89,30 @@ jobs:
 
       - name: Restore dependencies
         uses: actions/cache/restore@v4
+        id: restore-deps
         with:
           enableCrossOsArchive: true
-          fail-on-cache-miss: true
           key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           path: node_modules
+          restore-keys: |
+            npm-install-${{ runner.os }}-
 
       - name: Cache task
         if: ${{ matrix.task.cache }}
         uses: actions/cache@v4
         with:
           enableCrossOsArchive: true
-          key: ${{ matrix.task.name }}-${{ runner.os }}
+          key: ${{ matrix.task.name }}-${{ runner.os }}-${{ github.sha }}
           path: ${{ matrix.task.cache }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+
+      - name: Install dependencies
+        if: steps.restore-deps.outputs.cache-hit != 'true'
+        run: npm ci
 
       - name: Run lint task
         run: ${{ matrix.task.run }}
@@ -132,24 +138,36 @@ jobs:
 
       - name: Restore dependencies
         uses: actions/cache/restore@v4
+        id: restore-deps-tasks
         with:
           enableCrossOsArchive: true
-          fail-on-cache-miss: true
           key: npm-install-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
           path: node_modules
+          restore-keys: |
+            npm-install-${{ runner.os }}-
 
       - name: Restore build
         uses: actions/cache/restore@v4
+        id: restore-build
         with:
           enableCrossOsArchive: true
-          fail-on-cache-miss: true
           key: npm-build-${{ runner.os }}-${{ github.sha }}
           path: .server
+          restore-keys: |
+            npm-build-${{ runner.os }}-
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+
+      - name: Install dependencies
+        if: steps.restore-deps-tasks.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Build project
+        if: steps.restore-build.outputs.cache-hit != 'true'
+        run: npm run build
 
       - name: Cache task
         if: ${{ matrix.task.cache }}
@@ -186,9 +204,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           enableCrossOsArchive: true
-          fail-on-cache-miss: true
           key: test-unit-${{ runner.os }}-${{ github.sha }}
           path: coverage
+          restore-keys: |
+            test-unit-${{ runner.os }}-
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v4.2.1
