@@ -5,8 +5,17 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 const logger = createLogger()
 
 process.on('unhandledRejection', (error) => {
+  const err = error instanceof Error ? error : new Error('Unknown error')
   logger.info('Unhandled rejection')
-  logger.error(error)
+  logger.error(
+    {
+      err,
+      context: 'unhandledRejection',
+      message: err.message,
+      stack: err.stack
+    },
+    'Unhandled promise rejection occurred'
+  )
   throw error
 })
 

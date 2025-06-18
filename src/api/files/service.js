@@ -61,7 +61,15 @@ export async function ingestFile(uploadPayload) {
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
-      logger.error(error)
+      logger.error(
+        {
+          mongoError: err.errorResponse,
+          fileId: fileContainer.fileId,
+          context: 'duplicateFileIngestion',
+          message: error
+        },
+        `File ID '${fileContainer.fileId}' has already been ingested`
+      )
 
       throw Boom.badRequest(error)
     }
@@ -162,7 +170,16 @@ export async function submit(submitPayload) {
       )
     }
   } catch (err) {
-    logger.error(err)
+    const error = err instanceof Error ? err : new Error('Unknown error')
+    logger.error(
+      {
+        err: error,
+        sessionId,
+        message: error.message,
+        stack: error.stack
+      },
+      `Failed to save files for session ID '${sessionId}'`
+    )
 
     if (Boom.isBoom(err)) {
       throw err
@@ -215,8 +232,14 @@ async function assertFileExists(
   } catch (err) {
     if (err instanceof NotFound) {
       logger[logAsError ? 'error' : 'info'](
-        err,
-        `Received request for ${fileIdentifier.s3Key}, but the file does not exist.`
+        {
+          err,
+          s3Key: fileIdentifier.s3Key,
+          s3Bucket: fileIdentifier.s3Bucket,
+          message: `Received request for ${fileIdentifier.s3Key}, but the file does not exist.`,
+          stack: err.stack
+        },
+        `File not found in S3: ${fileIdentifier.s3Key}`
       )
 
       throw errorToThrow
@@ -236,7 +259,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
   const fileStatus = await getAndVerify(fileId, retrievalKey)
   const client = getS3Client()
 
-  await assertFileExists(fileStatus, Boom.resourceGone())
+  await assertFileExists(fileStatus, Boom.resourceGone(), false)
 
   const contentDispositionHeader = contentDisposition(fileStatus.filename)
 
@@ -293,7 +316,16 @@ export async function persistFiles(files, persistedRetrievalKey) {
 
     logger.info(`Finished persisting ${files.length} files`)
   } catch (err) {
-    logger.error(err, 'Error persisting files')
+    const error = err instanceof Error ? err : new Error('Unknown error')
+    logger.error(
+      {
+        err: error,
+        filesCount: files.length,
+        message: error.message,
+        stack: error.stack
+      },
+      'Error persisting files'
+    )
 
     // no point persisting part of a batch. clean it up.
     await deleteOldFiles(updateFiles, 'newS3Key', client)
@@ -391,6 +423,22 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
       throw Boom.resourceGone(`File ${fileId} no longer exists`)
     }
 
+    // Log unexpected S3 errors
+    const error = err instanceof Error ? err : new Error('Unknown S3 error')
+    logger.error(
+      {
+        err: error,
+        fileId,
+        oldS3Key,
+        newS3Key,
+        bucket: fileStatus.s3Bucket,
+        context: 's3CopyFailure',
+        message: error.message,
+        stack: error.stack
+      },
+      `Failed to copy file ${fileId} in S3`
+    )
+
     throw err
   }
 
@@ -420,8 +468,29 @@ async function getAndVerify(fileId, retrievalKey) {
   )
 
   if (!retrievalKeyCorrect) {
+    logger.info(
+      {
+        fileId,
+        attemptedAuth: 'failed',
+        reason: 'incorrectRetrievalKey',
+        filename: fileStatus.filename,
+        s3Key: fileStatus.s3Key
+      },
+      `Failed authentication attempt for file ${fileId} - incorrect retrieval key provided`
+    )
+
     throw Boom.forbidden(`Retrieval key for file ${fileId} is incorrect`)
   }
+
+  logger.info(
+    {
+      fileId,
+      attemptedAuth: 'success',
+      filename: fileStatus.filename,
+      s3Key: fileStatus.s3Key
+    },
+    `Successful authentication for file ${fileId}`
+  )
 
   return fileStatus
 }

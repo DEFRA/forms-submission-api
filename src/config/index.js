@@ -3,6 +3,16 @@ import { cwd } from 'process'
 import 'dotenv/config'
 import convict from 'convict'
 
+const isProduction = process.env.NODE_ENV === 'production'
+const isTest = process.env.NODE_ENV === 'test'
+
+const SENSITIVE_FIELDS = [
+  'retrievalKey',
+  'persistedRetrievalKey',
+  'initiatedRetrievalKey',
+  'fieldsToUpdate.retrievalKey'
+]
+
 export const config = convict({
   env: {
     doc: 'The application environment.',
@@ -41,8 +51,40 @@ export const config = convict({
     format: Boolean,
     default: process.env.NODE_ENV === 'test'
   },
+  log: {
+    isEnabled: {
+      doc: 'Is logging enabled',
+      format: Boolean,
+      default: !isTest,
+      env: 'LOG_ENABLED'
+    },
+    level: {
+      doc: 'Logging level',
+      format: ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'],
+      default: 'info',
+      env: 'LOG_LEVEL'
+    },
+    format: {
+      doc: 'Format to output logs in',
+      format: ['ecs', 'pino-pretty'],
+      default: isProduction ? 'ecs' : 'pino-pretty',
+      env: 'LOG_FORMAT'
+    },
+    redact: {
+      doc: 'Log paths to redact',
+      format: Array,
+      default: isProduction
+        ? [
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'res.headers',
+            ...SENSITIVE_FIELDS
+          ]
+        : ['req', 'res', 'responseTime', ...SENSITIVE_FIELDS]
+    }
+  },
   logLevel: {
-    doc: 'Logging level',
+    doc: 'Logging level (deprecated - use log.level)',
     format: ['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'],
     default: 'info',
     env: 'LOG_LEVEL'
