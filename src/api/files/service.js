@@ -36,7 +36,8 @@ export async function ingestFile(uploadPayload) {
 
   await assertFileExists(
     fileContainer,
-    Boom.badRequest('File does not exist in S3')
+    Boom.badRequest('File does not exist in S3'),
+    false
   )
 
   const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
