@@ -5,7 +5,7 @@
 export function failAction(request, h, error) {
   const err = error instanceof Error ? error : new Error('Unknown error')
   request.logger.error(
-    { err },
+    err,
     `[validationFailed] Request validation failed for ${request.method} ${request.url.pathname} - ${err.message}`
   )
 

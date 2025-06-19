@@ -61,11 +61,8 @@ export async function ingestFile(uploadPayload) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
       logger.error(
-        {
-          err,
-          code: '11000'
-        },
-        `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId}`
+        err,
+        `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId} - code: 11000`
       )
 
       throw Boom.badRequest(error)
@@ -99,7 +96,7 @@ async function assertFileExists(
     if (err instanceof NotFound) {
       if (logAsError) {
         logger.error(
-          { err },
+          err,
           `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
         )
       } else {
@@ -184,7 +181,7 @@ export async function persistFiles(files, persistedRetrievalKey) {
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
-      { err: error },
+      error,
       `[persistFiles] Error persisting ${files.length} files - ${error.message}`
     )
 
@@ -269,7 +266,7 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     // Log unexpected S3 errors
     const error = err instanceof Error ? err : new Error('Unknown S3 error')
     logger.error(
-      { err: error },
+      error,
       `[s3CopyFailure] Failed to copy file ${fileId} from ${oldS3Key} to ${newS3Key} in bucket ${fileStatus.s3Bucket} - ${error.message}`
     )
 
@@ -363,7 +360,7 @@ export async function submit(submitPayload) {
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
-      { err: error },
+      error,
       `[submitFiles] Failed to save files for sessionId: ${sessionId} - ${error.message}`
     )
 

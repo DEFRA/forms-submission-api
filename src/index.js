@@ -13,9 +13,6 @@ import('~/src/server.js')
     const err =
       error instanceof Error ? error : new Error('Unknown startup error')
     logger.info('Server failed to start :(')
-    logger.error(
-      { err },
-      `[serverStartup] Server failed to start: ${err.message}`
-    )
+    logger.error(err, `[serverStartup] Server failed to start: ${err.message}`)
     throw error
   })
