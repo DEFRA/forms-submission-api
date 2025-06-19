@@ -8,11 +8,7 @@ process.on('unhandledRejection', (error) => {
   const err = error instanceof Error ? error : new Error('Unknown error')
   logger.info('Unhandled rejection')
   logger.error(
-    {
-      message: err.message,
-      stack_trace: err.stack,
-      type: err.name
-    },
+    { err },
     `[unhandledRejection] Unhandled promise rejection: ${err.message}`
   )
   throw error

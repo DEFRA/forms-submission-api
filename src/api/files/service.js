@@ -61,9 +61,8 @@ export async function ingestFile(uploadPayload) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
       logger.error(
         {
-          message: error,
-          code: '11000',
-          type: 'MongoServerError'
+          err,
+          code: '11000'
         },
         `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId}`
       )
@@ -99,11 +98,7 @@ async function assertFileExists(
     if (err instanceof NotFound) {
       if (logAsError) {
         logger.error(
-          {
-            message: `File does not exist: ${fileIdentifier.s3Key}`,
-            stack_trace: err.stack,
-            type: err.name
-          },
+          { err },
           `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
         )
       } else {
@@ -188,11 +183,7 @@ export async function persistFiles(files, persistedRetrievalKey) {
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
-      {
-        message: error.message,
-        stack_trace: error.stack,
-        type: error.name
-      },
+      { err: error },
       `[persistFiles] Error persisting ${files.length} files - ${error.message}`
     )
 
@@ -277,11 +268,7 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     // Log unexpected S3 errors
     const error = err instanceof Error ? err : new Error('Unknown S3 error')
     logger.error(
-      {
-        message: error.message,
-        stack_trace: error.stack,
-        type: error.name
-      },
+      { err: error },
       `[s3CopyFailure] Failed to copy file ${fileId} from ${oldS3Key} to ${newS3Key} in bucket ${fileStatus.s3Bucket} - ${error.message}`
     )
 
@@ -375,11 +362,7 @@ export async function submit(submitPayload) {
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error')
     logger.error(
-      {
-        message: error.message,
-        stack_trace: error.stack,
-        type: error.name
-      },
+      { err: error },
       `[submitFiles] Failed to save files for sessionId: ${sessionId} - ${error.message}`
     )
 
