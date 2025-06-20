@@ -3,7 +3,11 @@
  * @type {Lifecycle.Method}
  */
 export function failAction(request, h, error) {
-  request.logger.error(error, error?.message)
+  const err = error instanceof Error ? error : new Error('Unknown error')
+  request.logger.error(
+    err,
+    `[validationFailed] Request validation failed for ${request.method} ${request.url.pathname} - ${err.message}`
+  )
 
   throw error ?? new Error('Unknown error')
 }

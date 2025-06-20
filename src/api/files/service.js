@@ -1,31 +1,29 @@
-import { randomUUID } from 'crypto'
-
 import {
   CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   NoSuchKey,
-  NotFound,
-  PutObjectCommand,
-  S3Client
+  NotFound
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import contentDisposition from 'content-disposition'
-import { stringify } from 'csv-stringify'
 import { MongoServerError } from 'mongodb'
 
 import * as repository from '~/src/api/files/repository.js'
+import {
+  createMainCsvFile,
+  processRepeaterFiles
+} from '~/src/api/files/service-helpers.js'
+import { getS3Client } from '~/src/api/files/utils.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
 
 const logger = createLogger()
-const s3Region = config.get('s3Region')
-const s3Bucket = config.get('s3Bucket')
 const loadedPrefix = config.get('loadedPrefix')
 
 /**
@@ -38,7 +36,8 @@ export async function ingestFile(uploadPayload) {
 
   await assertFileExists(
     fileContainer,
-    Boom.badRequest('File does not exist in S3')
+    Boom.badRequest('File does not exist in S3'),
+    false
   )
 
   const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
@@ -61,135 +60,16 @@ export async function ingestFile(uploadPayload) {
   } catch (err) {
     if (err instanceof MongoServerError && err.errorResponse.code === 11000) {
       const error = `File ID '${fileContainer.fileId}' has already been ingested`
-      logger.error(error)
+      logger.error(
+        err,
+        `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId} - code: 11000`
+      )
 
       throw Boom.badRequest(error)
     }
 
     throw err
   }
-}
-
-/**
- * Accepts submissions into the forms-submission-api
- * @param {SubmitPayload} submitPayload
- */
-export async function submit(submitPayload) {
-  const { sessionId, retrievalKey, main, repeaters } = submitPayload
-
-  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
-
-  const hashed = await argon2.hash(retrievalKey)
-  const contentType = 'text/csv'
-
-  /**
-   * Create the main CSV file
-   */
-  async function createMain() {
-    const headers = main.map((rec) => rec.title)
-    const values = main.map((rec) => rec.value)
-    const csv = await createCsv([headers, values])
-    const fileId = randomUUID()
-    const fileKey = `${loadedPrefix}/${fileId}`
-
-    await createS3File(fileKey, csv, contentType, getS3Client())
-
-    await repository.create({
-      fileId,
-      filename: `${fileId}.csv`,
-      contentType,
-      s3Key: fileKey,
-      s3Bucket,
-      retrievalKey: hashed,
-      retrievalKeyIsCaseSensitive
-    })
-
-    return fileId
-  }
-
-  /**
-   * @param {SubmitRecordset} repeater
-   */
-  async function createRepeater(repeater) {
-    /**
-     * @type {string[]}
-     */
-    const headers = []
-    const values = repeater.value.map((value, index) => {
-      if (index === 0) {
-        headers.push(...value.map((val) => val.title))
-      }
-      return value.map((val) => val.value)
-    })
-
-    const csv = await createCsv([headers, ...values])
-    const fileId = randomUUID()
-    const fileKey = `${loadedPrefix}/${fileId}`
-
-    await createS3File(fileKey, csv, contentType, getS3Client())
-
-    await repository.create({
-      fileId,
-      filename: `${fileId}.csv`,
-      contentType,
-      s3Key: fileKey,
-      s3Bucket,
-      retrievalKey: hashed,
-      retrievalKeyIsCaseSensitive
-    })
-
-    return { name: repeater.name, fileId }
-  }
-
-  try {
-    const mainFileId = await createMain()
-
-    const repeaterResult = await Promise.allSettled(
-      repeaters.map(createRepeater)
-    )
-    const fullfilled = repeaterResult.filter(
-      (result) => result.status === 'fulfilled'
-    )
-
-    if (fullfilled.length !== repeaterResult.length) {
-      throw Boom.internal('Failed to save repeater files')
-    }
-
-    return {
-      main: mainFileId,
-      repeaters: Object.fromEntries(
-        fullfilled.map((result) => [result.value.name, result.value.fileId])
-      )
-    }
-  } catch (err) {
-    logger.error(err)
-
-    if (Boom.isBoom(err)) {
-      throw err
-    }
-
-    throw new Error(`Failed to save files for session ID '${sessionId}'.`)
-  }
-}
-
-/**
- * @param {Input} input
- * @returns {Promise<string>}
- */
-function createCsv(input) {
-  return new Promise((resolve, reject) => {
-    stringify(
-      input,
-      /** @type {Callback} */ function (err, output) {
-        if (err) {
-          reject(err instanceof Error ? err : new Error('CSV stringify error'))
-          return
-        }
-
-        resolve(output)
-      }
-    )
-  })
 }
 
 /**
@@ -214,10 +94,16 @@ async function assertFileExists(
     await client.send(command)
   } catch (err) {
     if (err instanceof NotFound) {
-      logger[logAsError ? 'error' : 'info'](
-        err,
-        `Received request for ${fileIdentifier.s3Key}, but the file does not exist.`
-      )
+      if (logAsError) {
+        logger.error(
+          err,
+          `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
+        )
+      } else {
+        logger.info(
+          `[fileNotFound] File not found in S3: ${fileIdentifier.s3Key} in bucket: ${fileIdentifier.s3Bucket}`
+        )
+      }
 
       throw errorToThrow
     }
@@ -236,7 +122,7 @@ export async function getPresignedLink(fileId, retrievalKey) {
   const fileStatus = await getAndVerify(fileId, retrievalKey)
   const client = getS3Client()
 
-  await assertFileExists(fileStatus, Boom.resourceGone())
+  await assertFileExists(fileStatus, Boom.resourceGone(), false)
 
   const contentDispositionHeader = contentDisposition(fileStatus.filename)
 
@@ -293,7 +179,11 @@ export async function persistFiles(files, persistedRetrievalKey) {
 
     logger.info(`Finished persisting ${files.length} files`)
   } catch (err) {
-    logger.error(err, 'Error persisting files')
+    const error = err instanceof Error ? err : new Error('Unknown error')
+    logger.error(
+      error,
+      `[persistFiles] Error persisting ${files.length} files - ${error.message}`
+    )
 
     // no point persisting part of a batch. clean it up.
     await deleteOldFiles(updateFiles, 'newS3Key', client)
@@ -310,24 +200,6 @@ export async function persistFiles(files, persistedRetrievalKey) {
     // anyway, so this ultimately is just a cost issue not a functional one.
     await deleteOldFiles(updateFiles, 'oldS3Key', client)
   }
-}
-
-/**
- * Create a file in S3.
- * @param {string} key - the key of the file
- * @param {string} body - file body
- * @param {string} contentType - content type
- * @param {S3Client} client - S3 client
- */
-function createS3File(key, body, contentType, client) {
-  return client.send(
-    new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType
-    })
-  )
 }
 
 /**
@@ -391,6 +263,13 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
       throw Boom.resourceGone(`File ${fileId} no longer exists`)
     }
 
+    // Log unexpected S3 errors
+    const error = err instanceof Error ? err : new Error('Unknown S3 error')
+    logger.error(
+      error,
+      `[s3CopyFailure] Failed to copy file ${fileId} from ${oldS3Key} to ${newS3Key} in bucket ${fileStatus.s3Bucket} - ${error.message}`
+    )
+
     throw err
   }
 
@@ -420,24 +299,18 @@ async function getAndVerify(fileId, retrievalKey) {
   )
 
   if (!retrievalKeyCorrect) {
+    logger.info(
+      `[authFailed] Failed authentication attempt for fileId: ${fileId} - incorrect retrieval key - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
+    )
+
     throw Boom.forbidden(`Retrieval key for file ${fileId} is incorrect`)
   }
 
-  return fileStatus
-}
+  logger.info(
+    `[authSuccess] Successful authentication for fileId: ${fileId} - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
+  )
 
-/**
- * Retrieves an S3 client
- * @returns
- */
-function getS3Client() {
-  return new S3Client({
-    region: s3Region,
-    ...(config.get('s3Endpoint') && {
-      endpoint: config.get('s3Endpoint'),
-      forcePathStyle: true
-    })
-  })
+  return fileStatus
 }
 
 /**
@@ -460,7 +333,47 @@ export async function checkFileStatus(fileId) {
 }
 
 /**
+ * Accepts submissions into the forms-submission-api
+ * @param {SubmitPayload} submitPayload
+ */
+export async function submit(submitPayload) {
+  const { sessionId, retrievalKey, main, repeaters } = submitPayload
+  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
+  const hashedRetrievalKey = await argon2.hash(retrievalKey)
+
+  try {
+    const mainFileId = await createMainCsvFile(
+      main,
+      hashedRetrievalKey,
+      retrievalKeyIsCaseSensitive
+    )
+    const repeaterFileIds = await processRepeaterFiles(
+      repeaters,
+      hashedRetrievalKey,
+      retrievalKeyIsCaseSensitive
+    )
+
+    return {
+      main: mainFileId,
+      repeaters: repeaterFileIds
+    }
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error('Unknown error')
+    logger.error(
+      error,
+      `[submitFiles] Failed to save files for sessionId: ${sessionId} - ${error.message}`
+    )
+
+    if (Boom.isBoom(err)) {
+      throw err
+    }
+
+    throw new Error(`Failed to save files for session ID '${sessionId}'.`)
+  }
+}
+
+/**
  * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
- * @import { Input, Callback } from 'csv-stringify'
+ * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

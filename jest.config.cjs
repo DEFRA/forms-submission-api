@@ -38,6 +38,7 @@ module.exports = {
   transformIgnorePatterns: [
     `node_modules/(?!${[
       '@defra/forms-model/.*',
+      '@defra/hapi-tracing/.*',
       'nanoid', // Supports ESM only
       'slug' // Supports ESM only
     ].join('|')}/)`
