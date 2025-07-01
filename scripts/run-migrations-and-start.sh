@@ -11,4 +11,4 @@ npx migrate-mongo up -f migrate-mongo-config.cjs
 echo "Migrations complete. Starting application..."
 
 # Start the application with the original start command
-exec npm start --ignore-scripts 
+exec npm start --ignore-scripts
