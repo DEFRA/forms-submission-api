@@ -31,9 +31,31 @@ export async function getByFileId(fileId) {
     db.collection(COLLECTION_NAME)
   )
 
-  const value = coll.findOne({ fileId })
+  let value = await coll.findOne({ fileId })
 
-  logger.info(`Found file status for file ID ${fileId}`)
+  // If not found in the correct collection, try the incorrect collection
+  if (!value) {
+    logger.info(
+      `File ID ${fileId} not found in '${COLLECTION_NAME}' collection, checking 'file-upload-status' collection`
+    )
+
+    const fallbackColl =
+      /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+        db.collection('file-upload-status')
+      )
+
+    value = await fallbackColl.findOne({ fileId })
+
+    if (value) {
+      logger.info(
+        `Found file status for file ID ${fileId} in 'file-upload-status' collection`
+      )
+    }
+  } else {
+    logger.info(
+      `Found file status for file ID ${fileId} in '${COLLECTION_NAME}' collection`
+    )
+  }
 
   return value
 }
