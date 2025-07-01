@@ -33,11 +33,15 @@ USER node
 
 COPY --from=development /home/node/package*.json ./
 COPY --from=development /home/node/.server ./.server/
+COPY --from=development /home/node/migrate-mongo-config.cjs ./
+COPY --from=development /home/node/migrations ./migrations/
+COPY --from=development /home/node/scripts ./scripts/
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && \
+    chmod +x scripts/run-migrations-and-start.sh
 
 ARG PORT
 ENV PORT ${PORT}
 EXPOSE ${PORT}
 
-CMD [ "npm", "start", "--ignore-scripts" ]
+CMD [ "./scripts/run-migrations-and-start.sh" ]
