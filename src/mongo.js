@@ -3,7 +3,7 @@ import { MongoClient } from 'mongodb'
 import { config } from '~/src/config/index.js'
 import { secureContext } from '~/src/secure-context.js'
 
-export const COLLECTION_NAME = 'file-upload-status'
+export const COLLECTION_NAME = 'files'
 
 /**
  * @type {Db}
