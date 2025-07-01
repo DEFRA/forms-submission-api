@@ -42,10 +42,29 @@ export async function getByFileId(fileId) {
 }
 ```
 
+## Migration Solution
+
+A database migration has been implemented using migrate-mongo to properly move documents from `file-upload-status` to `files` collection:
+
+### Migration Process
+
+1. The migration script (`migrations/20250701153637-move-file-upload-status-to-files.cjs`) copies all documents from `file-upload-status` to `files`
+2. Skips any documents that already exist in `files` (based on fileId)
+3. Logs detailed progress and summary
+4. Preserves the original collection
+
+### Running Migrations
+
+- **Automatic**: Migrations run automatically on container startup via `scripts/run-migrations-and-start.sh`
+- **Manual**: Use `npm run migrate:up` to run migrations manually
+- **Status**: Use `npm run migrate:status` to check migration status
+- **Rollback**: Use `npm run migrate:down` to rollback if needed
+
 ## Next Steps
 
-This is a temporary fix to resolve the immediate 404 errors. A proper solution should include:
+Once the migration has been successfully run in all environments:
 
-1. Data migration to move all documents from `file-upload-status` to `files` collection
-2. Removal of the fallback logic once migration is complete
-3. Ensuring all services write to the correct collection
+1. Verify all documents have been copied correctly
+2. Remove the fallback logic from `src/api/files/repository.js`
+3. Ensure all services are writing to the correct `files` collection
+4. After sufficient time, the `file-upload-status` collection can be archived or removed

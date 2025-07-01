@@ -82,6 +82,34 @@ To view them in your command line run:
 npm run
 ```
 
+### Database Migrations
+
+This project uses [migrate-mongo](https://www.npmjs.com/package/migrate-mongo) to manage database migrations. Migrations run automatically when the Docker container starts.
+
+#### Local Development
+
+To work with migrations locally, you can install migrate-mongo globally:
+
+```bash
+npm install -g migrate-mongo
+```
+
+Available migration commands:
+
+```bash
+# Check migration status
+npm run migrate:status
+
+# Run all pending migrations
+npm run migrate:up
+
+# Rollback the last migration
+npm run migrate:down
+
+# Create a new migration
+npx migrate-mongo create <migration-name> -f migrate-mongo-config.cjs
+```
+
 ## API endpoints
 
 | Endpoint               | Description                                                                                     |
