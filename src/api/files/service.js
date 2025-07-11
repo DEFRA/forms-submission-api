@@ -300,14 +300,14 @@ async function getAndVerify(fileId, retrievalKey) {
 
   if (!retrievalKeyCorrect) {
     logger.info(
-      `[authFailed] Failed authentication attempt for fileId: ${fileId} - incorrect retrieval key - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
+      `[authFailed] Failed authentication attempt for fileId: ${fileId} - incorrect retrieval key - s3Key: ${fileStatus.s3Key}`
     )
 
     throw Boom.forbidden(`Retrieval key for file ${fileId} is incorrect`)
   }
 
   logger.info(
-    `[authSuccess] Successful authentication for fileId: ${fileId} - filename: ${fileStatus.filename} - s3Key: ${fileStatus.s3Key}`
+    `[authSuccess] Successful authentication for fileId: ${fileId}- s3Key: ${fileStatus.s3Key}`
   )
 
   return fileStatus
