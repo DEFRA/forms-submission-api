@@ -54,10 +54,10 @@
     "proxy-agent": "^6.5.0"
   },
   "devDependencies": {
-    "@babel/cli": "^7.26.4",
-    "@babel/core": "^7.26.0",
-    "@babel/plugin-syntax-import-attributes": "^7.26.0",
-    "@babel/preset-env": "^7.26.0",
+    "@babel/cli": "^7.28.0",
+    "@babel/core": "^7.28.0",
+    "@babel/plugin-syntax-import-attributes": "^7.27.1",
+    "@babel/preset-env": "^7.28.0",
     "@types/convict": "^6.1.6",
     "@types/eslint": "^9.6.1",
     "@types/jest": "^29.5.14",
@@ -67,9 +67,9 @@
     "@typescript-eslint/parser": "^8.19.0",
     "aws-sdk-client-mock": "^4.0.1",
     "aws-sdk-client-mock-jest": "^4.1.0",
-    "babel-jest": "^29.7.0",
+    "babel-jest": "^30.0.5",
     "babel-plugin-module-resolver": "^5.0.2",
-    "babel-plugin-transform-import-meta": "^2.2.1",
+    "babel-plugin-transform-import-meta": "^2.3.3",
     "editorconfig-checker": "^6.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
@@ -86,7 +86,7 @@
     "oidc-client-ts": "^3.1.0",
     "prettier": "^3.4.2",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.9.2"
   },
   "engines": {
     "node": "^22.11.0",
