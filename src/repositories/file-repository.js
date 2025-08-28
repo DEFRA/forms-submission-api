@@ -1,5 +1,5 @@
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { COLLECTION_NAME, db } from '~/src/mongo.js'
+import { FILES_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 
@@ -11,7 +11,7 @@ export async function create(fileStatus) {
   logger.info(`Creating file status for file ID ${fileStatus.fileId}`)
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
-    db.collection(COLLECTION_NAME)
+    db.collection(FILES_COLLECTION_NAME)
   )
 
   await coll.insertOne(fileStatus)
@@ -28,7 +28,7 @@ export async function getByFileId(fileId) {
   logger.info(`Retrieving file status for file ID ${fileId}`)
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
-    db.collection(COLLECTION_NAME)
+    db.collection(FILES_COLLECTION_NAME)
   )
 
   let value = await coll.findOne({ fileId })
@@ -36,7 +36,7 @@ export async function getByFileId(fileId) {
   // If not found in the correct collection, try the incorrect collection
   if (!value) {
     logger.info(
-      `File ID ${fileId} not found in '${COLLECTION_NAME}' collection, checking 'file-upload-status' collection`
+      `File ID ${fileId} not found in '${FILES_COLLECTION_NAME}' collection, checking 'file-upload-status' collection`
     )
 
     const fallbackColl =
@@ -53,7 +53,7 @@ export async function getByFileId(fileId) {
     }
   } else {
     logger.info(
-      `Found file status for file ID ${fileId} in '${COLLECTION_NAME}' collection`
+      `Found file status for file ID ${fileId} in '${FILES_COLLECTION_NAME}' collection`
     )
   }
 
@@ -76,7 +76,7 @@ export async function updateS3Keys(updateFiles, session) {
   })
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
-    db.collection(COLLECTION_NAME)
+    db.collection(FILES_COLLECTION_NAME)
   )
 
   return coll.bulkWrite(ops, { session })
@@ -113,7 +113,7 @@ async function updateFields(fileIds, fieldsToUpdate, session) {
   logger.info(`Updating ${fieldNames} for ${fileIds.length} file IDs`)
 
   const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
-    db.collection(COLLECTION_NAME)
+    db.collection(FILES_COLLECTION_NAME)
   )
 
   const result = await coll.updateMany(

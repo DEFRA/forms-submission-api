@@ -12,16 +12,16 @@ import argon2 from 'argon2'
 import contentDisposition from 'content-disposition'
 import { MongoServerError } from 'mongodb'
 
-import * as repository from '~/src/api/files/repository.js'
-import {
-  createMainCsvFile,
-  processRepeaterFiles
-} from '~/src/api/files/service-helpers.js'
-import { getS3Client } from '~/src/api/files/utils.js'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
+import * as repository from '~/src/repositories/file-repository.js'
+import {
+  createMainCsvFile,
+  processRepeaterFiles
+} from '~/src/services/service-helpers.js'
+import { getS3Client } from '~/src/services/utils.js'
 
 const logger = createLogger()
 const loadedPrefix = config.get('loadedPrefix')

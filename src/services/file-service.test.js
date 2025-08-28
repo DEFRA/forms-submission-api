@@ -15,21 +15,21 @@ import { mockClient } from 'aws-sdk-client-mock'
 import { MongoServerError, ObjectId } from 'mongodb'
 import { pino } from 'pino'
 
-import * as repository from '~/src/api/files/repository.js'
+import { prepareDb } from '~/src/mongo.js'
+import * as repository from '~/src/repositories/file-repository.js'
 import {
   checkFileStatus,
   getPresignedLink,
   ingestFile,
   persistFiles,
   submit
-} from '~/src/api/files/service.js'
-import { prepareDb } from '~/src/mongo.js'
+} from '~/src/services/file-service.js'
 
 import 'aws-sdk-client-mock-jest'
 
 const s3Mock = mockClient(S3Client)
 
-jest.mock('~/src/api/files/repository.js')
+jest.mock('~/src/repositories/file-repository.js')
 jest.mock('@aws-sdk/s3-request-presigner')
 jest.mock('argon2')
 

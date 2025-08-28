@@ -1,16 +1,16 @@
 import { StatusCodes } from 'http-status-codes'
 
+import { createServer } from '~/src/api/server.js'
 import {
   checkFileStatus,
   getPresignedLink,
   ingestFile,
   persistFiles
-} from '~/src/api/files/service.js'
-import { createServer } from '~/src/api/server.js'
+} from '~/src/services/file-service.js'
 import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
-jest.mock('~/src/api/files/service.js')
+jest.mock('~/src/services/file-service.js')
 
 describe('Files route', () => {
   /** @type {Server} */

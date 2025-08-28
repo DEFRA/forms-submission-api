@@ -1,10 +1,10 @@
 import { StatusCodes } from 'http-status-codes'
 
-import { submit } from '~/src/api/files/service.js'
 import { createServer } from '~/src/api/server.js'
+import { submit } from '~/src/services/file-service.js'
 
 jest.mock('~/src/mongo.js')
-jest.mock('~/src/api/files/service.js')
+jest.mock('~/src/services/file-service.js')
 
 describe('Forms route', () => {
   /** @type {Server} */

@@ -12,6 +12,7 @@ import { auth } from '~/src/plugins/auth/index.js'
 import { logRequests } from '~/src/plugins/log-requests.js'
 import { router } from '~/src/plugins/router.js'
 import { prepareSecureContext } from '~/src/secure-context.js'
+import { runTask } from '~/src/tasks/receive-messages.js'
 
 const isProduction = config.get('isProduction')
 
@@ -66,6 +67,8 @@ export async function createServer() {
 
   await prepareDb(server.logger)
   await server.register(router)
+
+  await runTask()
 
   return server
 }

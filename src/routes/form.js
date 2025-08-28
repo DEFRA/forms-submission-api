@@ -1,6 +1,6 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 
-import { submit } from '~/src/api/files/service.js'
+import { submit } from '~/src/services/file-service.js'
 
 export default [
   /**

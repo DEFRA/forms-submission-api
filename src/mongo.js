@@ -3,7 +3,8 @@ import { MongoClient } from 'mongodb'
 import { config } from '~/src/config/index.js'
 import { secureContext } from '~/src/secure-context.js'
 
-export const COLLECTION_NAME = 'files'
+export const FILES_COLLECTION_NAME = 'files'
+export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
 
 /**
  * @type {Db}
@@ -41,9 +42,16 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormFileUploadStatus>}
    */
-  const coll = db.collection(COLLECTION_NAME)
+  const coll = db.collection(FILES_COLLECTION_NAME)
 
   await coll.createIndex({ fileId: 1 }, { unique: true })
+
+  /**
+   * @type {Collection<FormFileUploadStatus>}
+   */
+  const col2 = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+
+  await col2.createIndex({ entityId: 1 }, { unique: true })
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
