@@ -97,12 +97,12 @@ export function buildSubmissionRecordDocument(
 }
 
 /**
- * @param {boolean} rawMessageDelivery
+ * @param {boolean} isRawMessage
  * @param {string} body
  * @returns {string}
  */
-export function rawMessageDelivery(rawMessageDelivery, body) {
-  if (rawMessageDelivery) {
+export function rawMessageDelivery(isRawMessage, body) {
+  if (isRawMessage) {
     return body
   }
   return JSON.stringify({
