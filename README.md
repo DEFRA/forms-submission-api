@@ -82,6 +82,119 @@ To view them in your command line run:
 npm run
 ```
 
+## Integration Tests
+
+The integration tests use Docker Compose to create a complete testing environment with MongoDB, LocalStack (for S3 emulation), OIDC mock server, and Newman (Postman CLI) for API testing.
+
+### Prerequisites
+
+- Docker and Docker Compose installed
+- Node.js (version as specified in `.nvmrc`)
+
+### Running Integration Tests
+
+#### Quick Start
+
+To run the full integration test suite:
+
+```bash
+npm run test:integration
+```
+
+This command will:
+
+1. Start all required services (MongoDB, OIDC mock, app)
+2. Wait for services to be ready
+3. Run the Postman collection tests
+4. Clean up all services
+
+#### Manual Step-by-Step Execution
+
+For debugging or development purposes, you can run the integration tests step by step:
+
+1. **Start infrastructure services:**
+
+   ```bash
+   npm run test:integration:setup
+   ```
+
+2. **Start the application:**
+
+   ```bash
+   npm run test:integration:start
+   ```
+
+3. **Wait for services to be ready:**
+
+   ```bash
+   npm run test:integration:wait
+   ```
+
+4. **Run the tests:**
+
+   ```bash
+   npm run test:integration:run
+   ```
+
+5. **Clean up:**
+   ```bash
+   npm run test:integration:stop
+   ```
+
+### What the Integration Tests Cover
+
+The integration tests verify all the key functionality of the forms-submission-api:
+
+1. **Health Check** - Verifies the API is running
+2. **File Ingestion** - Tests the CDP callback endpoint (`POST /file`)
+3. **File Status Check** - Tests file existence verification (`GET /file/{fileId}`)
+4. **Presigned Link Generation** - Tests secure file access (`POST /file/link`)
+5. **File Persistence** - Tests moving files from 7-day to 30-day storage (`POST /files/persist`)
+6. **Form Submission** - Tests complete form submission flow (`POST /submit`)
+7. **Error Handling** - Tests validation failures and invalid requests
+8. **Batch Operations** - Tests multiple file handling
+
+### Test Environment Details
+
+The integration test environment includes:
+
+- **MongoDB**: Replica set configuration for transaction support
+- **OIDC Mock Server**: Authentication provider for secure endpoints
+- **Newman**: Postman CLI for running API test collections
+
+### Test Reports
+
+When running on the main branch, HTML reports are generated:
+
+- Location: `./newman-reports/newman-report.html`
+- Includes detailed request/response logs and test results
+- Available as CI artifacts in GitHub Actions
+
+### Troubleshooting
+
+#### Common Issues:
+
+1. **Port conflicts**: The tests use ports 3001, 5556, and 27018. Make sure these are available.
+
+2. **Docker resources**: The integration tests require sufficient Docker resources. Increase Docker memory if needed.
+
+3. **Services not ready**: If tests fail due to services not being ready, increase the wait time in the `test:integration:wait` script.
+
+4. **Clean up**: If services are left running, use:
+   ```bash
+   npm run test:integration:stop
+   ```
+
+#### Viewing Logs:
+
+To view service logs:
+
+```bash
+docker compose -f docker-compose.integration-test.yml logs [service_name]
+```
+
+Available services: `mongo_test`, `oidc`, `app_test`, `newman`
+
 ## API endpoints
 
 | Endpoint               | Description                                                                                     |

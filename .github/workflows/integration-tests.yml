@@ -1,0 +1,91 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Cache node modules
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    - name: Cache Docker images
+      uses: actions/cache@v4
+      with:
+        path: /tmp/docker-save
+        key: ${{ runner.os }}-docker-${{ hashFiles('docker-compose.integration-test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-docker-
+
+    - name: Load Docker images from cache
+      run: |
+        mkdir -p /tmp/docker-save
+        if ls /tmp/docker-save/*.tar >/dev/null 2>&1; then
+          echo "Loading Docker images from cache"
+          for image in /tmp/docker-save/*.tar; do
+            echo "Loading image: $image"
+            docker load -i "$image"
+          done
+        else
+          echo "No cached Docker images found"
+        fi
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - name: Run Integration Tests (PR)
+      if: github.event_name == 'pull_request'
+      run: npm run test:integration
+
+    - name: Run Integration Tests with Reports (Main)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        npm run test:integration:setup
+        npm run test:integration:start
+        npm run test:integration:wait
+
+        mkdir -p ./newman-reports
+        docker compose -f docker-compose.integration-test.yml run --rm --entrypoint="" \
+          newman sh -c "npm install -g newman-reporter-htmlextra && newman run /etc/newman/forms-submission-api-ci-mock.postman_collection.json \
+          -e /etc/newman/forms-submission-api-ci-mock.postman_environment.json \
+          -r cli,json,htmlextra \
+          --reporter-json-export /etc/newman/reports/newman-summary.json \
+          --reporter-htmlextra-export /etc/newman/reports/newman-report.html \
+          --reporter-htmlextra-showConsoleLogs"
+
+        EXIT_CODE=$?
+        npm run test:integration:stop
+        exit $EXIT_CODE
+
+    # Save Docker images for future runs
+    - name: Save Docker images to cache
+      if: always()
+      run: |
+        mkdir -p /tmp/docker-save
+        docker images --format "{{.Repository}}:{{.Tag}}" | grep -v "<none>" | while read -r image; do
+          echo "Saving image: $image"
+          docker save -o "/tmp/docker-save/$(echo "$image" | tr '/:' '_').tar" "$image"
+        done
+
+    - name: Upload Test Report
+      uses: actions/upload-artifact@v4
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+      with:
+        name: integration-test-report
+        path: ./newman-reports/newman-report.html
+        if-no-files-found: warn
