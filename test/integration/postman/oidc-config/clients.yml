@@ -1,0 +1,12 @@
+- ClientId: "newman-test-client"
+  ClientSecrets:
+    - "newman-mock-secret"
+  AllowedGrantTypes: ["password"]
+  RedirectUris: ["http://localhost/dev/null"]
+  AllowedScopes:
+    - "openid"
+    - "profile"
+    - "email"
+    - "newman-test-client"
+  AccessTokenType: "Jwt"
+  AlwaysIncludeUserClaimsInIdToken: true

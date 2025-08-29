@@ -1,0 +1,142 @@
+services:
+  mongo_test:
+    image: mongo:6.0
+    container_name: forms-submission-api-mongo-test
+    command: ['--replSet', 'rs0', '--bind_ip_all', '--port', '27017']
+    ports:
+      - '27018:27017'
+    volumes:
+      - mongo_test_data:/data/db
+    healthcheck:
+      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo_test:27017'}]}) }" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      start_period: 10s
+      retries: 30
+    environment:
+      MONGO_INITDB_DATABASE: forms-submission-api-test
+    networks:
+      - forms_test_net
+
+  localstack_test:
+    image: localstack/localstack:3.0.2
+    container_name: localstack-test
+    ports:
+      - '4567:4566'
+    environment:
+      DEBUG: ${DEBUG:-0}
+      LS_LOG: WARN
+      SERVICES: s3,sqs,sns
+      LOCALSTACK_HOST: 0.0.0.0
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+    volumes:
+      - '/tmp/localstack-test:/var/lib/localstack'
+      - './test/integration/init-localstack.sh:/etc/localstack/init/ready.d/init-localstack.sh'
+    healthcheck:
+      test: ['CMD', 'curl', 'localhost:4566']
+      interval: 5s
+      start_period: 10s
+      retries: 6
+    networks:
+      - forms_test_net
+
+  oidc:
+    image: ghcr.io/soluto/oidc-server-mock:0.6.0
+    container_name: oidc-mock-test
+    ports:
+      - '5556:80'
+    environment:
+      ISSUER: http://oidc:80
+      PORT: 80
+      USERS_CONFIGURATION_PATH: /data/users.yml
+      CLIENTS_CONFIGURATION_PATH: /data/clients.yml
+      API_SCOPES_INLINE: |
+        - Name: "newman-test-client"
+      API_RESOURCES_INLINE: |
+        - Name: "newman-test-client"
+          DisplayName: "Forms Submission API Test Resource"
+          Scopes: ["newman-test-client"]
+          UserClaims: ["oid", "groups", "email", "name", "preferred_username", "email_verified"]
+      SERVER_OPTIONS_INLINE: |
+        {
+          "IssuerUri": "http://oidc:80",
+          "AccessTokenJwtType": "JWT",
+          "Discovery": {
+            "ShowKeySet": true
+          },
+          "Events": { "RaiseErrorEvents": true, "RaiseSuccessEvents": true, "RaiseInformationEvents": true }
+        }
+    volumes:
+      - ./test/integration/postman/oidc-config:/data:ro
+    networks:
+      - forms_test_net
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget -q --spider http://localhost:80/.well-known/openid-configuration || exit 1'
+        ]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 90s
+
+  app_test:
+    build:
+      context: .
+      target: production
+    container_name: forms-submission-api-app-test
+    ports:
+      - '3001:3001'
+    environment:
+      MONGO_URI: mongodb://mongo_test:27017/forms-submission-api-test?replicaSet=rs0&directConnection=true
+      PORT: 3001
+      NODE_ENV: production
+      OIDC_JWKS_URI: 'http://oidc:80/.well-known/openid-configuration/jwks'
+      OIDC_VERIFY_AUD: 'newman-test-client'
+      OIDC_VERIFY_ISS: 'http://oidc:80'
+      # Mock S3 configuration for testing
+      AWS_ACCESS_KEY_ID: 'test'
+      AWS_SECRET_ACCESS_KEY: 'test'
+      AWS_REGION: 'us-east-1'
+      S3_BUCKET: 'test-forms-submission-bucket'
+      S3_ENDPOINT: 'http://localstack_test:4566'
+      LOADED_PREFIX: 'loaded'
+    depends_on:
+      mongo_test:
+        condition: service_healthy
+      localstack_test:
+        condition: service_healthy
+      oidc:
+        condition: service_started
+    command: ['npm', 'start', '--ignore-scripts']
+    networks:
+      - forms_test_net
+
+  newman:
+    image: postman/newman:latest
+    container_name: forms-submission-api-newman-test
+    environment:
+      NEWMAN_TOKEN_URL: 'http://oidc:80/connect/token'
+      NEWMAN_USERNAME: 'newman-service-account'
+      NEWMAN_PASSWORD: 'newman-mock-password'
+      NEWMAN_CLIENT_ID: 'newman-test-client'
+      NEWMAN_CLIENT_SECRET: 'newman-mock-secret'
+      NEWMAN_SCOPE: 'openid profile email newman-test-client'
+      NEWMAN_TEST_EMAIL: 'test.email@defra.gov.uk'
+      API_URL: 'http://app_test:3001'
+    volumes:
+      - ./test/integration/postman:/etc/newman
+      - ./newman-reports:/etc/newman/reports
+    depends_on:
+      - app_test
+    networks:
+      - forms_test_net
+
+volumes:
+  mongo_test_data:
+
+networks:
+  forms_test_net:

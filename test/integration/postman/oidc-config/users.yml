@@ -1,0 +1,16 @@
+- SubjectId: "86758ba9-92e7-4287-9751-7705e449688e"
+  Username: "newman-service-account"
+  Password: "newman-mock-password"
+  Claims:
+    - Type: "oid"
+      Value: "86758ba9-92e7-4287-9751-7705e449688e"
+    - Type: "groups"
+      Value: '["7049296f-2156-4d61-8ac3-349276438ef9"]' # had to add this as our auth plugin was expecting a stringified array
+    - Type: "email"
+      Value: "newman-service-account@internal.test"
+    - Type: "name"
+      Value: "Newman SA"
+    - Type: "email_verified"
+      Value: "true"
+    - Type: "preferred_username"
+      Value: "newman-service-account"

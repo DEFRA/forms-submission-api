@@ -1,0 +1,712 @@
+{
+  "info": {
+    "_postman_id": "99fb4de2-c42c-44aa-96d1-42892844a99c",
+    "name": "forms-submission-api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "1257159"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Health check returns 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{root}}/health",
+          "host": ["{{root}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "File Ingestion - CDP Callback",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"File ingestion succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Ingestion completed');",
+              "});",
+              "",
+              "// Store the file ID for later tests",
+              "const fileId = JSON.parse(pm.request.body.raw).form.file.fileId;",
+              "pm.collectionVariables.set('test_file_id', fileId);",
+              "pm.collectionVariables.set('test_retrieval_key', JSON.parse(pm.request.body.raw).metadata.retrievalKey);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generate a unique file ID and retrieval key for this test",
+              "const fileId = pm.variables.replaceIn('{{$guid}}');",
+              "pm.collectionVariables.set('current_file_id', fileId);",
+              "pm.collectionVariables.set('current_retrieval_key', 'test-retrieval-key-' + Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metadata\": {\n    \"retrievalKey\": \"{{current_retrieval_key}}\"\n  },\n  \"form\": {\n    \"file\": {\n      \"fileId\": \"{{current_file_id}}\",\n      \"filename\": \"test-document.pdf\",\n      \"contentType\": \"application/pdf\",\n      \"fileStatus\": \"complete\",\n      \"s3Key\": \"staging/test-document.pdf\",\n      \"s3Bucket\": \"{{s3Bucket}}\",\n      \"hasError\": false\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file",
+          "host": ["{{root}}"],
+          "path": ["file"]
+        }
+      }
+    },
+    {
+      "name": "File Ingestion - Validation Failure",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Invalid payload returns 200 (CDP failover)\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Ingestion failed');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"invalid\": \"payload\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file",
+          "host": ["{{root}}"],
+          "path": ["file"]
+        }
+      }
+    },
+    {
+      "name": "Check File Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"File status check succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Found');",
+              "    pm.expect(response.retrievalKeyIsCaseSensitive).to.be.a('boolean');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{root}}/file/{{current_file_id}}",
+          "host": ["{{root}}"],
+          "path": ["file", "{{current_file_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Check File Status - Not Found",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Non-existent file returns 404\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{root}}/file/non-existent-file-id",
+          "host": ["{{root}}"],
+          "path": ["file", "non-existent-file-id"]
+        }
+      }
+    },
+    {
+      "name": "Get Presigned Link",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Presigned link generation succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.url).to.be.a('string');",
+              "    pm.expect(response.url).to.include('http');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileId\": \"{{current_file_id}}\",\n  \"retrievalKey\": \"{{current_retrieval_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file/link",
+          "host": ["{{root}}"],
+          "path": ["file", "link"]
+        }
+      }
+    },
+    {
+      "name": "Get Presigned Link - Invalid Key",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Invalid retrieval key returns 403\", function () {",
+              "    pm.response.to.have.status(403);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileId\": \"{{current_file_id}}\",\n  \"retrievalKey\": \"invalid-retrieval-key\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file/link",
+          "host": ["{{root}}"],
+          "path": ["file", "link"]
+        }
+      }
+    },
+    {
+      "name": "Persist Files",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Files persistence succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Files persisted');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"files\": [\n    {\n      \"fileId\": \"{{current_file_id}}\",\n      \"initiatedRetrievalKey\": \"{{current_retrieval_key}}\"\n    }\n  ],\n  \"persistedRetrievalKey\": \"persisted-key-{{$timestamp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/files/persist",
+          "host": ["{{root}}"],
+          "path": ["files", "persist"]
+        }
+      }
+    },
+    {
+      "name": "Form Submission",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Form submission succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Submit completed');",
+              "    pm.expect(response.result.files).to.be.an('object');",
+              "    pm.expect(response.result.files.main).to.be.a('string');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sessionId\": \"test-session-{{$timestamp}}\",\n  \"retrievalKey\": \"submission-key-{{$timestamp}}\",\n  \"main\": [\n    {\n      \"name\": \"personalName\",\n      \"title\": \"Personal Name\",\n      \"value\": \"Test User\"\n    },\n    {\n      \"name\": \"personalEmailAddress\",\n      \"title\": \"Email Address\",\n      \"value\": \"test@example.com\"\n    },\n    {\n      \"name\": \"businessName\",\n      \"title\": \"Business Name\",\n      \"value\": \"Test Business Ltd\"\n    }\n  ],\n  \"repeaters\": []\n}"
+        },
+        "url": {
+          "raw": "{{root}}/submit",
+          "host": ["{{root}}"],
+          "path": ["submit"]
+        }
+      }
+    },
+    {
+      "name": "Multiple File Ingestion Test",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generate multiple file IDs for batch testing",
+              "pm.collectionVariables.set('batch_file_1', pm.variables.replaceIn('{{$guid}}'));",
+              "pm.collectionVariables.set('batch_file_2', pm.variables.replaceIn('{{$guid}}'));",
+              "pm.collectionVariables.set('batch_retrieval_key', 'batch-key-' + Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Batch file ingestion succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Ingestion completed');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metadata\": {\n    \"retrievalKey\": \"{{batch_retrieval_key}}\"\n  },\n  \"form\": {\n    \"file\": {\n      \"fileId\": \"{{batch_file_1}}\",\n      \"filename\": \"batch-document-1.pdf\",\n      \"contentType\": \"application/pdf\",\n      \"fileStatus\": \"complete\",\n      \"s3Key\": \"staging/batch-document-1.pdf\",\n      \"s3Bucket\": \"{{s3Bucket}}\",\n      \"hasError\": false\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file",
+          "host": ["{{root}}"],
+          "path": ["file"]
+        }
+      }
+    },
+    {
+      "name": "Batch File Persistence",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Batch files persistence succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Files persisted');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"files\": [\n    {\n      \"fileId\": \"{{batch_file_1}}\",\n      \"initiatedRetrievalKey\": \"{{batch_retrieval_key}}\"\n    }\n  ],\n  \"persistedRetrievalKey\": \"batch-persisted-key-{{$timestamp}}\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/files/persist",
+          "host": ["{{root}}"],
+          "path": ["files", "persist"]
+        }
+      }
+    },
+    {
+      "name": "Ingest File for Missing S3 Test",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Create a file that will exist in DB but we'll simulate S3 deletion",
+              "pm.collectionVariables.set('orphaned_file_id', pm.variables.replaceIn('{{$guid}}'));",
+              "pm.collectionVariables.set('orphaned_retrieval_key', 'orphaned-key-' + Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Orphaned file ingestion succeeds\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.message).to.eql('Ingestion completed');",
+              "});",
+              "",
+              "// Now simulate the file being deleted from S3 by changing the S3 key in our collection variable",
+              "// This simulates what happens when a file exists in DB but S3 file is gone",
+              "pm.collectionVariables.set('orphaned_s3_key', 'staging/deleted-file-' + Date.now() + '.pdf');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metadata\": {\n    \"retrievalKey\": \"{{orphaned_retrieval_key}}\"\n  },\n  \"form\": {\n    \"file\": {\n      \"fileId\": \"{{orphaned_file_id}}\",\n      \"filename\": \"orphaned-document.pdf\",\n      \"contentType\": \"application/pdf\",\n      \"fileStatus\": \"complete\",\n      \"s3Key\": \"staging/orphaned-document.pdf\",\n      \"s3Bucket\": \"{{s3Bucket}}\",\n      \"hasError\": false\n    }\n  }\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file",
+          "host": ["{{root}}"],
+          "path": ["file"]
+        }
+      }
+    },
+    {
+      "name": "Simulate S3 File Deletion",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// This test simulates deleting the orphaned file from S3 after it was ingested",
+              "// In a real scenario, this could happen due to lifecycle policies, manual deletion, etc.",
+              "pm.test(\"File deleted from S3 successfully\", function () {",
+              "    // We expect this to succeed - we're just cleaning up S3",
+              "    pm.response.to.have.status(204);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localstack_test:4566/{{s3Bucket}}/staging/orphaned-document.pdf",
+          "protocol": "http",
+          "host": ["localstack_test"],
+          "port": "4566",
+          "path": ["{{s3Bucket}}", "staging", "orphaned-document.pdf"]
+        }
+      }
+    },
+    {
+      "name": "Get Presigned Link - File Missing from S3",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Presigned link for missing S3 file returns 410 Gone\", function () {",
+              "    // The file exists in DB but not in S3, should return 410 Gone",
+              "    pm.response.to.have.status(410);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fileId\": \"{{orphaned_file_id}}\",\n  \"retrievalKey\": \"{{orphaned_retrieval_key}}\"\n}"
+        },
+        "url": {
+          "raw": "{{root}}/file/link",
+          "host": ["{{root}}"],
+          "path": ["file", "link"]
+        }
+      }
+    },
+    {
+      "name": "Check Status - File Missing from S3",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"File status check for missing S3 file returns 410 Gone\", function () {",
+              "    // The file exists in DB but not in S3, should return 410 Gone",
+              "    pm.response.to.have.status(410);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{root}}/file/{{orphaned_file_id}}",
+          "host": ["{{root}}"],
+          "path": ["file", "{{orphaned_file_id}}"]
+        }
+      }
+    }
+  ],
+  "auth": {
+    "type": "oauth2",
+    "oauth2": [
+      {
+        "key": "tokenName",
+        "value": "newman-token",
+        "type": "string"
+      },
+      {
+        "key": "callBackUrl",
+        "value": "http://localhost/dev/null",
+        "type": "string"
+      },
+      {
+        "key": "authUrl",
+        "value": "{{authUrl}}/connect/authorize",
+        "type": "string"
+      },
+      {
+        "key": "accessTokenUrl",
+        "value": "{{accessTokenUrl}}",
+        "type": "string"
+      },
+      {
+        "key": "clientId",
+        "value": "{{clientId}}",
+        "type": "string"
+      },
+      {
+        "key": "clientSecret",
+        "value": "{{clientSecret}}",
+        "type": "string"
+      },
+      {
+        "key": "scope",
+        "value": "{{scope}}",
+        "type": "string"
+      },
+      {
+        "key": "username",
+        "value": "{{username}}",
+        "type": "string"
+      },
+      {
+        "key": "password",
+        "value": "{{password}}",
+        "type": "string"
+      },
+      {
+        "key": "grant_type",
+        "value": "password",
+        "type": "string"
+      },
+      {
+        "key": "addTokenTo",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Get access token if not already set or expired",
+          "const accessToken = pm.environment.get('accessToken');",
+          "const tokenExpiry = pm.environment.get('tokenExpiry');",
+          "const now = Date.now();",
+          "",
+          "if (!accessToken || !tokenExpiry || now >= tokenExpiry) {",
+          "    const tokenRequest = {",
+          "        url: pm.environment.get('accessTokenUrl'),",
+          "        method: 'POST',",
+          "        header: {",
+          "            'Content-Type': 'application/x-www-form-urlencoded'",
+          "        },",
+          "        body: {",
+          "            mode: 'urlencoded',",
+          "            urlencoded: [",
+          "                { key: 'grant_type', value: 'password' },",
+          "                { key: 'username', value: pm.environment.get('username') },",
+          "                { key: 'password', value: pm.environment.get('password') },",
+          "                { key: 'client_id', value: pm.environment.get('clientId') },",
+          "                { key: 'client_secret', value: pm.environment.get('clientSecret') },",
+          "                { key: 'scope', value: pm.environment.get('scope') }",
+          "            ]",
+          "        }",
+          "    };",
+          "",
+          "    pm.sendRequest(tokenRequest, (err, response) => {",
+          "        if (err) {",
+          "            console.log('Error getting token:', err);",
+          "            return;",
+          "        }",
+          "",
+          "        const responseJson = response.json();",
+          "        if (responseJson.access_token) {",
+          "            pm.environment.set('accessToken', responseJson.access_token);",
+          "            // Set expiry to 50 minutes from now (tokens expire in 1 hour)",
+          "            pm.environment.set('tokenExpiry', now + (50 * 60 * 1000));",
+          "        }",
+          "    });",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          ""
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "current_file_id",
+      "value": ""
+    },
+    {
+      "key": "current_retrieval_key",
+      "value": ""
+    },
+    {
+      "key": "batch_file_1",
+      "value": ""
+    },
+    {
+      "key": "batch_file_2",
+      "value": ""
+    },
+    {
+      "key": "batch_retrieval_key",
+      "value": ""
+    },
+    {
+      "key": "orphaned_file_id",
+      "value": ""
+    },
+    {
+      "key": "orphaned_retrieval_key",
+      "value": ""
+    },
+    {
+      "key": "orphaned_s3_key",
+      "value": ""
+    }
+  ]
+}
