@@ -6,16 +6,23 @@ import {
 import { ValidationError } from 'joi'
 import { pino } from 'pino'
 
+import { deleteEventMessage } from '~/src/messaging/event.js'
 import { prepareDb } from '~/src/mongo.js'
 import {
   buildMessage,
+  buildMessageFromRunnerMessage,
+  buildSaveAndExitMessage,
+  buildSubmissionMetaBase,
   rawMessageDelivery
 } from '~/src/repositories/__stubs__/save-and-exit.js'
-import { mapSubmissionEvent } from '~/src/services/events.js'
+import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import {
+  mapSubmissionEvent,
+  processSubmissionEvents
+} from '~/src/services/events.js'
 
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/repositories/save-and-exit-repository.js')
-jest.mock('~/src/messaging/event.js')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -148,6 +155,130 @@ describe('events', () => {
           submissionEventMessage
         )
       )
+    })
+  })
+
+  describe('processSubmissionEvents', () => {
+    const messageId1 = '01267dd5-8cc7-4749-9802-40190f6429eb'
+    const messageId2 = '5dd16f40-6118-4797-97c9-60a298c9a898'
+    const messageId3 = '70c0155c-e9a9-4b90-a45f-a839924fca65'
+
+    const recordInput1 = buildSubmissionMetaBase({
+      recordCreatedAt: new Date('2025-08-08'),
+      messageId: messageId1
+    })
+    const recordInput2 = buildSubmissionMetaBase({
+      recordCreatedAt: new Date('2025-09-09'),
+      messageId: messageId2
+    })
+    const recordInput3 = buildSubmissionMetaBase({
+      recordCreatedAt: new Date('2025-10-10'),
+      messageId: messageId3
+    })
+
+    const entityId1 = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
+    const entityId2 = 'dc11160e-8d8c-4151-a70a-080a08ef6622'
+    const entityId3 = '4d6dc877-83ef-475b-a591-5b1709d634dd'
+    const saveAndExitMessage1 = buildSaveAndExitMessage({ entityId: entityId1 })
+    const saveAndExitMessage2 = buildSaveAndExitMessage({ entityId: entityId2 })
+    const saveAndExitMessage3 = buildSaveAndExitMessage({ entityId: entityId3 })
+    const message1 = buildMessageFromRunnerMessage(saveAndExitMessage1, {
+      MessageId: messageId1
+    })
+    const message2 = buildMessageFromRunnerMessage(saveAndExitMessage2, {
+      MessageId: messageId2
+    })
+    const message3 = buildMessageFromRunnerMessage(saveAndExitMessage3, {
+      MessageId: messageId3
+    })
+    const message4 = buildMessageFromRunnerMessage(saveAndExitMessage1, {
+      MessageId: messageId1
+    })
+    const message5 = buildMessageFromRunnerMessage(saveAndExitMessage2, {
+      MessageId: messageId2
+    })
+    const message6 = buildMessageFromRunnerMessage(saveAndExitMessage3, {
+      MessageId: messageId3
+    })
+    const messages = [message1, message2, message3]
+    const messages2 = [message4, message5, message6]
+
+    it('should create a list of audit events', async () => {
+      const expectedMapped1 = {
+        ...saveAndExitMessage1,
+        ...recordInput1,
+        recordCreatedAt: expect.any(Date),
+        messageId: messageId1
+      }
+      expectedMapped1.data.security.answer = expect.any(String)
+      expectedMapped1.entityId = expect.any(String)
+
+      const expectedMapped2 = {
+        ...saveAndExitMessage2,
+        ...recordInput2,
+        recordCreatedAt: expect.any(Date),
+        messageId: messageId2
+      }
+      expectedMapped2.data.security.answer = expect.any(String)
+      expectedMapped2.entityId = expect.any(String)
+
+      const expectedMapped3 = {
+        ...saveAndExitMessage3,
+        ...recordInput3,
+        recordCreatedAt: expect.any(Date),
+        messageId: messageId3
+      }
+      expectedMapped3.data.security.answer = expect.any(String)
+      expectedMapped3.entityId = expect.any(String)
+
+      const result = await processSubmissionEvents(messages)
+      expect(createSaveAndExitRecord).toHaveBeenCalledTimes(3)
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
+        expectedMapped1,
+        expect.anything()
+      )
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
+        expectedMapped2,
+        expect.anything()
+      )
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
+        expectedMapped3,
+        expect.anything()
+      )
+      expect(deleteEventMessage).toHaveBeenCalledTimes(3)
+      expect(deleteEventMessage).toHaveBeenCalledWith(message1)
+      expect(deleteEventMessage).toHaveBeenCalledWith(message2)
+      expect(deleteEventMessage).toHaveBeenCalledWith(message3)
+
+      expect(result).toEqual({
+        processed: messages,
+        failed: []
+      })
+    })
+
+    it('should handle failures', async () => {
+      jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
+      jest
+        .mocked(createSaveAndExitRecord)
+        .mockRejectedValueOnce(new Error('error in create'))
+      jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
+      jest.mocked(deleteEventMessage).mockResolvedValueOnce({
+        $metadata: { httpStatusCode: 200 }
+      })
+      jest
+        .mocked(deleteEventMessage)
+        .mockRejectedValueOnce(new Error('error in delete'))
+      const result = await processSubmissionEvents(messages2)
+
+      expect(result).toEqual({
+        processed: expect.any(Array),
+        failed: expect.any(Array)
+      })
+
+      expect(result.processed).toHaveLength(1)
+      expect(result.failed).toHaveLength(2)
+      expect(result.failed).toContainEqual(new Error('error in create'))
+      expect(result.failed).toContainEqual(new Error('error in delete'))
     })
   })
 })
