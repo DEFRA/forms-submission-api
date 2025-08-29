@@ -2,9 +2,19 @@ import { ObjectId } from 'mongodb'
 
 import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
-import { create, getByFileId } from '~/src/repositories/file-repository.js'
+import {
+  create,
+  getByFileId,
+  updateRetrievalKeys,
+  updateS3Keys
+} from '~/src/repositories/file-repository.js'
 
 const mockCollection = buildMockCollection()
+
+/**
+ * @type {any}
+ */
+const mockSession = {}
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -81,6 +91,22 @@ describe('file repository', () => {
         new Error('an error')
       )
     })
+
+    it('should handle no record found in primary and fallback', async () => {
+      mockCollection.findOne
+        .mockReturnValueOnce(undefined)
+        .mockReturnValueOnce(fileDocument)
+      const fileRecord = await getByFileId(fileDocument.fileId)
+      expect(fileRecord).toEqual(fileDocument)
+    })
+
+    it('should handle no record found in either primary or fallback', async () => {
+      mockCollection.findOne
+        .mockReturnValueOnce(undefined)
+        .mockReturnValueOnce(undefined)
+      const fileRecord = await getByFileId(fileDocument.fileId)
+      expect(fileRecord).toBeUndefined()
+    })
   })
 
   describe('create', () => {
@@ -93,6 +119,63 @@ describe('file repository', () => {
     it('should handle failures', async () => {
       mockCollection.insertOne.mockRejectedValueOnce(new Error('Failed'))
       await expect(create(fileDocument)).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('updateS3Keys', () => {
+    const fileArray = [
+      {
+        fileId: 'file1',
+        s3Bucket: 's3Bucket',
+        oldS3Key: 'old-key1',
+        newS3Key: 'new-key1'
+      }
+    ]
+    it('should update record', async () => {
+      await updateS3Keys(fileArray, mockSession)
+      const [bulkWriteFileCall] = mockCollection.bulkWrite.mock.calls[0]
+      expect(bulkWriteFileCall).toEqual([
+        {
+          updateOne: {
+            filter: {
+              fileId: fileArray[0].fileId
+            },
+            update: [
+              {
+                $set: {
+                  s3Key: 'new-key1'
+                }
+              }
+            ]
+          }
+        }
+      ])
+    })
+  })
+
+  describe('updateRetrievalKeys', () => {
+    const fileIdsArray = ['fileId1', 'fileId2', 'fileId3']
+    it('should update retrieval keys', async () => {
+      jest
+        .mocked(mockCollection.updateMany)
+        .mockResolvedValueOnce({ acknowledged: true })
+      await updateRetrievalKeys(
+        fileIdsArray,
+        'retrievalKey',
+        false,
+        mockSession
+      )
+      const [updateManyCall] = mockCollection.updateMany.mock.calls[0]
+      expect(updateManyCall).toEqual({
+        fileId: { $in: ['fileId1', 'fileId2', 'fileId3'] }
+      })
+    })
+
+    it('should uthrow if failure', async () => {
+      jest.mocked(mockCollection.updateMany).mockResolvedValueOnce({})
+      await expect(
+        updateRetrievalKeys(fileIdsArray, 'retrievalKey', false, mockSession)
+      ).rejects.toThrow('Failed to update')
     })
   })
 })
