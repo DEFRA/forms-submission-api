@@ -65,6 +65,8 @@ export async function createServer() {
     prepareSecureContext(server)
   }
 
+  // TODO - sort types
+  // @ts-expect-error - pino logging types don't match (Logger vs Logger<never> vs Logger<never, boolean>)
   await prepareDb(server.logger)
   await server.register(router)
 
