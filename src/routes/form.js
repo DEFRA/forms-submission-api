@@ -4,7 +4,10 @@ import {
 } from '@defra/forms-model'
 
 import { submit } from '~/src/services/file-service.js'
-import { validateAndGetSavedState } from '~/src/services/save-and-exit-service.js'
+import {
+  validateAndGetSavedState,
+  validateSavedLink
+} from '~/src/services/save-and-exit-service.js'
 
 export default [
   /**
@@ -31,6 +34,22 @@ export default [
       validate: {
         payload: formSubmitPayloadSchema
       }
+    }
+  }),
+
+  /**
+   * @type {ServerRoute}
+   */
+  ({
+    method: 'GET',
+    path: '/save-and-exit/{link}',
+    async handler(request) {
+      const { link } = request.params
+
+      return await validateSavedLink(link)
+    },
+    options: {
+      auth: false
     }
   }),
 

@@ -9,7 +9,7 @@
 
 /**
  * @typedef {object} SaveAndExitPayload
- * @property {string} entityId - key contained in magic link
+ * @property {string} magicLinkId - key contained in magic link
  * @property {{ formId: string, email: string, security: { question: string, answer: string }}} [data] - data payload
  */
 

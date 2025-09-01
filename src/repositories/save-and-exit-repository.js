@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongodb'
+
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
@@ -36,7 +38,7 @@ export async function getSaveAndExitRecord(id) {
   )
 
   try {
-    const result = await coll.findOne({ entityId: id })
+    const result = await coll.findOne({ _id: new ObjectId(id) })
 
     logger.info('Read save-and-exit records')
 
@@ -54,6 +56,7 @@ export async function getSaveAndExitRecord(id) {
  * Creates a save-and-exit record from SubmissionRecordInput
  * @param {RunnerRecordInput} recordInput
  * @param {ClientSession} session
+ * @returns {Promise<ObjectId>} newId
  */
 export async function createSaveAndExitRecord(recordInput, session) {
   logger.info(`Inserting ${recordInput.messageId}`)
@@ -63,7 +66,7 @@ export async function createSaveAndExitRecord(recordInput, session) {
   )
 
   try {
-    await coll.insertOne(
+    const res = await coll.insertOne(
       {
         ...recordInput,
         expireAt: addDays(new Date(), expiryInDays)
@@ -72,6 +75,8 @@ export async function createSaveAndExitRecord(recordInput, session) {
     )
 
     logger.info(`Inserted ${recordInput.messageId}`)
+
+    return res.insertedId
   } catch (err) {
     logger.error(
       err,

@@ -42,17 +42,17 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormFileUploadStatus>}
    */
-  const coll = db.collection(FILES_COLLECTION_NAME)
+  const filesColl = db.collection(FILES_COLLECTION_NAME)
 
-  await coll.createIndex({ fileId: 1 }, { unique: true })
+  await filesColl.createIndex({ fileId: 1 }, { unique: true })
 
   /**
    * @type {Collection<FormFileUploadStatus>}
    */
-  const col2 = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
-  await col2.createIndex({ entityId: 1 }, { unique: true })
-  await col2.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+  await saveColl.createIndex({ _id: 1 }, { unique: true })
+  await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 

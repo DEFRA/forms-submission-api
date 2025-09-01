@@ -4,14 +4,35 @@ import argon2 from 'argon2'
 import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 
 /**
- * Accepts file status into the forms-submission-api
+ * Validate the save-and-exit link (just verify link id at this stage)
+ * @param {string} linkId
+ */
+export async function validateSavedLink(linkId) {
+  if (!linkId) {
+    throw Boom.badRequest('Invalid magic link')
+  }
+
+  const record = await getSaveAndExitRecord(linkId)
+
+  if (!record) {
+    throw Boom.badRequest('Invalid magic link')
+  }
+
+  return {
+    formId: record.data.formId,
+    question: record.data.security.question
+  }
+}
+
+/**
+ * Validate the full details of the save-and-exit credentials and return the form state
  * @param {SaveAndExitPayload} payload
  */
 export async function validateAndGetSavedState(payload) {
-  const { entityId, data } = payload
+  const { magicLinkId, data } = payload
   const { formId, security } = data ?? {}
 
-  const record = await getSaveAndExitRecord(entityId)
+  const record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
     throw Boom.badRequest('Invalid magic link')

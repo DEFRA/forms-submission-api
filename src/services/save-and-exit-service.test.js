@@ -82,7 +82,7 @@ describe('save-and-exit service', () => {
               answer: 'a1'
             }
           },
-          entityId: '12345'
+          magicLinkId: '12345'
         })
       ).rejects.toThrow('Invalid security answer')
     })
@@ -101,7 +101,7 @@ describe('save-and-exit service', () => {
             answer: 'a3'
           }
         },
-        entityId: '12345'
+        magicLinkId: '12345'
       })
       expect(state).toBeDefined()
       // @ts-expect-error - dynamic field names
