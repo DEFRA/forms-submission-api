@@ -1,3 +1,5 @@
+import { SecurityQuestionsEnum } from '@defra/forms-model'
+
 import {
   buildSaveAndExitMessage,
   buildSubmissionMetaBase,
@@ -5,7 +7,10 @@ import {
   buildSubmissionRecordDocumentMeta
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
-import { validateAndGetSavedState } from '~/src/services/save-and-exit-service.js'
+import {
+  validateAndGetSavedState,
+  validateSavedLink
+} from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 
@@ -111,7 +116,37 @@ describe('save-and-exit service', () => {
     })
   })
 
-  // Carry on with more tests here TODO
+  describe('validateSavedLink', () => {
+    test('should throw if missing link)', async () => {
+      // @ts-expect-error - missing link value
+      await expect(validateSavedLink(undefined)).rejects.toThrow(
+        'Invalid magic link'
+      )
+    })
+
+    test('should throw if link not found)', async () => {
+      // @ts-expect-error - missing record value
+      jest.mocked(getSaveAndExitRecord).mockResolvedValue(undefined)
+      await expect(validateSavedLink('12345')).rejects.toThrow(
+        'Invalid magic link'
+      )
+    })
+
+    test('should return valid result)', async () => {
+      jest.mocked(getSaveAndExitRecord).mockResolvedValue({
+        // @ts-expect-error - partial record value
+        data: {
+          formId: '1234',
+          security: {
+            question: SecurityQuestionsEnum.MemorablePlace,
+            answer: ''
+          }
+        }
+      })
+      const res = await validateSavedLink('123456')
+      expect(res).toEqual({ formId: '1234', question: 'memorable-place' })
+    })
+  })
 })
 
 /**
