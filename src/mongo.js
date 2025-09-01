@@ -52,6 +52,7 @@ export async function prepareDb(logger) {
   const col2 = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
   await col2.createIndex({ entityId: 1 }, { unique: true })
+  await col2.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 

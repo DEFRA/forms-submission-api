@@ -4,6 +4,13 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
+ * @typedef {Request<{ Server: { db: Db }, Payload: SaveAndExitPayload }>} RequestSaveAndExit
+ */
+
+/**
+ * @typedef {object} SaveAndExitPayload
+ * @property {string} entityId - key contained in magic link
+ * @property {{ formId: string, email: string, security: { question: string, answer: string }}} [data] - data payload
  */
 
 /**

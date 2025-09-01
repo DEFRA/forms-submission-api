@@ -1,8 +1,27 @@
+/**
+ * @typedef {object} Ttl
+ * @property {Date} expireAt - Time to live
+ * @typedef {RunnerRecordInput & Ttl} RunnerRecordInputWithTtl
+ */
+
+import { config } from '~/src/config/index.js'
 import { getErrorMessage } from '~/src/helpers/error-message.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
+const expiryInDays = config.get('saveAndExitExpiryInDays')
+
+/**
+ * @param {Date} date
+ * @param {number} days
+ * @returns {Date}
+ */
+export function addDays(date, days) {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
 
 /**
  * Gets a record based on id
@@ -39,12 +58,18 @@ export async function getSaveAndExitRecord(id) {
 export async function createSaveAndExitRecord(recordInput, session) {
   logger.info(`Inserting ${recordInput.messageId}`)
 
-  const coll = /** @type {Collection<RunnerRecordInput>} */ (
+  const coll = /** @type {Collection<RunnerRecordInputWithTtl>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
-    await coll.insertOne(recordInput, { session })
+    await coll.insertOne(
+      {
+        ...recordInput,
+        expireAt: addDays(new Date(), expiryInDays)
+      },
+      { session }
+    )
 
     logger.info(`Inserted ${recordInput.messageId}`)
   } catch (err) {
