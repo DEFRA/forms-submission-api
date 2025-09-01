@@ -3,19 +3,21 @@ import argon2 from 'argon2'
 
 import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 
+const INVALID_MAGIC_LINK = 'Invalid magic link'
+
 /**
  * Validate the save-and-exit link (just verify link id at this stage)
  * @param {string} linkId
  */
 export async function validateSavedLink(linkId) {
   if (!linkId) {
-    throw Boom.badRequest('Invalid magic link')
+    throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
 
   const record = await getSaveAndExitRecord(linkId)
 
   if (!record) {
-    throw Boom.badRequest('Invalid magic link')
+    throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
 
   return {
@@ -35,7 +37,7 @@ export async function validateAndGetSavedState(payload) {
   const record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
-    throw Boom.badRequest('Invalid magic link')
+    throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
 
   if (record.data.formId !== formId) {

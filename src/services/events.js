@@ -62,8 +62,8 @@ export async function processSubmissionEvents(messages) {
       return await session.withTransaction(async () => {
         const document = await mapSubmissionEvent(message)
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const insertedId = await createSaveAndExitRecord(document, session)
+        // const insertedId =
+        await createSaveAndExitRecord(document, session)
 
         // TODO - send email including magic link
 
