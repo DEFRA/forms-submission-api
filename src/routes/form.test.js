@@ -1,4 +1,4 @@
-import { SecurityQuestionsEnum } from '@defra/forms-model'
+import { FormStatus, SecurityQuestionsEnum } from '@defra/forms-model'
 import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
@@ -11,6 +11,7 @@ import {
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/services/save-and-exit-service.js')
+jest.mock('~/src/tasks/receive-messages.js')
 
 describe('Forms route', () => {
   /** @type {Server} */
@@ -157,7 +158,7 @@ describe('Forms route', () => {
     })
 
     test('Testing POST /save-and-exit route fails if with invalid payload', async () => {
-      jest.mocked(validateAndGetSavedState).mockResolvedValueOnce({})
+      jest.mocked(validateAndGetSavedState).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
@@ -171,6 +172,35 @@ describe('Forms route', () => {
         error: 'Bad Request',
         message:
           '"formId" is required. "email" is required. "state" is required. "something" is not allowed'
+      })
+    })
+
+    test('Testing POST /save-and-exit route is successful with valid payload', async () => {
+      jest
+        .mocked(validateAndGetSavedState)
+        .mockResolvedValue({ formField1: '123' })
+      const response = await server.inject({
+        method: 'POST',
+        url: '/save-and-exit',
+        payload: {
+          formId: '12345',
+          security: {
+            question: SecurityQuestionsEnum.MemorablePlace,
+            answer: 'answer'
+          },
+          formStatus: {
+            status: FormStatus.Draft,
+            isPreview: false
+          },
+          email: 'my-email@test.com',
+          state: {}
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Save-and-exit retrieved successfully',
+        result: { state: { formField1: '123' } }
       })
     })
   })

@@ -27,6 +27,7 @@
 
 /**
  * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
+ * @typedef {SaveAndExitMessageData & { expiredAt: Date }} SaveAndExit
  */
 
 /**
@@ -38,7 +39,7 @@
  */
 
 /**
- * @import { SubmitPayload } from '@defra/forms-model'
+ * @import { SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */

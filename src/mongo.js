@@ -47,7 +47,7 @@ export async function prepareDb(logger) {
   await filesColl.createIndex({ fileId: 1 }, { unique: true })
 
   /**
-   * @type {Collection<FormFileUploadStatus>}
+   * @type {Collection<SaveAndExit>}
    */
   const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
@@ -61,5 +61,5 @@ export async function prepareDb(logger) {
 /**
  * @import { Collection, Db } from 'mongodb'
  * @import { Logger } from 'pino'
- * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, SaveAndExit } from '~/src/api/types.js'
  */
