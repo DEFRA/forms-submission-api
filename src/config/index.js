@@ -214,6 +214,12 @@ export const config = convict({
     format: Number,
     default: 30,
     env: 'SQS_VISIBILITY_TIMEOUT'
+  },
+  saveAndExitExpiryInDays: {
+    doc: 'Save-and-exit expiry as number of days',
+    format: Number,
+    default: 28,
+    env: 'SAVE_AND_EXIT_EXPIRY_IN_DAYS'
   }
 })
 

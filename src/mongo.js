@@ -42,16 +42,16 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormFileUploadStatus>}
    */
-  const coll = db.collection(FILES_COLLECTION_NAME)
+  const filesColl = db.collection(FILES_COLLECTION_NAME)
 
-  await coll.createIndex({ fileId: 1 }, { unique: true })
+  await filesColl.createIndex({ fileId: 1 }, { unique: true })
 
   /**
-   * @type {Collection<FormFileUploadStatus>}
+   * @type {Collection<SaveAndExit>}
    */
-  const col2 = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
-  await col2.createIndex({ entityId: 1 }, { unique: true })
+  await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
@@ -61,5 +61,5 @@ export async function prepareDb(logger) {
 /**
  * @import { Collection, Db } from 'mongodb'
  * @import { Logger } from 'pino'
- * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, SaveAndExit } from '~/src/api/types.js'
  */

@@ -97,10 +97,16 @@ describe('save-and-exit-repository', () => {
 
   describe('createSaveAndExitRecord', () => {
     it('should create a save-and-exit record', async () => {
+      jest.mocked(
+        mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
+      )
       await createSaveAndExitRecord(submissionRecordInput, mockSession)
       const [insertedSubmissionRecordInput, session] =
         mockCollection.insertOne.mock.calls[0]
-      expect(insertedSubmissionRecordInput).toEqual(submissionRecordInput)
+      expect(insertedSubmissionRecordInput).toEqual({
+        ...submissionRecordInput,
+        expireAt: expect.any(Date)
+      })
       expect(session).toEqual({ session: mockSession })
     })
 

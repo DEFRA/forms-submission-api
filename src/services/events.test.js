@@ -1,4 +1,5 @@
 import {
+  SecurityQuestionsEnum,
   SubmissionEventMessageCategory,
   SubmissionEventMessageSource,
   SubmissionEventMessageType
@@ -67,7 +68,7 @@ describe('events', () => {
     const submissionEventMessage = buildMessage({
       Body: rawMessageDelivery(
         true,
-        '{\n     "entityId": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "formId": "689b7ab1d0eeac9711a7fb33",\n         "email": "my-email@test.com",\n         "security": {\n "question": "q1", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
+        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "formId": "689b7ab1d0eeac9711a7fb33",\n         "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
       ),
       MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
       MessageAttributes: {},
@@ -78,7 +79,6 @@ describe('events', () => {
 
     it('should map the message', async () => {
       expect(await mapSubmissionEvent(submissionEventMessage)).toEqual({
-        entityId: '689b7ab1d0eeac9711a7fb33',
         messageCreatedAt: expect.any(Date),
         recordCreatedAt: expect.any(Date),
         messageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
@@ -88,7 +88,7 @@ describe('events', () => {
           formId: '689b7ab1d0eeac9711a7fb33',
           email: 'my-email@test.com',
           security: {
-            question: 'q1',
+            question: SecurityQuestionsEnum.MemorablePlace,
             answer: expect.any(String)
           },
           state: {
@@ -139,7 +139,7 @@ describe('events', () => {
       const submissionEventMessage = buildMessage({
         Body: rawMessageDelivery(
           true,
-          '{\n     "entityId": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n     "data":  {\n       "formId": "689b7ab1d0eeac9711a7fb33",\n         "email": "my-email@test.com",\n         "security": {\n "question": "q1", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
+          '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n     "data":  {\n       "formId": "689b7ab1d0eeac9711a7fb33",\n         "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
         ),
         MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
         MessageAttributes: {},
@@ -176,12 +176,12 @@ describe('events', () => {
       messageId: messageId3
     })
 
-    const entityId1 = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
-    const entityId2 = 'dc11160e-8d8c-4151-a70a-080a08ef6622'
-    const entityId3 = '4d6dc877-83ef-475b-a591-5b1709d634dd'
-    const saveAndExitMessage1 = buildSaveAndExitMessage({ entityId: entityId1 })
-    const saveAndExitMessage2 = buildSaveAndExitMessage({ entityId: entityId2 })
-    const saveAndExitMessage3 = buildSaveAndExitMessage({ entityId: entityId3 })
+    const formId1 = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
+    const formId2 = 'dc11160e-8d8c-4151-a70a-080a08ef6622'
+    const formId3 = '4d6dc877-83ef-475b-a591-5b1709d634dd'
+    const saveAndExitMessage1 = buildSaveAndExitMessage({}, formId1)
+    const saveAndExitMessage2 = buildSaveAndExitMessage({}, formId2)
+    const saveAndExitMessage3 = buildSaveAndExitMessage({}, formId3)
     const message1 = buildMessageFromRunnerMessage(saveAndExitMessage1, {
       MessageId: messageId1
     })
@@ -211,7 +211,6 @@ describe('events', () => {
         messageId: messageId1
       }
       expectedMapped1.data.security.answer = expect.any(String)
-      expectedMapped1.entityId = expect.any(String)
 
       const expectedMapped2 = {
         ...saveAndExitMessage2,
@@ -220,7 +219,6 @@ describe('events', () => {
         messageId: messageId2
       }
       expectedMapped2.data.security.answer = expect.any(String)
-      expectedMapped2.entityId = expect.any(String)
 
       const expectedMapped3 = {
         ...saveAndExitMessage3,
@@ -229,7 +227,6 @@ describe('events', () => {
         messageId: messageId3
       }
       expectedMapped3.data.security.answer = expect.any(String)
-      expectedMapped3.entityId = expect.any(String)
 
       const result = await processSubmissionEvents(messages)
       expect(createSaveAndExitRecord).toHaveBeenCalledTimes(3)
@@ -257,10 +254,12 @@ describe('events', () => {
     })
 
     it('should handle failures', async () => {
+      // @ts-expect-error - record not found
       jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
       jest
         .mocked(createSaveAndExitRecord)
         .mockRejectedValueOnce(new Error('error in create'))
+      // @ts-expect-error - record not found
       jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
       jest.mocked(deleteEventMessage).mockResolvedValueOnce({
         $metadata: { httpStatusCode: 200 }

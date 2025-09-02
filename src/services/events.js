@@ -24,7 +24,7 @@ export async function mapSubmissionEvent(message) {
   }
 
   /**
-   * @type {SubmissionMessage}
+   * @type {SaveAndExitMessage}
    */
   const messageBody = JSON.parse(message.Body)
 
@@ -62,7 +62,10 @@ export async function processSubmissionEvents(messages) {
       return await session.withTransaction(async () => {
         const document = await mapSubmissionEvent(message)
 
+        // const insertedId =
         await createSaveAndExitRecord(document, session)
+
+        // TODO - send email including magic link
 
         logger.info(`Deleting ${message.MessageId}`)
 
@@ -107,5 +110,5 @@ export async function processSubmissionEvents(messages) {
 
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
- * @import { RunnerRecordInput, SubmissionMessage } from '@defra/forms-model'
+ * @import { RunnerRecordInput, SaveAndExitMessage } from '@defra/forms-model'
  */
