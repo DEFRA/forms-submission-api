@@ -1,15 +1,15 @@
 import {
-  checkFileStatus,
-  getPresignedLink,
-  ingestFile,
-  persistFiles
-} from '~/src/api/files/service.js'
-import {
   fileAccessPayloadSchema,
   fileIngestPayloadSchema,
   filePersistPayloadSchema,
   fileRetrievalParamsSchema
 } from '~/src/models/files.js'
+import {
+  checkFileStatus,
+  getPresignedLink,
+  ingestFile,
+  persistFiles
+} from '~/src/services/file-service.js'
 
 export default [
   /**

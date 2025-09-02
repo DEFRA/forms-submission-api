@@ -3,7 +3,7 @@ import { stringify } from 'csv-stringify'
 
 import { config } from '~/src/config/index.js'
 
-const s3Region = config.get('s3Region')
+const awsRegion = config.get('awsRegion')
 const s3Bucket = config.get('s3Bucket')
 
 /**
@@ -50,7 +50,7 @@ export function createS3File(key, body, contentType, client) {
  */
 export function getS3Client() {
   return new S3Client({
-    region: s3Region,
+    region: awsRegion,
     ...(config.get('s3Endpoint') && {
       endpoint: config.get('s3Endpoint'),
       forcePathStyle: true

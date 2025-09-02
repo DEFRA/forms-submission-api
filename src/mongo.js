@@ -3,7 +3,8 @@ import { MongoClient } from 'mongodb'
 import { config } from '~/src/config/index.js'
 import { secureContext } from '~/src/secure-context.js'
 
-export const COLLECTION_NAME = 'files'
+export const FILES_COLLECTION_NAME = 'files'
+export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
 
 /**
  * @type {Db}
@@ -41,9 +42,17 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormFileUploadStatus>}
    */
-  const coll = db.collection(COLLECTION_NAME)
+  const filesColl = db.collection(FILES_COLLECTION_NAME)
 
-  await coll.createIndex({ fileId: 1 }, { unique: true })
+  await filesColl.createIndex({ fileId: 1 }, { unique: true })
+
+  /**
+   * @type {Collection<SaveAndExit>}
+   */
+  const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+
+  await saveColl.createIndex({ messageId: 1 }, { unique: true })
+  await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
@@ -53,5 +62,5 @@ export async function prepareDb(logger) {
 /**
  * @import { Collection, Db } from 'mongodb'
  * @import { Logger } from 'pino'
- * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, SaveAndExit } from '~/src/api/types.js'
  */

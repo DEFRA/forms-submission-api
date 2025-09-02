@@ -5,6 +5,7 @@ import convict from 'convict'
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
+const DEFAULT_MESSAGE_TIMEOUT = 30
 
 export const config = convict({
   env: {
@@ -166,12 +167,6 @@ export const config = convict({
     default: '',
     env: 'S3_BUCKET'
   },
-  s3Region: {
-    doc: 'S3 region for the app on CDP',
-    format: String,
-    default: 'eu-west-2',
-    env: 'S3_REGION'
-  },
   s3Endpoint: {
     doc: 'The S3 HTTP(S) endpoint, if required (e.g. a local development dev service). Activating this will force path style addressing for compatibility with Localstack.',
     format: String,
@@ -183,6 +178,48 @@ export const config = convict({
     format: String,
     default: 'loaded',
     env: 'LOADED_PREFIX'
+  },
+  awsRegion: {
+    doc: 'AWS region',
+    format: String,
+    default: 'eu-west-2',
+    env: 'AWS_REGION'
+  },
+  sqsEndpoint: {
+    doc: 'The SQS endpoint, if required (e.g. a local development dev service)',
+    format: String,
+    default: '',
+    env: 'SQS_ENDPOINT'
+  },
+  sqsEventsQueueUrl: {
+    doc: 'SQS queue URL',
+    format: String,
+    default: '',
+    env: 'EVENTS_SQS_QUEUE_URL'
+  },
+  receiveMessageTimeout: {
+    doc: 'The wait time between each poll in milliseconds',
+    format: Number,
+    default: DEFAULT_MESSAGE_TIMEOUT * 1000,
+    env: 'RECEIVE_MESSAGE_TIMEOUT_MS'
+  },
+  maxNumberOfMessages: {
+    doc: 'The maximum number of messages to be received from queue at a time',
+    format: Number,
+    default: 10,
+    env: 'SQS_MAX_NUMBER_OF_MESSAGES'
+  },
+  visibilityTimeout: {
+    doc: 'The number of seconds that a message is hidden from other consumers after being retrieved from the queue.',
+    format: Number,
+    default: 30,
+    env: 'SQS_VISIBILITY_TIMEOUT'
+  },
+  saveAndExitExpiryInDays: {
+    doc: 'Save-and-exit expiry as number of days',
+    format: Number,
+    default: 28,
+    env: 'SAVE_AND_EXIT_EXPIRY_IN_DAYS'
   }
 })
 

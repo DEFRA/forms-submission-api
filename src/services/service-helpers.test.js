@@ -1,15 +1,15 @@
 import { jest } from '@jest/globals'
 
-import * as repository from '~/src/api/files/repository.js'
+import * as repository from '~/src/repositories/file-repository.js'
 import {
   createMainCsvFile,
   createRepeaterCsvFile,
   processRepeaterFiles
-} from '~/src/api/files/service-helpers.js'
-import { createCsv, createS3File, getS3Client } from '~/src/api/files/utils.js'
+} from '~/src/services/service-helpers.js'
+import { createCsv, createS3File, getS3Client } from '~/src/services/utils.js'
 
-jest.mock('~/src/api/files/utils.js')
-jest.mock('~/src/api/files/repository.js')
+jest.mock('~/src/services/utils.js')
+jest.mock('~/src/repositories/file-repository.js')
 
 describe('Service Helpers', () => {
   beforeEach(() => {

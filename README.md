@@ -4,19 +4,20 @@ API to track form submissions. Currently tracks file submissions only.
 
 See [docs/](docs/) for documentation.
 
-- [Requirements](#requirements)
-  - [Node.js](#nodejs)
-- [Local development](#local-development)
-  - [Setup](#setup)
-  - [Development](#development)
-  - [Production](#production)
-  - [Npm scripts](#npm-scripts)
-- [API endpoints](#api-endpoints)
-- [Docker](#docker)
-  - [Development Image](#development-image)
-  - [Production Image](#production-image)
-- [Licence](#licence)
-  - [About the licence](#about-the-licence)
+- [forms-submission-api](#forms-submission-api)
+  - [Requirements](#requirements)
+    - [Node.js](#nodejs)
+  - [Local development](#local-development)
+    - [Setup](#setup)
+    - [Development](#development)
+    - [Production](#production)
+    - [Npm scripts](#npm-scripts)
+  - [API endpoints](#api-endpoints)
+  - [Docker](#docker)
+    - [Development image](#development-image)
+    - [Production image](#production-image)
+  - [Licence](#licence)
+    - [About the licence](#about-the-licence)
 
 ## Requirements
 
