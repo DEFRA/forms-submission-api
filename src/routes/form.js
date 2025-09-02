@@ -46,7 +46,7 @@ export default [
     async handler(request) {
       const { link } = request.params
 
-      return await validateSavedLink(link)
+      return validateSavedLink(link)
     },
     options: {
       auth: false
