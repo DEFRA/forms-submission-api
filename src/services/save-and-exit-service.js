@@ -7,14 +7,14 @@ const INVALID_MAGIC_LINK = 'Invalid magic link'
 
 /**
  * Validate the save-and-exit link (just verify link id at this stage)
- * @param {string} linkId
+ * @param {string} magicLinkId
  */
-export async function validateSavedLink(linkId) {
-  if (!linkId) {
+export async function validateSavedLink(magicLinkId) {
+  if (!magicLinkId) {
     throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
 
-  const record = await getSaveAndExitRecord(linkId)
+  const record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
     throw Boom.badRequest(INVALID_MAGIC_LINK)
