@@ -24,7 +24,7 @@ export async function validateSavedLink(magicLinkId) {
   }
 
   return {
-    formId: record.data.form.id,
+    form: record.data.form,
     question: record.data.security.question
   }
 }

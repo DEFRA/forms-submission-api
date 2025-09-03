@@ -158,7 +158,7 @@ describe('save-and-exit service', () => {
         }
       })
       const res = await validateSavedLink('123456')
-      expect(res).toEqual({ formId: '1234', question: 'memorable-place' })
+      expect(res).toEqual({ form: { id: '1234' }, question: 'memorable-place' })
     })
   })
 })
