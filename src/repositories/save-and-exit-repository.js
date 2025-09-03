@@ -1,5 +1,3 @@
-import { ObjectId } from 'mongodb'
-
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
@@ -30,7 +28,7 @@ export async function getSaveAndExitRecord(id) {
   )
 
   try {
-    const result = await coll.findOne({ _id: new ObjectId(id) })
+    const result = await coll.findOne({ messageId: id })
 
     logger.info('Read save-and-exit records')
 
@@ -80,6 +78,6 @@ export async function createSaveAndExitRecord(recordInput, session) {
 }
 
 /**
- * @import { RunnerRecordInput, RunnerRecord } from '@defra/forms-model'
- * @import { ClientSession, Collection, WithId } from 'mongodb'
+ * @import { RunnerRecordInput } from '@defra/forms-model'
+ * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  */
