@@ -10,7 +10,7 @@
 /**
  * @typedef {object} SaveAndExitPayload
  * @property {string} magicLinkId - key contained in magic link
- * @property {{ formId: string, email: string, security: { question: string, answer: string }}} [data] - data payload
+ * @property {{ form: { id: string, title: string, slug: string, status: FormStatus, isPreview: boolean }, email: string, security: { question: string, answer: string }}} [data] - data payload
  */
 
 /**
@@ -39,7 +39,7 @@
  */
 
 /**
- * @import { SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
+ * @import { FormStatus, SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */

@@ -70,15 +70,17 @@ export function buildSaveAndExitMessage(
     createdAt: new Date('2025-08-07T10:52:22.236Z'),
     messageCreatedAt: new Date('2025-08-07T10:52:22.246Z'),
     data: {
-      formId: formId ?? '688131eeff67f889d52c66cc',
+      form: {
+        id: formId ?? '688131eeff67f889d52c66cc',
+        title: 'My First Form',
+        slug: 'my-first-form',
+        status: FormStatus.Draft,
+        isPreview: false
+      },
       email: 'my-email@test.com',
       security: {
         question: SecurityQuestionsEnum.MemorablePlace,
         answer: 'a2'
-      },
-      formStatus: {
-        status: FormStatus.Draft,
-        isPreview: false
       },
       state: {
         formField1: 'val1',
@@ -128,7 +130,7 @@ export function buildMessage(partialMessage = {}) {
   return {
     Body: rawMessageDelivery(
       true,
-      '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n     "createdBy":  {\n       "displayName": "Enrique Chase",\n         "id": "83f09a7d-c80c-4e15-bcf3-641559c7b8a7"\n       },\n     "data":  {\n       "formId": "689b7ab1d0eeac9711a7fb33",\n         "organisation": "Defra",\n         "slug": "audit-form",\n         "teamEmail": "forms@example.uk",\n         "teamName": "Forms",\n         "title": "My Audit Event Form"\n       },\n     "schemaVersion": 1,\n     "type": "FORM_CREATED"\n,\n     "source": "FORMS_MANAGER"\n   }'
+      '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n     "createdBy":  {\n       "displayName": "Enrique Chase",\n         "id": "83f09a7d-c80c-4e15-bcf3-641559c7b8a7"\n       },\n     "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n    "title": "my-first-form",  \n   "slug": "my-first-form",   \n  "isPreview": false,   \n.  "status": "draft". \n  },  "organisation": "Defra",\n         "slug": "audit-form",\n         "teamEmail": "forms@example.uk",\n         "teamName": "Forms",\n         "title": "My Audit Event Form"\n       },\n     "schemaVersion": 1,\n     "type": "FORM_CREATED"\n,\n     "source": "FORMS_MANAGER"\n   }'
     ),
     MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
     MessageAttributes: {},

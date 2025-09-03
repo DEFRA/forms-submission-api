@@ -2,11 +2,13 @@ import { submissionMessageSchema } from '@defra/forms-model'
 import argon2 from 'argon2'
 import Joi from 'joi'
 
+import { config } from '~/src/config/index.js'
 import { getErrorMessage } from '~/src/helpers/error-message.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
@@ -47,6 +49,33 @@ export async function mapSubmissionEvent(message) {
 }
 
 /**
+ * @param {RunnerRecordInput} document
+ * @returns {SendNotificationArgs}
+ */
+export function constructEmailContent(document) {
+  const emailSubject = 'Form progress saved'
+
+  const emailBody = `# Form progress saved
+  Your progress with ${document.data.form.title} has been saved.
+
+  [Continue with your form](https://defraforms.gov.uk/save-and-exit-resume/${document.messageId})
+
+  ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
+
+  The link is valid for 28 days. After that time, your saved information will be deleted.
+  `
+
+  return {
+    emailAddress: document.data.email,
+    templateId: config.get('notifyTemplateId'),
+    personalisation: {
+      subject: emailSubject,
+      body: emailBody
+    }
+  }
+}
+
+/**
  * Process submission events
  * @param {Message[]} messages
  * @returns {Promise<{ processed: Message[]; failed: any[] }>}
@@ -62,10 +91,10 @@ export async function processSubmissionEvents(messages) {
       return await session.withTransaction(async () => {
         const document = await mapSubmissionEvent(message)
 
-        // const insertedId =
         await createSaveAndExitRecord(document, session)
 
-        // TODO - send email including magic link
+        const emailContent = constructEmailContent(document)
+        await sendNotification(emailContent)
 
         logger.info(`Deleting ${message.MessageId}`)
 
@@ -110,5 +139,6 @@ export async function processSubmissionEvents(messages) {
 
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
+ * @import { SendNotificationArgs } from '~/src/services/notify.js'
  * @import { RunnerRecordInput, SaveAndExitMessage } from '@defra/forms-model'
  */

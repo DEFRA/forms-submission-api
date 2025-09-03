@@ -158,6 +158,7 @@ describe('Forms route', () => {
     })
 
     test('Testing POST /save-and-exit route fails if with invalid payload', async () => {
+      // @ts-expect-error - invalid type due to invalid payload
       jest.mocked(validateAndGetSavedState).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
@@ -171,26 +172,37 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         error: 'Bad Request',
         message:
-          '"formId" is required. "email" is required. "state" is required. "something" is not allowed'
+          '"email" is required. "state" is required. "something" is not allowed'
       })
     })
 
     test('Testing POST /save-and-exit route is successful with valid payload', async () => {
-      jest
-        .mocked(validateAndGetSavedState)
-        .mockResolvedValue({ formField1: '123' })
+      jest.mocked(validateAndGetSavedState).mockResolvedValue({
+        form: {
+          id: '12345',
+          slug: 'my-first-form',
+          title: 'My First Form',
+          isPreview: false,
+          status: FormStatus.Draft
+        },
+        state: {
+          formField1: '123'
+        }
+      })
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
         payload: {
-          formId: '12345',
+          form: {
+            id: '12345',
+            title: 'My First Form',
+            slug: 'my-first-form',
+            status: FormStatus.Draft,
+            isPreview: false
+          },
           security: {
             question: SecurityQuestionsEnum.MemorablePlace,
             answer: 'answer'
-          },
-          formStatus: {
-            status: FormStatus.Draft,
-            isPreview: false
           },
           email: 'my-email@test.com',
           state: {}
@@ -200,7 +212,14 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
         message: 'Save-and-exit retrieved successfully',
-        result: { state: { formField1: '123' } }
+        result: {
+          state: {
+            formField1: '123'
+          },
+          form: {
+            id: '12345'
+          }
+        }
       })
     })
   })

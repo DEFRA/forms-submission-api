@@ -65,11 +65,11 @@ export default [
     async handler(request) {
       const { payload } = request
 
-      const state = await validateAndGetSavedState(payload)
+      const result = await validateAndGetSavedState(payload)
 
       return {
         message: 'Save-and-exit retrieved successfully',
-        result: { state }
+        result
       }
     },
     options: {

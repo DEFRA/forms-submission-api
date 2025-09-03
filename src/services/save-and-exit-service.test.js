@@ -1,4 +1,4 @@
-import { SecurityQuestionsEnum } from '@defra/forms-model'
+import { FormStatus, SecurityQuestionsEnum } from '@defra/forms-model'
 
 import {
   buildSaveAndExitMessage,
@@ -63,9 +63,11 @@ describe('save-and-exit service', () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
       await expect(
         validateAndGetSavedState({
-          // @ts-expect-error - type doesnt conform as it is bad data
           data: {
-            formId: '688131eeff67f889d52c66cc',
+            // @ts-expect-error - type doesnt conform as it is bad data
+            form: {
+              id: '688131eeff67f889d52c66cc'
+            },
             security: { question: 'q2', answer: 'invalid' }
           }
         })
@@ -80,7 +82,10 @@ describe('save-and-exit service', () => {
       await expect(
         validateAndGetSavedState({
           data: {
-            formId: '688131eeff67f889d52c66cc',
+            // @ts-expect-error - type doesnt conform as it is bad data
+            form: {
+              id: '688131eeff67f889d52c66cc'
+            },
             email: 'my-email@test.com',
             security: {
               question: 'q3',
@@ -97,9 +102,15 @@ describe('save-and-exit service', () => {
       submissionDocument2.data.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument2)
-      const state = await validateAndGetSavedState({
+      const res = await validateAndGetSavedState({
         data: {
-          formId: '688131eeff67f889d52c66cc',
+          form: {
+            id: '688131eeff67f889d52c66cc',
+            title: 'My First Form',
+            slug: 'my-first-form',
+            status: FormStatus.Draft,
+            isPreview: false
+          },
           email: 'my-email@test.com',
           security: {
             question: 'q1',
@@ -108,11 +119,12 @@ describe('save-and-exit service', () => {
         },
         magicLinkId: '12345'
       })
-      expect(state).toBeDefined()
+      expect(res).toBeDefined()
       // @ts-expect-error - dynamic field names
-      expect(state.formField1).toBe('val1')
+      expect(res.state.formField1).toBe('val1')
       // @ts-expect-error - dynamic field names
-      expect(state.formField2).toBe('val2')
+      expect(res.state.formField2).toBe('val2')
+      expect(res.form.slug).toBe('my-first-form')
     })
   })
 
@@ -134,9 +146,11 @@ describe('save-and-exit service', () => {
 
     test('should return valid result)', async () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue({
-        // @ts-expect-error - partial record value
         data: {
-          formId: '1234',
+          // @ts-expect-error - partial record value
+          form: {
+            id: '1234'
+          },
           security: {
             question: SecurityQuestionsEnum.MemorablePlace,
             answer: ''
