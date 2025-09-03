@@ -12,6 +12,8 @@ import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
+const expiryInDays = config.get('saveAndExitExpiryInDays')
+
 /**
  * @param {Message} message
  * @returns { Promise<RunnerRecordInput> }
@@ -62,7 +64,7 @@ export function constructEmailContent(document) {
 
   ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
-  The link is valid for 28 days. After that time, your saved information will be deleted.
+  The link is valid for ${expiryInDays} days. After that time, your saved information will be deleted.
   `
 
   return {

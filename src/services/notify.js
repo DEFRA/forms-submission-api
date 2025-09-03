@@ -61,7 +61,7 @@ export async function sendNotification(args) {
       postJson
     )
 
-  return await postJsonByType(new URL(NOTIFY_ENDPOINT), {
+  return postJsonByType(new URL(NOTIFY_ENDPOINT), {
     payload: {
       template_id: templateId,
       email_address: emailAddress,
