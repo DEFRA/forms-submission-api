@@ -1,6 +1,9 @@
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 
+const MIN_OK_STATUS = 200
+const MAX_OK_STATUS = 299
+
 /**
  * @template {object} [BodyType=Buffer]
  * @param {string} method
@@ -15,8 +18,8 @@ export async function request(method, url, options) {
 
   if (
     !response.statusCode ||
-    response.statusCode < 200 ||
-    response.statusCode > 299
+    response.statusCode < MIN_OK_STATUS ||
+    response.statusCode > MAX_OK_STATUS
   ) {
     const statusCode = response.statusCode
     let err
