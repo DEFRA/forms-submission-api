@@ -142,7 +142,13 @@ describe('Forms route', () => {
   describe('Save and exit', () => {
     test('Testing GET /save-and-exit route returns record', async () => {
       jest.mocked(validateSavedLink).mockResolvedValueOnce({
-        formId: '12345',
+        form: {
+          id: '12345',
+          slug: 'my-first-form',
+          title: 'My First Form',
+          isPreview: false,
+          status: FormStatus.Draft
+        },
         question: SecurityQuestionsEnum.MemorablePlace
       })
       const response = await server.inject({
@@ -152,7 +158,13 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        formId: '12345',
+        form: {
+          id: '12345',
+          slug: 'my-first-form',
+          title: 'My First Form',
+          isPreview: false,
+          status: 'draft'
+        },
         question: 'memorable-place'
       })
     })
