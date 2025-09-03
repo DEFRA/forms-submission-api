@@ -9,6 +9,8 @@ import {
 } from '@defra/forms-model'
 import { ObjectId } from 'mongodb'
 
+import { addDays } from '~/src/helpers/date-helper.js'
+
 export const STUB_RECORD_CREATED_AT = new Date('2025-08-07T10:52:41.153Z')
 export const STUB_MESSAGE_ID = '4564f91e-d348-419b-96c9-da2c88e82369'
 export const STUB_SUBMISSION_RECORD_ID = '68948579d5659369f1e634c6'
@@ -95,13 +97,15 @@ export function buildSaveAndExitMessage(
  *
  * @param {SaveAndExitMessage} saveAndExitMessage
  * @param {Partial<WithId<RunnerRecordBase>>} partialSubmissionDocumentMeta
- * @returns {WithId<RunnerRecordInput>}
+ * @returns {WithId<RunnerRecordFull>}
  */
 export function buildSubmissionRecordDocument(
   saveAndExitMessage,
   partialSubmissionDocumentMeta
 ) {
   return {
+    invalidPasswordAttempts: 0,
+    expireAt: addDays(new Date(), 28),
     ...saveAndExitMessage,
     ...buildSubmissionRecordDocumentMeta(partialSubmissionDocumentMeta)
   }
@@ -160,6 +164,7 @@ export function buildMessageFromRunnerMessage(
 }
 /**
  * @import { WithId } from 'mongodb'
- * @import { RunnerRecordInput, SaveAndExitMessage, RunnerRecordInputMeta, RunnerRecordBase } from '@defra/forms-model'
+ * @import { SaveAndExitMessage, RunnerRecordInputMeta, RunnerRecordBase } from '@defra/forms-model'
  * @import { Message } from '@aws-sdk/client-sqs'
+ * @import { RunnerRecordFull } from '~/src/repositories/save-and-exit-repository.js'
  */

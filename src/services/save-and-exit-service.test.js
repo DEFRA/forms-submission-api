@@ -25,7 +25,7 @@ describe('save-and-exit service', () => {
       message,
       recordInput
     )
-    const submissionDocument = /** @type {WithId<RunnerRecord>} */ (
+    const submissionDocument = /** @type {WithId<RunnerRecordFull>} */ (
       buildSubmissionRecordDocument(
         message,
         buildSubmissionRecordDocumentMeta({
@@ -165,5 +165,5 @@ describe('save-and-exit service', () => {
 
 /**
  * @import { WithId } from 'mongodb'
- * @import { RunnerRecord } from  '@defra/forms-model'
+ * @import { RunnerRecordFull } from '~/src/repositories/save-and-exit-repository.js'
  */

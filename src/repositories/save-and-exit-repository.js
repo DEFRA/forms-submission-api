@@ -3,10 +3,13 @@ import { ObjectId } from 'mongodb'
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
- * @typedef {RunnerRecordInput & Ttl} RunnerRecordInputWithTtl
+ * @typedef {object} InvalidAttempts
+ * @property {number} invalidPasswordAttempts - Number of invalid password attempts so far
+ * @typedef {RunnerRecordInput & Ttl & InvalidAttempts} RunnerRecordFull
  */
 
 import { config } from '~/src/config/index.js'
+import { addDays } from '~/src/helpers/date-helper.js'
 import { getErrorMessage } from '~/src/helpers/error-message.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
@@ -15,25 +18,14 @@ const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
 
 /**
- * @param {Date} date
- * @param {number} days
- * @returns {Date}
- */
-export function addDays(date, days) {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
-
-/**
  * Gets a record based on id
  * @param {string} id
- * @returns { Promise<WithId<RunnerRecord> | null> }
+ * @returns { Promise<WithId<RunnerRecordFull> | null> }
  */
 export async function getSaveAndExitRecord(id) {
   logger.info('Reading save-and-exit records')
 
-  const coll = /** @type {Collection<RunnerRecord>} */ (
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -61,7 +53,7 @@ export async function getSaveAndExitRecord(id) {
 export async function createSaveAndExitRecord(recordInput, session) {
   logger.info(`Inserting ${recordInput.messageId}`)
 
-  const coll = /** @type {Collection<RunnerRecordInputWithTtl>} */ (
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -69,7 +61,8 @@ export async function createSaveAndExitRecord(recordInput, session) {
     const res = await coll.insertOne(
       {
         ...recordInput,
-        expireAt: addDays(new Date(), expiryInDays)
+        expireAt: addDays(new Date(), expiryInDays),
+        invalidPasswordAttempts: 0
       },
       { session }
     )

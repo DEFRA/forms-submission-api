@@ -105,7 +105,8 @@ describe('save-and-exit-repository', () => {
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
         ...submissionRecordInput,
-        expireAt: expect.any(Date)
+        expireAt: expect.any(Date),
+        invalidPasswordAttempts: 0
       })
       expect(session).toEqual({ session: mockSession })
     })
