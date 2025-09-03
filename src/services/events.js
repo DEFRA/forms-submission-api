@@ -60,7 +60,7 @@ export function constructEmailContent(document) {
   const emailBody = `# Form progress saved
   Your progress with ${document.data.form.title} has been saved.
 
-  [Continue with your form](https://defraforms.gov.uk/save-and-exit-resume/${document.messageId})
+  [Continue with your form](https://defraforms.gov.uk/save-and-exit-resume/${document.data.form.slug}/${document.messageId})
 
   ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
