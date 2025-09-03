@@ -5,16 +5,20 @@ import { postJson } from '~/src/services/httpService.js'
 
 const notifyAPIKey = config.get('notifyAPIKey')
 
+const INT_36 = 36
+const INT_37 = 37
+const INT_73 = 73
+
 // Extract the two uuids from the notifyApiKey
 // See https://github.com/alphagov/notifications-node-client/blob/main/client/api_client.js#L17
 // Needed until `https://github.com/alphagov/notifications-node-client/pull/200` is published
 const apiKeyId = notifyAPIKey.substring(
-  notifyAPIKey.length - 36,
+  notifyAPIKey.length - INT_36,
   notifyAPIKey.length
 )
 const serviceId = notifyAPIKey.substring(
-  notifyAPIKey.length - 73,
-  notifyAPIKey.length - 37
+  notifyAPIKey.length - INT_73,
+  notifyAPIKey.length - INT_37
 )
 
 /**
