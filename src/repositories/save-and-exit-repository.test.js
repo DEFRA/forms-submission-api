@@ -9,7 +9,8 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
-  getSaveAndExitRecord
+  getSaveAndExitRecord,
+  incrementInvalidPasswordAttempts
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -116,6 +117,35 @@ describe('save-and-exit-repository', () => {
       await expect(
         createSaveAndExitRecord(submissionRecordInput, mockSession)
       ).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('incrementInvalidPasswordAttempts', () => {
+    it('should increment record', async () => {
+      jest.mocked(
+        mockCollection.findOneAndUpdate.mockResolvedValueOnce({
+          ...submissionRecordInput,
+          expireAt: expect.any(Date),
+          invalidPasswordAttempts: 1
+        })
+      )
+      const res = await incrementInvalidPasswordAttempts('123')
+      const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(updated).toEqual({
+        messageId: '123'
+      })
+      expect(res).toEqual({
+        ...submissionRecordInput,
+        expireAt: expect.any(Date),
+        invalidPasswordAttempts: 1
+      })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.findOneAndUpdate.mockRejectedValueOnce(new Error('Failed'))
+      await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
+        new Error('Failed')
+      )
     })
   })
 })
