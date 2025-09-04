@@ -139,12 +139,37 @@ describe('save-and-exit-repository', () => {
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 1
       })
+      expect(mockCollection.deleteOne).not.toHaveBeenCalled()
+    })
+
+    it('should delete record if increment max threshold reached', async () => {
+      jest.mocked(
+        mockCollection.findOneAndUpdate.mockResolvedValueOnce({
+          ...submissionRecordInput,
+          expireAt: expect.any(Date),
+          invalidPasswordAttempts: 3
+        })
+      )
+      const res = await incrementInvalidPasswordAttempts('123')
+      const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(updated).toEqual({
+        messageId: '123'
+      })
+      expect(res).toBeNull()
+      expect(mockCollection.deleteOne).toHaveBeenCalled()
     })
 
     it('should handle failures', async () => {
       mockCollection.findOneAndUpdate.mockRejectedValueOnce(new Error('Failed'))
       await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
         new Error('Failed')
+      )
+    })
+
+    it('should handle not found', async () => {
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(undefined)
+      await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
+        new Error('Not Found')
       )
     })
   })
