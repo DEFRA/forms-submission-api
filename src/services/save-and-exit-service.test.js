@@ -1,4 +1,4 @@
-import { FormStatus, SecurityQuestionsEnum } from '@defra/forms-model'
+import { SecurityQuestionsEnum } from '@defra/forms-model'
 
 import {
   buildSaveAndExitMessage,
@@ -63,13 +63,9 @@ describe('save-and-exit service', () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
       await expect(
         validateAndGetSavedState({
-          data: {
-            // @ts-expect-error - type doesnt conform as it is bad data
-            form: {
-              id: '688131eeff67f889d52c66cc'
-            },
-            security: { question: 'q2', answer: 'invalid' }
-          }
+          formId: '688131eeff67f889d52c66cc',
+          securityAnswer: 'invalid',
+          magicLinkId: 'some-magic-link'
         })
       ).rejects.toThrow('Invalid security answer')
     })
@@ -81,18 +77,9 @@ describe('save-and-exit service', () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
       await expect(
         validateAndGetSavedState({
-          data: {
-            // @ts-expect-error - type doesnt conform as it is bad data
-            form: {
-              id: '688131eeff67f889d52c66cc'
-            },
-            email: 'my-email@test.com',
-            security: {
-              question: 'q3',
-              answer: 'a1'
-            }
-          },
-          magicLinkId: '12345'
+          formId: '688131eeff67f889d52c66cc',
+          securityAnswer: 'a2',
+          magicLinkId: 'some-magic-link'
         })
       ).rejects.toThrow('Invalid security answer')
     })
@@ -103,21 +90,9 @@ describe('save-and-exit service', () => {
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument2)
       const res = await validateAndGetSavedState({
-        data: {
-          form: {
-            id: '688131eeff67f889d52c66cc',
-            title: 'My First Form',
-            slug: 'my-first-form',
-            status: FormStatus.Draft,
-            isPreview: false
-          },
-          email: 'my-email@test.com',
-          security: {
-            question: 'q1',
-            answer: 'a3'
-          }
-        },
-        magicLinkId: '12345'
+        formId: '688131eeff67f889d52c66cc',
+        securityAnswer: 'a3',
+        magicLinkId: 'some-magic-link'
       })
       expect(res).toBeDefined()
       // @ts-expect-error - dynamic field names

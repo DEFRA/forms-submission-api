@@ -184,7 +184,7 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         error: 'Bad Request',
         message:
-          '"email" is required. "state" is required. "something" is not allowed'
+          '"magicLinkId" is required. "formId" is required. "securityAnswer" is required. "something" is not allowed'
       })
     })
 
@@ -205,19 +205,9 @@ describe('Forms route', () => {
         method: 'POST',
         url: '/save-and-exit',
         payload: {
-          form: {
-            id: '12345',
-            title: 'My First Form',
-            slug: 'my-first-form',
-            status: FormStatus.Draft,
-            isPreview: false
-          },
-          security: {
-            question: SecurityQuestionsEnum.MemorablePlace,
-            answer: 'answer'
-          },
-          email: 'my-email@test.com',
-          state: {}
+          formId: '12345',
+          securityAnswer: 'answer',
+          magicLinkId: 'some-magic-link'
         }
       })
 

@@ -5,12 +5,20 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
  * @typedef {Request<{ Server: { db: Db }, Payload: SaveAndExitPayload }>} RequestSaveAndExit
+ * @typedef {Request<{ Server: { db: Db }, Payload: ValidateSaveAndExitPayload }>} RequestValidateSaveAndExit
  */
 
 /**
  * @typedef {object} SaveAndExitPayload
  * @property {string} magicLinkId - key contained in magic link
  * @property {{ form: { id: string, title: string, slug: string, status: FormStatus, isPreview: boolean }, email: string, security: { question: string, answer: string }}} [data] - data payload
+ */
+
+/**
+ * @typedef {object} ValidateSaveAndExitPayload
+ * @property {string} magicLinkId - key contained in magic link
+ * @property {string} formId - the id of the form
+ * @property {string} securityAnswer - security answer provided by user
  */
 
 /**

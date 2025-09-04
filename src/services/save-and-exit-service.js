@@ -31,11 +31,10 @@ export async function validateSavedLink(magicLinkId) {
 
 /**
  * Validate the full details of the save-and-exit credentials and return the form state
- * @param {SaveAndExitPayload} payload
+ * @param {ValidateSaveAndExitPayload} payload
  */
 export async function validateAndGetSavedState(payload) {
-  const { magicLinkId, data } = payload
-  const { form, security } = data ?? {}
+  const { magicLinkId, formId, securityAnswer } = payload
 
   const record = await getSaveAndExitRecord(magicLinkId)
 
@@ -43,7 +42,7 @@ export async function validateAndGetSavedState(payload) {
     throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
 
-  if (record.data.form.id !== form?.id) {
+  if (record.data.form.id !== formId) {
     throw Boom.badRequest('Invalid form id')
   }
 
@@ -51,7 +50,7 @@ export async function validateAndGetSavedState(payload) {
   try {
     validPassword = await argon2.verify(
       record.data.security.answer,
-      security?.answer ?? ''
+      securityAnswer
     )
   } catch {
     logger.error(
@@ -70,5 +69,5 @@ export async function validateAndGetSavedState(payload) {
 }
 
 /**
- * @import { SaveAndExitPayload } from '~/src/api/types.js'
+ * @import { ValidateSaveAndExitPayload } from '~/src/api/types.js'
  */

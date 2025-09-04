@@ -1,13 +1,17 @@
-import {
-  formSubmitPayloadSchema,
-  saveAndExitMessageData
-} from '@defra/forms-model'
+import { formSubmitPayloadSchema } from '@defra/forms-model'
+import Joi from 'joi'
 
 import { submit } from '~/src/services/file-service.js'
 import {
   validateAndGetSavedState,
   validateSavedLink
 } from '~/src/services/save-and-exit-service.js'
+
+const validateSaveAndExitSchema = Joi.object({
+  magicLinkId: Joi.string().required(),
+  formId: Joi.string().required(),
+  securityAnswer: Joi.string().required()
+})
 
 export default [
   /**
@@ -60,7 +64,7 @@ export default [
     method: 'POST',
     path: '/save-and-exit',
     /**
-     * @param {RequestSaveAndExit} request
+     * @param {RequestValidateSaveAndExit} request
      */
     async handler(request) {
       const { payload } = request
@@ -75,7 +79,7 @@ export default [
     options: {
       auth: false,
       validate: {
-        payload: saveAndExitMessageData
+        payload: validateSaveAndExitSchema
       }
     }
   })
@@ -83,5 +87,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestSaveAndExit, RequestSubmit } from '~/src/api/types.js'
+ * @import { RequestValidateSaveAndExit, RequestSubmit } from '~/src/api/types.js'
  */
