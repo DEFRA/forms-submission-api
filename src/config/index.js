@@ -57,6 +57,12 @@ export const config = convict({
     format: Boolean,
     default: process.env.NODE_ENV === 'test'
   },
+  managerUrl: {
+    doc: 'The base url fo forms-manager',
+    format: String,
+    default: null,
+    env: 'MANAGER_URL'
+  },
   log: {
     isEnabled: {
       doc: 'Is logging enabled',

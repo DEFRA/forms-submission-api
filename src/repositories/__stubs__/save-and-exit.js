@@ -74,8 +74,6 @@ export function buildSaveAndExitMessage(
     data: {
       form: {
         id: formId ?? '688131eeff67f889d52c66cc',
-        title: 'My First Form',
-        slug: 'my-first-form',
         status: FormStatus.Draft,
         isPreview: false,
         baseUrl: 'http://localhost:3009'

@@ -8,6 +8,7 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import { getFormMetadataById } from '~/src/services/form-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
@@ -52,13 +53,14 @@ export async function mapSubmissionEvent(message) {
 
 /**
  * @param {RunnerRecordInput} document
+ * @param {FormMetadata} form
  * @returns {SendNotificationArgs}
  */
-export function constructEmailContent(document) {
+export function constructEmailContent(document, form) {
   const emailSubject = 'Form progress saved'
 
   const emailBody = `# Form progress saved
-  Your progress with ${document.data.form.title} has been saved.
+  Your progress with ${form.title} has been saved.
 
   [Continue with your form](${document.data.form.baseUrl}/save-and-exit-resume/${document.data.form.id}/${document.messageId})
 
@@ -95,7 +97,8 @@ export async function processSubmissionEvents(messages) {
 
         await createSaveAndExitRecord(document, session)
 
-        const emailContent = constructEmailContent(document)
+        const form = await getFormMetadataById(document.data.form.id)
+        const emailContent = constructEmailContent(document, form)
         await sendNotification(emailContent)
 
         logger.info(`Deleting ${message.MessageId}`)
@@ -142,5 +145,5 @@ export async function processSubmissionEvents(messages) {
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
- * @import { RunnerRecordInput, SaveAndExitMessage } from '@defra/forms-model'
+ * @import { FormMetadata, RunnerRecordInput, SaveAndExitMessage } from '@defra/forms-model'
  */

@@ -79,7 +79,7 @@ describe('save-and-exit service', () => {
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
       // @ts-expect-error - field name may be missing
-      expect(res.form.slug).toBe('my-first-form')
+      expect(res.form.id).toBe('688131eeff67f889d52c66cc')
     })
   })
 

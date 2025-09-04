@@ -144,8 +144,6 @@ describe('Forms route', () => {
       jest.mocked(validateSavedLink).mockResolvedValueOnce({
         form: {
           id: '12345',
-          slug: 'my-first-form',
-          title: 'My First Form',
           isPreview: false,
           status: FormStatus.Draft,
           baseUrl: 'http://localhost:3009'
@@ -162,8 +160,6 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         form: {
           id: '12345',
-          slug: 'my-first-form',
-          title: 'My First Form',
           isPreview: false,
           status: 'draft'
         },
@@ -194,8 +190,6 @@ describe('Forms route', () => {
       jest.mocked(validateAndGetSavedState).mockResolvedValue({
         form: {
           id: '12345',
-          slug: 'my-first-form',
-          title: 'My First Form',
           isPreview: false,
           status: FormStatus.Draft,
           baseUrl: 'http://localhost:3009'
