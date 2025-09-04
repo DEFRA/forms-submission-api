@@ -147,9 +147,11 @@ describe('Forms route', () => {
           slug: 'my-first-form',
           title: 'My First Form',
           isPreview: false,
-          status: FormStatus.Draft
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
         },
-        question: SecurityQuestionsEnum.MemorablePlace
+        question: SecurityQuestionsEnum.MemorablePlace,
+        invalidPasswordAttempts: 0
       })
       const response = await server.inject({
         method: 'GET',
@@ -184,7 +186,7 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         error: 'Bad Request',
         message:
-          '"magicLinkId" is required. "formId" is required. "securityAnswer" is required. "something" is not allowed'
+          '"magicLinkId" is required. "securityAnswer" is required. "something" is not allowed'
       })
     })
 
@@ -195,17 +197,19 @@ describe('Forms route', () => {
           slug: 'my-first-form',
           title: 'My First Form',
           isPreview: false,
-          status: FormStatus.Draft
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
         },
         state: {
           formField1: '123'
-        }
+        },
+        invalidPasswordAttempts: 0,
+        result: 'Success'
       })
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
         payload: {
-          formId: '12345',
           securityAnswer: 'answer',
           magicLinkId: 'some-magic-link'
         }
@@ -213,15 +217,14 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Save-and-exit retrieved successfully',
-        result: {
-          state: {
-            formField1: '123'
-          },
-          form: {
-            id: '12345'
-          }
-        }
+        result: 'Success',
+        state: {
+          formField1: '123'
+        },
+        form: {
+          id: '12345'
+        },
+        invalidPasswordAttempts: 0
       })
     })
   })

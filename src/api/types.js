@@ -17,7 +17,6 @@
 /**
  * @typedef {object} ValidateSaveAndExitPayload
  * @property {string} magicLinkId - key contained in magic link
- * @property {string} formId - the id of the form
  * @property {string} securityAnswer - security answer provided by user
  */
 

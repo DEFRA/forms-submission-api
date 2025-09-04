@@ -9,7 +9,6 @@ import {
 
 const validateSaveAndExitSchema = Joi.object({
   magicLinkId: Joi.string().required(),
-  formId: Joi.string().required(),
   securityAnswer: Joi.string().required()
 })
 
@@ -71,10 +70,7 @@ export default [
 
       const result = await validateAndGetSavedState(payload)
 
-      return {
-        message: 'Save-and-exit retrieved successfully',
-        result
-      }
+      return result
     },
     options: {
       auth: false,

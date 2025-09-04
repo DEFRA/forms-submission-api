@@ -69,7 +69,7 @@ describe('events', () => {
     const submissionEventMessage = buildMessage({
       Body: rawMessageDelivery(
         true,
-        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "title": "My First Form",\n "slug": "my-first-form", \n "isPreview": false, \n "status": "draft" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
+        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "title": "My First Form",\n "slug": "my-first-form", \n "isPreview": false, \n "status": "draft", \n "baseUrl": "http://localhost:3009" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
       ),
       MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
       MessageAttributes: {},
@@ -91,7 +91,8 @@ describe('events', () => {
             slug: 'my-first-form',
             title: 'My First Form',
             isPreview: false,
-            status: 'draft'
+            status: 'draft',
+            baseUrl: 'http://localhost:3009'
           },
           email: 'my-email@test.com',
           security: {

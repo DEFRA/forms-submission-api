@@ -43,45 +43,25 @@ describe('save-and-exit service', () => {
       )
     })
 
-    test('should throw if missing formId', async () => {
+    test('should return error result if incorrect security answer (invalid encryption)', async () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      // @ts-expect-error - type doesnt conform as it is bad data
-      await expect(validateAndGetSavedState({})).rejects.toThrow(
-        'Invalid form id'
-      )
+      const res = await validateAndGetSavedState({
+        securityAnswer: 'invalid',
+        magicLinkId: 'some-magic-link'
+      })
+      expect(res.result).toBe('Invalid security answer')
     })
 
-    test('should throw if incorrect formId', async () => {
-      jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      await expect(
-        // @ts-expect-error - type doesnt conform as it is bad data
-        validateAndGetSavedState({ data: { formId: 'invalid ' } })
-      ).rejects.toThrow('Invalid form id')
-    })
-
-    test('should throw if incorrect security answer (invalid encryption)', async () => {
-      jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      await expect(
-        validateAndGetSavedState({
-          formId: '688131eeff67f889d52c66cc',
-          securityAnswer: 'invalid',
-          magicLinkId: 'some-magic-link'
-        })
-      ).rejects.toThrow('Invalid security answer')
-    })
-
-    test('should throw if incorrect security answer (valid encryption but wrong answer)', async () => {
+    test('should return error result if incorrect security answer (valid encryption but wrong answer)', async () => {
       const submissionDocument2 = structuredClone(submissionDocument)
       submissionDocument2.data.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$cW4DLWbXvQagUDNVUHgRtQ$aaT6McioURZqWOMnnOX8Kqun8ZmL0z+ucROI7nFnsdc'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      await expect(
-        validateAndGetSavedState({
-          formId: '688131eeff67f889d52c66cc',
-          securityAnswer: 'a2',
-          magicLinkId: 'some-magic-link'
-        })
-      ).rejects.toThrow('Invalid security answer')
+      const res = await validateAndGetSavedState({
+        securityAnswer: 'a2',
+        magicLinkId: 'some-magic-link'
+      })
+      expect(res.result).toBe('Invalid security answer')
     })
 
     test('should return state if all valid', async () => {
@@ -90,7 +70,6 @@ describe('save-and-exit service', () => {
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument2)
       const res = await validateAndGetSavedState({
-        formId: '688131eeff67f889d52c66cc',
         securityAnswer: 'a3',
         magicLinkId: 'some-magic-link'
       })
@@ -99,6 +78,7 @@ describe('save-and-exit service', () => {
       expect(res.state.formField1).toBe('val1')
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
+      // @ts-expect-error - field name may be missing
       expect(res.form.slug).toBe('my-first-form')
     })
   })

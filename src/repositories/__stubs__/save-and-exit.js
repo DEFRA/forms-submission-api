@@ -77,7 +77,8 @@ export function buildSaveAndExitMessage(
         title: 'My First Form',
         slug: 'my-first-form',
         status: FormStatus.Draft,
-        isPreview: false
+        isPreview: false,
+        baseUrl: 'http://localhost:3009'
       },
       email: 'my-email@test.com',
       security: {

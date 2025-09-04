@@ -2,7 +2,10 @@ import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import {
+  getSaveAndExitRecord,
+  incrementInvalidPasswordAttempts
+} from '~/src/repositories/save-and-exit-repository.js'
 
 const logger = createLogger()
 
@@ -25,7 +28,8 @@ export async function validateSavedLink(magicLinkId) {
 
   return {
     form: record.data.form,
-    question: record.data.security.question
+    question: record.data.security.question,
+    invalidPasswordAttempts: record.invalidPasswordAttempts
   }
 }
 
@@ -34,16 +38,13 @@ export async function validateSavedLink(magicLinkId) {
  * @param {ValidateSaveAndExitPayload} payload
  */
 export async function validateAndGetSavedState(payload) {
-  const { magicLinkId, formId, securityAnswer } = payload
+  const { magicLinkId, securityAnswer } = payload
 
-  const record = await getSaveAndExitRecord(magicLinkId)
+  let record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
-    throw Boom.badRequest(INVALID_MAGIC_LINK)
-  }
-
-  if (record.data.form.id !== formId) {
-    throw Boom.badRequest('Invalid form id')
+    // Invalid magic link
+    throw Boom.notFound('Invalid magic link')
   }
 
   let validPassword = false
@@ -59,12 +60,14 @@ export async function validateAndGetSavedState(payload) {
   }
 
   if (!validPassword) {
-    throw Boom.badRequest('Invalid security answer')
+    record = await incrementInvalidPasswordAttempts(magicLinkId)
   }
 
   return {
-    form: record.data.form,
-    state: record.data.state
+    form: record?.data.form,
+    state: !validPassword ? {} : record?.data.state,
+    invalidPasswordAttempts: record?.invalidPasswordAttempts,
+    result: !validPassword ? 'Invalid security answer' : 'Success'
   }
 }
 

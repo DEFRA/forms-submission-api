@@ -1,3 +1,5 @@
+import Boom from '@hapi/boom'
+
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
@@ -14,6 +16,7 @@ import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
+const maxInvalidPasswordAttempts = 3
 
 /**
  * Gets a record based on id
@@ -72,6 +75,48 @@ export async function createSaveAndExitRecord(recordInput, session) {
     logger.error(
       err,
       `Failed to insert ${recordInput.messageId} - ${getErrorMessage(err)} `
+    )
+    throw err
+  }
+}
+
+/**
+ * Increment invalid password attempts on a record based on id
+ * @param {string} id
+ * @returns { Promise<WithId<RunnerRecordFull> | null> }
+ */
+export async function incrementInvalidPasswordAttempts(id) {
+  logger.info('Increment invalid password attempts')
+
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.findOneAndUpdate(
+      { messageId: id },
+      { $inc: { invalidPasswordAttempts: 1 } }
+    )
+
+    if (!result) {
+      throw Boom.notFound()
+    }
+
+    if (result.invalidPasswordAttempts >= maxInvalidPasswordAttempts) {
+      logger.info(
+        'Reached max number of invalid password - record being deleted'
+      )
+      await coll.deleteOne({ messageId: id })
+      return null
+    }
+
+    logger.info('Incremented invalid password attempts')
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to increment invalid password attempts - ${getErrorMessage(err)}`
     )
     throw err
   }
