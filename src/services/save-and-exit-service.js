@@ -67,6 +67,7 @@ export async function validateAndGetSavedState(payload) {
     form: record?.data.form,
     state: !validPassword ? {} : record?.data.state,
     invalidPasswordAttempts: record?.invalidPasswordAttempts,
+    securityQuestion: record?.data.security.question,
     result: !validPassword ? 'Invalid security answer' : 'Success'
   }
 }
