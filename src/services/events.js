@@ -13,6 +13,8 @@ import { sendNotification } from '~/src/services/notify.js'
 const logger = createLogger()
 
 const expiryInDays = config.get('saveAndExitExpiryInDays')
+const notifyTemplateId = config.get('notifyTemplateId')
+const notifyReplyToId = config.get('notifyReplyToId')
 
 /**
  * @param {Message} message
@@ -91,12 +93,12 @@ export function constructEmailContent(document, formTitle) {
 
   return {
     emailAddress: document.email,
-    templateId: config.get('notifyTemplateId'),
+    templateId: notifyTemplateId,
     personalisation: {
       subject: emailSubject,
       body: emailBody
-    }
-    // TODO - add replyTo
+    },
+    emailReplyToId: notifyReplyToId
   }
 }
 
@@ -169,5 +171,5 @@ export async function processSubmissionEvents(messages) {
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
- * @import { FormMetadata, SaveAndExitMessageData, SaveAndExitMessage, SaveAndExitRecord } from '@defra/forms-model'
+ * @import { SaveAndExitMessage, SaveAndExitRecord } from '@defra/forms-model'
  */

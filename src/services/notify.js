@@ -32,6 +32,7 @@ const serviceId = notifyAPIKey.substring(
  * @property {string} templateId - id of the Notify template
  * @property {string} emailAddress - target email address
  * @property {NotifyPersonalisation} personalisation - email content
+ * @property {string} emailReplyToId - reply to email address
  */
 
 export const NOTIFY_ENDPOINT =
@@ -54,7 +55,7 @@ function createToken(iss, secret) {
  * @returns
  */
 export async function sendNotification(args) {
-  const { templateId, emailAddress, personalisation } = args
+  const { templateId, emailAddress, personalisation, emailReplyToId } = args
 
   const postJsonByType =
     /** @type {typeof postJson<{ template_id: string, email_address: string, personalisation: NotifyPersonalisation }>} */ (
@@ -65,7 +66,8 @@ export async function sendNotification(args) {
     payload: {
       template_id: templateId,
       email_address: emailAddress,
-      personalisation
+      personalisation,
+      email_reply_to_id: emailReplyToId
     },
     headers: {
       Authorization: 'Bearer ' + createToken(serviceId, apiKeyId)
