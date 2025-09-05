@@ -30,7 +30,8 @@ describe('sendNotification', () => {
     const args = {
       templateId: '123456',
       emailAddress: 'my-email@test.com',
-      personalisation: { subject: 'email-subject', body: 'email-body' }
+      personalisation: { subject: 'email-subject', body: 'email-body' },
+      emailReplyToId: '123456'
     }
     const result = await sendNotification(args)
     expect(result.response).toEqual({
@@ -42,7 +43,8 @@ describe('sendNotification', () => {
       payload: {
         template_id: args.templateId,
         email_address: args.emailAddress,
-        personalisation: args.personalisation
+        personalisation: args.personalisation,
+        email_reply_to_id: '123456'
       },
       headers: { Authorization: expect.any(String) }
     })
