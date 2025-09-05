@@ -14,7 +14,7 @@ const validateSaveAndExitSchema = Joi.object({
 
 export default [
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
+   * @satisfies {ServerRoute}
    */
   ({
     method: 'POST',
@@ -57,7 +57,7 @@ export default [
   }),
 
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
+   * @satisfies {ServerRoute}
    */
   ({
     method: 'POST',

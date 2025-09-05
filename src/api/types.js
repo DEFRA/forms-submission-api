@@ -4,14 +4,7 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
- * @typedef {Request<{ Server: { db: Db }, Payload: SaveAndExitPayload }>} RequestSaveAndExit
  * @typedef {Request<{ Server: { db: Db }, Payload: ValidateSaveAndExitPayload }>} RequestValidateSaveAndExit
- */
-
-/**
- * @typedef {object} SaveAndExitPayload
- * @property {string} magicLinkId - key contained in magic link
- * @property {{ form: { id: string, title: string, slug: string, status: FormStatus, isPreview: boolean }, email: string, security: { question: string, answer: string }}} [data] - data payload
  */
 
 /**
