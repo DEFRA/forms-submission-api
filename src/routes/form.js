@@ -1,17 +1,20 @@
-import {
-  formSubmitPayloadSchema,
-  saveAndExitMessageData
-} from '@defra/forms-model'
+import { formSubmitPayloadSchema } from '@defra/forms-model'
+import Joi from 'joi'
 
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
+
+const validateSaveAndExitSchema = Joi.object({
+  magicLinkId: Joi.string().required(),
+  securityAnswer: Joi.string().required()
+})
 
 export default [
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
+   * @satisfies {ServerRoute}
    */
   ({
     method: 'POST',
@@ -46,7 +49,7 @@ export default [
     async handler(request) {
       const { link } = request.params
 
-      return validateSavedLink(link)
+      return getSavedLinkDetails(link)
     },
     options: {
       auth: false
@@ -54,28 +57,25 @@ export default [
   }),
 
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
+   * @satisfies {ServerRoute}
    */
   ({
     method: 'POST',
     path: '/save-and-exit',
     /**
-     * @param {RequestSaveAndExit} request
+     * @param {RequestValidateSaveAndExit} request
      */
     async handler(request) {
       const { payload } = request
 
-      const state = await validateAndGetSavedState(payload)
+      const result = await validateSavedLinkCredentials(payload)
 
-      return {
-        message: 'Save-and-exit retrieved successfully',
-        result: { state }
-      }
+      return result
     },
     options: {
       auth: false,
       validate: {
-        payload: saveAndExitMessageData
+        payload: validateSaveAndExitSchema
       }
     }
   })
@@ -83,5 +83,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestSaveAndExit, RequestSubmit } from '~/src/api/types.js'
+ * @import { RequestValidateSaveAndExit, RequestSubmit } from '~/src/api/types.js'
  */

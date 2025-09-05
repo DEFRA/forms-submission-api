@@ -220,7 +220,33 @@ export const config = convict({
     format: Number,
     default: 28,
     env: 'SAVE_AND_EXIT_EXPIRY_IN_DAYS'
+  },
+
+  /**
+   * Send emails
+   */
+  /** @type {SchemaObj<string>} */
+  notifyTemplateId: {
+    format: String,
+    default: null,
+    env: 'NOTIFY_TEMPLATE_ID'
+  },
+  /** @type {SchemaObj<string>} */
+  notifyAPIKey: {
+    format: String,
+    default: null,
+    env: 'NOTIFY_API_KEY'
+  },
+  /** @type {SchemaObj<string>} */
+  notifyReplyToId: {
+    format: String,
+    default: null,
+    env: 'NOTIFY_REPLY_TO_ID'
   }
 })
 
 config.validate({ allowed: 'strict' })
+
+/**
+ * @import { SchemaObj } from 'convict'
+ */

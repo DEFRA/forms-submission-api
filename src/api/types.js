@@ -4,13 +4,13 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
- * @typedef {Request<{ Server: { db: Db }, Payload: SaveAndExitPayload }>} RequestSaveAndExit
+ * @typedef {Request<{ Server: { db: Db }, Payload: ValidateSaveAndExitPayload }>} RequestValidateSaveAndExit
  */
 
 /**
- * @typedef {object} SaveAndExitPayload
+ * @typedef {object} ValidateSaveAndExitPayload
  * @property {string} magicLinkId - key contained in magic link
- * @property {{ formId: string, email: string, security: { question: string, answer: string }}} [data] - data payload
+ * @property {string} securityAnswer - security answer provided by user
  */
 
 /**
@@ -39,7 +39,7 @@
  */
 
 /**
- * @import { SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
+ * @import { FormStatus, SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */

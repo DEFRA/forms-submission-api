@@ -1,7 +1,14 @@
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 
-import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import { createLogger } from '~/src/helpers/logging/logger.js'
+import {
+  deleteSaveAndExitRecord,
+  getSaveAndExitRecord,
+  incrementInvalidPasswordAttempts
+} from '~/src/repositories/save-and-exit-repository.js'
+
+const logger = createLogger()
 
 const INVALID_MAGIC_LINK = 'Invalid magic link'
 
@@ -9,7 +16,7 @@ const INVALID_MAGIC_LINK = 'Invalid magic link'
  * Validate the save-and-exit link (just verify link id at this stage)
  * @param {string} magicLinkId
  */
-export async function validateSavedLink(magicLinkId) {
+export async function getSavedLinkDetails(magicLinkId) {
   if (!magicLinkId) {
     throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
@@ -21,44 +28,50 @@ export async function validateSavedLink(magicLinkId) {
   }
 
   return {
-    formId: record.data.formId,
-    question: record.data.security.question
+    form: record.form,
+    question: record.security.question,
+    invalidPasswordAttempts: record.invalidPasswordAttempts
   }
 }
 
 /**
- * Validate the full details of the save-and-exit credentials and return the form state
- * @param {SaveAndExitPayload} payload
+ * Validate the full details of the save-and-exit credentials
+ * @param {ValidateSaveAndExitPayload} payload
  */
-export async function validateAndGetSavedState(payload) {
-  const { magicLinkId, data } = payload
-  const { formId, security } = data ?? {}
+export async function validateSavedLinkCredentials(payload) {
+  const { magicLinkId, securityAnswer } = payload
 
-  const record = await getSaveAndExitRecord(magicLinkId)
+  let record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
-    throw Boom.badRequest(INVALID_MAGIC_LINK)
-  }
-
-  if (record.data.formId !== formId) {
-    throw Boom.badRequest('Invalid form id')
+    // Invalid magic link
+    throw Boom.notFound('Invalid magic link')
   }
 
   let validPassword = false
   try {
-    validPassword = await argon2.verify(
-      record.data.security.answer,
-      security?.answer ?? ''
+    validPassword = await argon2.verify(record.security.answer, securityAnswer)
+  } catch {
+    logger.error(
+      `Invalid password hash for save-and-exit id ${magicLinkId} - unable to decrypt`
     )
-  } catch {}
-
-  if (!validPassword) {
-    throw Boom.badRequest('Invalid security answer')
   }
 
-  return record.data.state
+  if (!validPassword) {
+    record = await incrementInvalidPasswordAttempts(magicLinkId)
+  } else {
+    await deleteSaveAndExitRecord(magicLinkId)
+  }
+
+  return {
+    form: record?.form,
+    state: !validPassword ? {} : record?.state,
+    invalidPasswordAttempts: record?.invalidPasswordAttempts,
+    securityQuestion: record?.security.question,
+    result: !validPassword ? 'Invalid security answer' : 'Success'
+  }
 }
 
 /**
- * @import { SaveAndExitPayload } from '~/src/api/types.js'
+ * @import { ValidateSaveAndExitPayload } from '~/src/api/types.js'
  */

@@ -4,8 +4,8 @@ import { StatusCodes } from 'http-status-codes'
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/mongo.js')
@@ -141,9 +141,15 @@ describe('Forms route', () => {
 
   describe('Save and exit', () => {
     test('Testing GET /save-and-exit route returns record', async () => {
-      jest.mocked(validateSavedLink).mockResolvedValueOnce({
-        formId: '12345',
-        question: SecurityQuestionsEnum.MemorablePlace
+      jest.mocked(getSavedLinkDetails).mockResolvedValueOnce({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        question: SecurityQuestionsEnum.MemorablePlace,
+        invalidPasswordAttempts: 0
       })
       const response = await server.inject({
         method: 'GET',
@@ -152,13 +158,18 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        formId: '12345',
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: 'draft'
+        },
         question: 'memorable-place'
       })
     })
 
     test('Testing POST /save-and-exit route fails if with invalid payload', async () => {
-      jest.mocked(validateAndGetSavedState).mockResolvedValue({})
+      // @ts-expect-error - invalid type due to invalid payload
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
@@ -171,36 +182,44 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         error: 'Bad Request',
         message:
-          '"formId" is required. "email" is required. "state" is required. "something" is not allowed'
+          '"magicLinkId" is required. "securityAnswer" is required. "something" is not allowed'
       })
     })
 
     test('Testing POST /save-and-exit route is successful with valid payload', async () => {
-      jest
-        .mocked(validateAndGetSavedState)
-        .mockResolvedValue({ formField1: '123' })
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        state: {
+          formField1: '123'
+        },
+        invalidPasswordAttempts: 0,
+        securityQuestion: SecurityQuestionsEnum.MemorablePlace,
+        result: 'Success'
+      })
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
         payload: {
-          formId: '12345',
-          security: {
-            question: SecurityQuestionsEnum.MemorablePlace,
-            answer: 'answer'
-          },
-          formStatus: {
-            status: FormStatus.Draft,
-            isPreview: false
-          },
-          email: 'my-email@test.com',
-          state: {}
+          securityAnswer: 'answer',
+          magicLinkId: 'some-magic-link'
         }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Save-and-exit retrieved successfully',
-        result: { state: { formField1: '123' } }
+        result: 'Success',
+        state: {
+          formField1: '123'
+        },
+        form: {
+          id: '12345'
+        },
+        invalidPasswordAttempts: 0
       })
     })
   })
