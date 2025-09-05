@@ -13,20 +13,17 @@ import {
   buildMessage,
   buildMessageFromRunnerMessage,
   buildSaveAndExitMessage,
-  buildSubmissionMetaBase,
   rawMessageDelivery
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import {
-  mapSubmissionEvent,
+  mapSubmissionMessageToData,
   processSubmissionEvents
 } from '~/src/services/events.js'
-import { getFormMetadataById } from '~/src/services/form-service.js'
 
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 jest.mock('~/src/services/notify.js')
-jest.mock('~/src/services/form-service.js')
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
@@ -71,7 +68,7 @@ describe('events', () => {
     const submissionEventMessage = buildMessage({
       Body: rawMessageDelivery(
         true,
-        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "isPreview": false, \n "status": "draft", \n "baseUrl": "http://localhost:3009" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
+        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "title": "My First Form", \n "isPreview": false, \n "status": "draft", \n "baseUrl": "http://localhost:3009" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
       ),
       MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
       MessageAttributes: {},
@@ -80,38 +77,40 @@ describe('events', () => {
         'YTBkZjk3ZTAtODA4ZC00NTQ5LTg4MzMtOWY3NjA2MDJlMjUxIGFybjphd3M6c3FzOmV1LXdlc3QtMjowMDAwMDAwMDAwMDA6Zm9ybXNfYXVkaXRfZXZlbnRzIGZiYWZiMTdlLTg2ZjAtNGFjNi1iODY0LTNmMzJjZDYwYjIyOCAxNzUzMzU0ODY4LjgzMjUzMzQ='
     })
 
-    it('should map the message', async () => {
-      expect(await mapSubmissionEvent(submissionEventMessage)).toEqual({
-        messageCreatedAt: expect.any(Date),
-        recordCreatedAt: expect.any(Date),
+    it('should map the message to data', async () => {
+      expect(await mapSubmissionMessageToData(submissionEventMessage)).toEqual({
         messageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
-        category: SubmissionEventMessageCategory.RUNNER,
-        createdAt: new Date('2025-07-23T00:00:00.000Z'),
-        data: {
-          form: {
-            id: '689b7ab1d0eeac9711a7fb33',
-            isPreview: false,
-            status: 'draft',
-            baseUrl: 'http://localhost:3009'
+        parsedContent: {
+          messageCreatedAt: expect.any(Date),
+          category: SubmissionEventMessageCategory.RUNNER,
+          createdAt: new Date('2025-07-23T00:00:00.000Z'),
+          data: {
+            form: {
+              id: '689b7ab1d0eeac9711a7fb33',
+              title: 'My First Form',
+              isPreview: false,
+              status: 'draft',
+              baseUrl: 'http://localhost:3009'
+            },
+            email: 'my-email@test.com',
+            security: {
+              question: SecurityQuestionsEnum.MemorablePlace,
+              answer: expect.any(String)
+            },
+            state: {
+              formField1: 'val1',
+              formField2: 'val2'
+            }
           },
-          email: 'my-email@test.com',
-          security: {
-            question: SecurityQuestionsEnum.MemorablePlace,
-            answer: expect.any(String)
-          },
-          state: {
-            formField1: 'val1',
-            formField2: 'val2'
-          }
-        },
-        schemaVersion: 1,
-        type: SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT,
-        source: SubmissionEventMessageSource.FORMS_RUNNER
+          schemaVersion: 1,
+          type: SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT,
+          source: SubmissionEventMessageSource.FORMS_RUNNER
+        }
       })
     })
 
     it('should allow unknown fields the message', async () => {
-      const event = await mapSubmissionEvent({
+      const event = await mapSubmissionMessageToData({
         ...submissionEventMessage,
         // @ts-expect-error - unknown field
         unknownField: 'visible'
@@ -126,7 +125,7 @@ describe('events', () => {
         submissionEventMessage
 
       await expect(
-        mapSubmissionEvent(auditEventMessageWithoutMessageId)
+        mapSubmissionMessageToData(auditEventMessageWithoutMessageId)
       ).rejects.toThrow(new Error('Unexpected missing Message.MessageId'))
     })
 
@@ -135,7 +134,7 @@ describe('events', () => {
       const { Body, ...auditEventMessageWithoutBody } = submissionEventMessage
 
       await expect(
-        mapSubmissionEvent(auditEventMessageWithoutBody)
+        mapSubmissionMessageToData(auditEventMessageWithoutBody)
       ).rejects.toThrow(new Error('Unexpected empty Message.Body'))
     })
 
@@ -156,7 +155,9 @@ describe('events', () => {
           'YTBkZjk3ZTAtODA4ZC00NTQ5LTg4MzMtOWY3NjA2MDJlMjUxIGFybjphd3M6c3FzOmV1LXdlc3QtMjowMDAwMDAwMDAwMDA6Zm9ybXNfYXVkaXRfZXZlbnRzIGZiYWZiMTdlLTg2ZjAtNGFjNi1iODY0LTNmMzJjZDYwYjIyOCAxNzUzMzU0ODY4LjgzMjUzMzQ='
       })
 
-      await expect(mapSubmissionEvent(submissionEventMessage)).rejects.toThrow(
+      await expect(
+        mapSubmissionMessageToData(submissionEventMessage)
+      ).rejects.toThrow(
         new ValidationError(
           '"createdAt" is required',
           [],
@@ -170,19 +171,6 @@ describe('events', () => {
     const messageId1 = '01267dd5-8cc7-4749-9802-40190f6429eb'
     const messageId2 = '5dd16f40-6118-4797-97c9-60a298c9a898'
     const messageId3 = '70c0155c-e9a9-4b90-a45f-a839924fca65'
-
-    const recordInput1 = buildSubmissionMetaBase({
-      recordCreatedAt: new Date('2025-08-08'),
-      messageId: messageId1
-    })
-    const recordInput2 = buildSubmissionMetaBase({
-      recordCreatedAt: new Date('2025-09-09'),
-      messageId: messageId2
-    })
-    const recordInput3 = buildSubmissionMetaBase({
-      recordCreatedAt: new Date('2025-10-10'),
-      messageId: messageId3
-    })
 
     const formId1 = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
     const formId2 = 'dc11160e-8d8c-4151-a70a-080a08ef6622'
@@ -212,34 +200,68 @@ describe('events', () => {
     const messages2 = [message4, message5, message6]
 
     it('should create a list of audit events', async () => {
-      jest
-        .mocked(getFormMetadataById)
-        .mockResolvedValue(
-          /** @type {FormMetadata} */ ({ title: 'my-first-form' })
-        )
       const expectedMapped1 = {
-        ...saveAndExitMessage1,
-        ...recordInput1,
-        recordCreatedAt: expect.any(Date),
-        messageId: messageId1
+        form: {
+          id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
+          isPreview: false,
+          status: 'draft',
+          baseUrl: 'http://localhost:3009'
+        },
+        email: 'my-email@test.com',
+        security: {
+          answer: expect.any(String),
+          question: 'memorable-place'
+        },
+        state: {
+          formField1: 'val1',
+          formField2: 'val2'
+        },
+        invalidPasswordAttempts: 0,
+        magicLinkId: expect.any(String),
+        createdAt: expect.any(Date)
       }
-      expectedMapped1.data.security.answer = expect.any(String)
 
       const expectedMapped2 = {
-        ...saveAndExitMessage2,
-        ...recordInput2,
-        recordCreatedAt: expect.any(Date),
-        messageId: messageId2
+        form: {
+          id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
+          isPreview: false,
+          status: 'draft',
+          baseUrl: 'http://localhost:3009'
+        },
+        email: 'my-email@test.com',
+        security: {
+          answer: expect.any(String),
+          question: 'memorable-place'
+        },
+        state: {
+          formField1: 'val1',
+          formField2: 'val2'
+        },
+        invalidPasswordAttempts: 0,
+        magicLinkId: expect.any(String),
+        createdAt: expect.any(Date)
       }
-      expectedMapped2.data.security.answer = expect.any(String)
 
       const expectedMapped3 = {
-        ...saveAndExitMessage3,
-        ...recordInput3,
-        recordCreatedAt: expect.any(Date),
-        messageId: messageId3
+        form: {
+          id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
+          isPreview: false,
+          status: 'draft',
+          baseUrl: 'http://localhost:3009'
+        },
+        email: 'my-email@test.com',
+        security: {
+          answer: expect.any(String),
+          question: 'memorable-place'
+        },
+        state: {
+          formField1: 'val1',
+          formField2: 'val2'
+        },
+        invalidPasswordAttempts: 0,
+        magicLinkId: expect.any(String),
+        createdAt: expect.any(Date)
       }
-      expectedMapped3.data.security.answer = expect.any(String)
 
       const result = await processSubmissionEvents(messages)
       expect(createSaveAndExitRecord).toHaveBeenCalledTimes(3)
@@ -267,11 +289,6 @@ describe('events', () => {
     })
 
     it('should handle failures', async () => {
-      jest
-        .mocked(getFormMetadataById)
-        .mockResolvedValue(
-          /** @type {FormMetadata} */ ({ title: 'my-first-form' })
-        )
       // @ts-expect-error - record not found
       jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
       jest
@@ -302,5 +319,4 @@ describe('events', () => {
 
 /**
  * @import {Message} from '@aws-sdk/client-sqs'
- * @import {FormMetadata} from '@defra/forms-model'
  */

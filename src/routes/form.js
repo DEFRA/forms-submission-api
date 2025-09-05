@@ -3,8 +3,8 @@ import Joi from 'joi'
 
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 const validateSaveAndExitSchema = Joi.object({
@@ -49,7 +49,7 @@ export default [
     async handler(request) {
       const { link } = request.params
 
-      return validateSavedLink(link)
+      return getSavedLinkDetails(link)
     },
     options: {
       auth: false
@@ -68,7 +68,7 @@ export default [
     async handler(request) {
       const { payload } = request
 
-      const result = await validateAndGetSavedState(payload)
+      const result = await validateSavedLinkCredentials(payload)
 
       return result
     },

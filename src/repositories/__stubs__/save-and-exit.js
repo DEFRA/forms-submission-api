@@ -7,53 +7,10 @@ import {
   SubmissionEventMessageSource,
   SubmissionEventMessageType
 } from '@defra/forms-model'
-import { ObjectId } from 'mongodb'
 
 import { addDays } from '~/src/helpers/date-helper.js'
 
-export const STUB_RECORD_CREATED_AT = new Date('2025-08-07T10:52:41.153Z')
-export const STUB_MESSAGE_ID = '4564f91e-d348-419b-96c9-da2c88e82369'
 export const STUB_SUBMISSION_RECORD_ID = '68948579d5659369f1e634c6'
-
-/**
- * @param {Partial<RunnerRecordBase>} partialRunnerRecordBase
- * @returns {RunnerRecordBase}
- */
-export function buildSubmissionMetaBase(partialRunnerRecordBase = {}) {
-  return {
-    recordCreatedAt: STUB_RECORD_CREATED_AT,
-    messageId: STUB_MESSAGE_ID,
-    ...partialRunnerRecordBase
-  }
-}
-
-/**
- * @param {Partial<RunnerRecordInputMeta>} partialRunnerInputMeta
- * @returns {RunnerRecordInputMeta}
- */
-export function buildSubmissionInputMeta(partialRunnerInputMeta = {}) {
-  return {
-    recordCreatedAt: STUB_RECORD_CREATED_AT,
-    messageId: STUB_MESSAGE_ID,
-    id: STUB_SUBMISSION_RECORD_ID,
-    ...partialRunnerInputMeta
-  }
-}
-
-/**
- * @param {Partial<WithId<RunnerRecordBase>>} partialSubmissionRecordDocumentMeta
- * @returns {WithId<RunnerRecordBase>}
- */
-export function buildSubmissionRecordDocumentMeta(
-  partialSubmissionRecordDocumentMeta = {}
-) {
-  return {
-    recordCreatedAt: STUB_RECORD_CREATED_AT,
-    messageId: STUB_MESSAGE_ID,
-    _id: new ObjectId(STUB_SUBMISSION_RECORD_ID),
-    ...partialSubmissionRecordDocumentMeta
-  }
-}
 
 /**
  * @param {Partial<SaveAndExitMessage>} partialSaveAndExitMessage
@@ -74,6 +31,7 @@ export function buildSaveAndExitMessage(
     data: {
       form: {
         id: formId ?? '688131eeff67f889d52c66cc',
+        title: 'My FirstForm',
         status: FormStatus.Draft,
         isPreview: false,
         baseUrl: 'http://localhost:3009'
@@ -89,24 +47,6 @@ export function buildSaveAndExitMessage(
       }
     },
     ...partialSaveAndExitMessage
-  }
-}
-
-/**
- *
- * @param {SaveAndExitMessage} saveAndExitMessage
- * @param {Partial<WithId<RunnerRecordBase>>} partialSubmissionDocumentMeta
- * @returns {WithId<RunnerRecordFull>}
- */
-export function buildSubmissionRecordDocument(
-  saveAndExitMessage,
-  partialSubmissionDocumentMeta
-) {
-  return {
-    invalidPasswordAttempts: 0,
-    expireAt: addDays(new Date(), 28),
-    ...saveAndExitMessage,
-    ...buildSubmissionRecordDocumentMeta(partialSubmissionDocumentMeta)
   }
 }
 
@@ -161,9 +101,37 @@ export function buildMessageFromRunnerMessage(
     Body
   }
 }
+
+/**
+ * @returns {WithId<RunnerRecordFull>}
+ */
+export function buildDbDocument() {
+  return /** @type {WithId<RunnerRecordFull>} */ ({
+    magicLinkId: 'magic-id',
+    form: {
+      id: 'form-id',
+      status: 'draft',
+      isPreview: false,
+      baseUrl: 'http://localhost:3009'
+    },
+    email: 'my-email@test.com',
+    security: {
+      question: SecurityQuestionsEnum.MemorablePlace,
+      answer: 'a5'
+    },
+    state: {
+      formField1: 'val1',
+      formField2: 'val2'
+    },
+    invalidPasswordAttempts: 0,
+    createdAt: new Date(),
+    expireAt: addDays(new Date(), 28)
+  })
+}
+
 /**
  * @import { WithId } from 'mongodb'
- * @import { SaveAndExitMessage, RunnerRecordInputMeta, RunnerRecordBase } from '@defra/forms-model'
+ * @import { SaveAndExitMessage, } from '@defra/forms-model'
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { RunnerRecordFull } from '~/src/repositories/save-and-exit-repository.js'
  */

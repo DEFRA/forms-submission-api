@@ -2,13 +2,11 @@ import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
   STUB_SUBMISSION_RECORD_ID,
-  buildSaveAndExitMessage,
-  buildSubmissionMetaBase,
-  buildSubmissionRecordDocument,
-  buildSubmissionRecordDocumentMeta
+  buildDbDocument
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
+  deleteSaveAndExitRecord,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts
 } from '~/src/repositories/save-and-exit-repository.js'
@@ -57,21 +55,9 @@ jest.mock('~/src/mongo.js', () => {
 })
 
 describe('save-and-exit-repository', () => {
-  const recordInput = buildSubmissionMetaBase({
-    recordCreatedAt: new Date('2025-08-08'),
-    messageId: '23b3e93c-5bea-4bcc-ab27-be69ce82a190'
-  })
-  const message = buildSaveAndExitMessage()
-  const submissionRecordInput = buildSubmissionRecordDocument(
-    message,
-    recordInput
-  )
-  const submissionDocument = buildSubmissionRecordDocument(
-    message,
-    buildSubmissionRecordDocumentMeta({
-      ...submissionRecordInput
-    })
-  )
+  const submissionDocument = buildDbDocument()
+
+  const submissionRecordInput = structuredClone(buildDbDocument())
 
   beforeEach(() => {
     jest.mocked(db.collection).mockReturnValue(mockCollection)
@@ -132,7 +118,7 @@ describe('save-and-exit-repository', () => {
       const res = await incrementInvalidPasswordAttempts('123')
       const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
       expect(updated).toEqual({
-        messageId: '123'
+        magicLinkId: '123'
       })
       expect(res).toEqual({
         ...submissionRecordInput,
@@ -153,7 +139,7 @@ describe('save-and-exit-repository', () => {
       const res = await incrementInvalidPasswordAttempts('123')
       const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
       expect(updated).toEqual({
-        messageId: '123'
+        magicLinkId: '123'
       })
       expect(res).toBeNull()
       expect(mockCollection.deleteOne).toHaveBeenCalled()
@@ -170,6 +156,22 @@ describe('save-and-exit-repository', () => {
       mockCollection.findOneAndUpdate.mockResolvedValueOnce(undefined)
       await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
         new Error('Not Found')
+      )
+    })
+  })
+
+  describe('deleteSaveAndExitRecord', () => {
+    it('should delete a save-and-exit record', async () => {
+      jest.mocked(mockCollection.deleteOne.mockResolvedValueOnce({}))
+      await deleteSaveAndExitRecord('123')
+      const [deletedCall] = mockCollection.deleteOne.mock.calls[0]
+      expect(deletedCall).toEqual({ magicLinkId: '123' })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.deleteOne.mockRejectedValueOnce(new Error('Failed'))
+      await expect(deleteSaveAndExitRecord('123')).rejects.toThrow(
+        new Error('Failed')
       )
     })
   })

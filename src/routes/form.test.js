@@ -4,8 +4,8 @@ import { StatusCodes } from 'http-status-codes'
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/mongo.js')
@@ -141,7 +141,7 @@ describe('Forms route', () => {
 
   describe('Save and exit', () => {
     test('Testing GET /save-and-exit route returns record', async () => {
-      jest.mocked(validateSavedLink).mockResolvedValueOnce({
+      jest.mocked(getSavedLinkDetails).mockResolvedValueOnce({
         form: {
           id: '12345',
           isPreview: false,
@@ -169,7 +169,7 @@ describe('Forms route', () => {
 
     test('Testing POST /save-and-exit route fails if with invalid payload', async () => {
       // @ts-expect-error - invalid type due to invalid payload
-      jest.mocked(validateAndGetSavedState).mockResolvedValue({})
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
         url: '/save-and-exit',
@@ -187,7 +187,7 @@ describe('Forms route', () => {
     })
 
     test('Testing POST /save-and-exit route is successful with valid payload', async () => {
-      jest.mocked(validateAndGetSavedState).mockResolvedValue({
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({
         form: {
           id: '12345',
           isPreview: false,

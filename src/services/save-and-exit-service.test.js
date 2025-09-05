@@ -1,75 +1,59 @@
 import { SecurityQuestionsEnum } from '@defra/forms-model'
 
+import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
-  buildSaveAndExitMessage,
-  buildSubmissionMetaBase,
-  buildSubmissionRecordDocument,
-  buildSubmissionRecordDocumentMeta
-} from '~/src/repositories/__stubs__/save-and-exit.js'
-import { getSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+  deleteSaveAndExitRecord,
+  getSaveAndExitRecord
+} from '~/src/repositories/save-and-exit-repository.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 
 describe('save-and-exit service', () => {
-  describe('validateAndGetSavedState', () => {
-    const recordInput = buildSubmissionMetaBase({
-      recordCreatedAt: new Date('2025-08-08'),
-      messageId: '23b3e93c-5bea-4bcc-ab27-be69ce82a190'
-    })
-    const message = buildSaveAndExitMessage()
-    const submissionRecordInput = buildSubmissionRecordDocument(
-      message,
-      recordInput
-    )
-    const submissionDocument = /** @type {WithId<RunnerRecordFull>} */ (
-      buildSubmissionRecordDocument(
-        message,
-        buildSubmissionRecordDocumentMeta({
-          ...submissionRecordInput
-        })
-      )
-    )
+  describe('validateSavedLinkCredentials', () => {
+    const submissionDocument = buildDbDocument()
 
     test('should throw if invalid magic link', async () => {
       // @ts-expect-error - undefined as returned record i.e. record not found
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(undefined)
       // @ts-expect-error - type doesnt conform as it is bad data
-      await expect(validateAndGetSavedState({})).rejects.toThrow(
+      await expect(validateSavedLinkCredentials({})).rejects.toThrow(
         'Invalid magic link'
       )
     })
 
     test('should return error result if incorrect security answer (invalid encryption)', async () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      const res = await validateAndGetSavedState({
+      const res = await validateSavedLinkCredentials({
         securityAnswer: 'invalid',
         magicLinkId: 'some-magic-link'
       })
       expect(res.result).toBe('Invalid security answer')
+      expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
     })
 
     test('should return error result if incorrect security answer (valid encryption but wrong answer)', async () => {
       const submissionDocument2 = structuredClone(submissionDocument)
-      submissionDocument2.data.security.answer =
+      submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$cW4DLWbXvQagUDNVUHgRtQ$aaT6McioURZqWOMnnOX8Kqun8ZmL0z+ucROI7nFnsdc'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      const res = await validateAndGetSavedState({
+      const res = await validateSavedLinkCredentials({
         securityAnswer: 'a2',
         magicLinkId: 'some-magic-link'
       })
       expect(res.result).toBe('Invalid security answer')
+      expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
     })
 
-    test('should return state if all valid', async () => {
+    test('should return state (and delete record) if all valid', async () => {
       const submissionDocument2 = structuredClone(submissionDocument)
-      submissionDocument2.data.security.answer =
+      submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument2)
-      const res = await validateAndGetSavedState({
+      const res = await validateSavedLinkCredentials({
         securityAnswer: 'a3',
         magicLinkId: 'some-magic-link'
       })
@@ -79,14 +63,15 @@ describe('save-and-exit service', () => {
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
       // @ts-expect-error - field name may be missing
-      expect(res.form.id).toBe('688131eeff67f889d52c66cc')
+      expect(res.form.id).toBe('form-id')
+      expect(deleteSaveAndExitRecord).toHaveBeenCalled()
     })
   })
 
-  describe('validateSavedLink', () => {
+  describe('getSavedLinkDetails', () => {
     test('should throw if missing link)', async () => {
       // @ts-expect-error - missing link value
-      await expect(validateSavedLink(undefined)).rejects.toThrow(
+      await expect(getSavedLinkDetails(undefined)).rejects.toThrow(
         'Invalid magic link'
       )
     })
@@ -94,25 +79,23 @@ describe('save-and-exit service', () => {
     test('should throw if link not found)', async () => {
       // @ts-expect-error - missing record value
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(undefined)
-      await expect(validateSavedLink('12345')).rejects.toThrow(
+      await expect(getSavedLinkDetails('12345')).rejects.toThrow(
         'Invalid magic link'
       )
     })
 
     test('should return valid result)', async () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue({
-        data: {
-          // @ts-expect-error - partial record value
-          form: {
-            id: '1234'
-          },
-          security: {
-            question: SecurityQuestionsEnum.MemorablePlace,
-            answer: ''
-          }
+        // @ts-expect-error - partial record value
+        form: {
+          id: '1234'
+        },
+        security: {
+          question: SecurityQuestionsEnum.MemorablePlace,
+          answer: ''
         }
       })
-      const res = await validateSavedLink('123456')
+      const res = await getSavedLinkDetails('123456')
       expect(res).toEqual({ form: { id: '1234' }, question: 'memorable-place' })
     })
   })

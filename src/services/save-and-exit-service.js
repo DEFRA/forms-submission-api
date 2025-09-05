@@ -3,6 +3,7 @@ import argon2 from 'argon2'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
+  deleteSaveAndExitRecord,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts
 } from '~/src/repositories/save-and-exit-repository.js'
@@ -15,7 +16,7 @@ const INVALID_MAGIC_LINK = 'Invalid magic link'
  * Validate the save-and-exit link (just verify link id at this stage)
  * @param {string} magicLinkId
  */
-export async function validateSavedLink(magicLinkId) {
+export async function getSavedLinkDetails(magicLinkId) {
   if (!magicLinkId) {
     throw Boom.badRequest(INVALID_MAGIC_LINK)
   }
@@ -27,17 +28,17 @@ export async function validateSavedLink(magicLinkId) {
   }
 
   return {
-    form: record.data.form,
-    question: record.data.security.question,
+    form: record.form,
+    question: record.security.question,
     invalidPasswordAttempts: record.invalidPasswordAttempts
   }
 }
 
 /**
- * Validate the full details of the save-and-exit credentials and return the form state
+ * Validate the full details of the save-and-exit credentials
  * @param {ValidateSaveAndExitPayload} payload
  */
-export async function validateAndGetSavedState(payload) {
+export async function validateSavedLinkCredentials(payload) {
   const { magicLinkId, securityAnswer } = payload
 
   let record = await getSaveAndExitRecord(magicLinkId)
@@ -49,10 +50,7 @@ export async function validateAndGetSavedState(payload) {
 
   let validPassword = false
   try {
-    validPassword = await argon2.verify(
-      record.data.security.answer,
-      securityAnswer
-    )
+    validPassword = await argon2.verify(record.security.answer, securityAnswer)
   } catch {
     logger.error(
       `Invalid password hash for save-and-exit id ${magicLinkId} - unable to decrypt`
@@ -61,13 +59,15 @@ export async function validateAndGetSavedState(payload) {
 
   if (!validPassword) {
     record = await incrementInvalidPasswordAttempts(magicLinkId)
+  } else {
+    await deleteSaveAndExitRecord(magicLinkId)
   }
 
   return {
-    form: record?.data.form,
-    state: !validPassword ? {} : record?.data.state,
+    form: record?.form,
+    state: !validPassword ? {} : record?.state,
     invalidPasswordAttempts: record?.invalidPasswordAttempts,
-    securityQuestion: record?.data.security.question,
+    securityQuestion: record?.security.question,
     result: !validPassword ? 'Invalid security answer' : 'Success'
   }
 }

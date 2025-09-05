@@ -8,7 +8,6 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
-import { getFormMetadataById } from '~/src/services/form-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
@@ -17,9 +16,9 @@ const expiryInDays = config.get('saveAndExitExpiryInDays')
 
 /**
  * @param {Message} message
- * @returns { Promise<RunnerRecordInput> }
+ * @returns { Promise<{ messageId: string, parsedContent: SaveAndExitMessage}> }
  */
-export async function mapSubmissionEvent(message) {
+export async function mapSubmissionMessageToData(message) {
   if (!message.MessageId) {
     throw new Error('Unexpected missing Message.MessageId')
   }
@@ -46,23 +45,44 @@ export async function mapSubmissionEvent(message) {
 
   return {
     messageId: message.MessageId,
-    ...value,
-    recordCreatedAt: new Date()
+    parsedContent: value
   }
 }
 
 /**
- * @param {RunnerRecordInput} document
- * @param {FormMetadata} form
+ * @param {{ messageId: string, parsedContent: SaveAndExitMessage}} message
+ * @returns {SaveAndExitRecord}
+ */
+export function mapSubmissionDataToDocument(message) {
+  const { form, security, state, email } = message.parsedContent.data
+  return {
+    magicLinkId: message.messageId,
+    form: {
+      id: form.id,
+      isPreview: form.isPreview,
+      status: form.status,
+      baseUrl: form.baseUrl
+    },
+    email,
+    security,
+    state,
+    invalidPasswordAttempts: 0,
+    createdAt: new Date()
+  }
+}
+
+/**
+ * @param {SaveAndExitRecord} document
+ * @param {string} formTitle
  * @returns {SendNotificationArgs}
  */
-export function constructEmailContent(document, form) {
+export function constructEmailContent(document, formTitle) {
   const emailSubject = 'Form progress saved'
 
   const emailBody = `# Form progress saved
-  Your progress with ${form.title} has been saved.
+  Your progress with ${formTitle} has been saved.
 
-  [Continue with your form](${document.data.form.baseUrl}/save-and-exit-resume/${document.data.form.id}/${document.messageId})
+  [Continue with your form](${document.form.baseUrl}/save-and-exit-resume/${document.form.id}/${document.magicLinkId})
 
   ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
@@ -70,12 +90,13 @@ export function constructEmailContent(document, form) {
   `
 
   return {
-    emailAddress: document.data.email,
+    emailAddress: document.email,
     templateId: config.get('notifyTemplateId'),
     personalisation: {
       subject: emailSubject,
       body: emailBody
     }
+    // TODO - add replyTo
   }
 }
 
@@ -93,12 +114,15 @@ export async function processSubmissionEvents(messages) {
 
     try {
       return await session.withTransaction(async () => {
-        const document = await mapSubmissionEvent(message)
+        const data = await mapSubmissionMessageToData(message)
+        const document = mapSubmissionDataToDocument(data)
 
         await createSaveAndExitRecord(document, session)
 
-        const form = await getFormMetadataById(document.data.form.id)
-        const emailContent = constructEmailContent(document, form)
+        const emailContent = constructEmailContent(
+          document,
+          data.parsedContent.data.form.title
+        )
         await sendNotification(emailContent)
 
         logger.info(`Deleting ${message.MessageId}`)
@@ -145,5 +169,5 @@ export async function processSubmissionEvents(messages) {
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
- * @import { FormMetadata, RunnerRecordInput, SaveAndExitMessage } from '@defra/forms-model'
+ * @import { FormMetadata, SaveAndExitMessageData, SaveAndExitMessage, SaveAndExitRecord } from '@defra/forms-model'
  */

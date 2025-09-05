@@ -3,9 +3,7 @@ import Boom from '@hapi/boom'
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
- * @typedef {object} InvalidAttempts
- * @property {number} invalidPasswordAttempts - Number of invalid password attempts so far
- * @typedef {RunnerRecordInput & Ttl & InvalidAttempts} RunnerRecordFull
+ * @typedef {SaveAndExitRecord & Ttl} RunnerRecordFull
  */
 
 import { config } from '~/src/config/index.js'
@@ -31,7 +29,7 @@ export async function getSaveAndExitRecord(id) {
   )
 
   try {
-    const result = await coll.findOne({ messageId: id })
+    const result = await coll.findOne({ magicLinkId: id })
 
     logger.info('Read save-and-exit records')
 
@@ -47,12 +45,12 @@ export async function getSaveAndExitRecord(id) {
 
 /**
  * Creates a save-and-exit record from SubmissionRecordInput
- * @param {RunnerRecordInput} recordInput
+ * @param {SaveAndExitRecord} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
  */
 export async function createSaveAndExitRecord(recordInput, session) {
-  logger.info(`Inserting ${recordInput.messageId}`)
+  logger.info(`Inserting ${recordInput.magicLinkId}`)
 
   const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
@@ -68,13 +66,13 @@ export async function createSaveAndExitRecord(recordInput, session) {
       { session }
     )
 
-    logger.info(`Inserted ${recordInput.messageId}`)
+    logger.info(`Inserted ${recordInput.magicLinkId}`)
 
     return res.insertedId
   } catch (err) {
     logger.error(
       err,
-      `Failed to insert ${recordInput.messageId} - ${getErrorMessage(err)} `
+      `Failed to insert ${recordInput.magicLinkId} - ${getErrorMessage(err)} `
     )
     throw err
   }
@@ -94,7 +92,7 @@ export async function incrementInvalidPasswordAttempts(id) {
 
   try {
     const result = await coll.findOneAndUpdate(
-      { messageId: id },
+      { magicLinkId: id },
       { $inc: { invalidPasswordAttempts: 1 } }
     )
 
@@ -106,7 +104,7 @@ export async function incrementInvalidPasswordAttempts(id) {
       logger.info(
         'Reached max number of invalid password - record being deleted'
       )
-      await coll.deleteOne({ messageId: id })
+      await coll.deleteOne({ magicLinkId: id })
       return null
     }
 
@@ -123,6 +121,27 @@ export async function incrementInvalidPasswordAttempts(id) {
 }
 
 /**
- * @import { RunnerRecordInput } from '@defra/forms-model'
+ * Deletes a save-and-exit record
+ * @param {string} id - message id/magic link id
+ */
+export async function deleteSaveAndExitRecord(id) {
+  logger.info(`Deleting ${id}`)
+
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    await coll.deleteOne({ magicLinkId: id })
+
+    logger.info(`Deleted ${id}`)
+  } catch (err) {
+    logger.error(err, `Failed to delete ${id} - ${getErrorMessage(err)} `)
+    throw err
+  }
+}
+
+/**
+ * @import { SaveAndExitRecord } from '@defra/forms-model'
  * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  */
