@@ -2,14 +2,13 @@ import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
   STUB_SUBMISSION_RECORD_ID,
-  buildSaveAndExitMessage,
-  buildSubmissionMetaBase,
-  buildSubmissionRecordDocument,
-  buildSubmissionRecordDocumentMeta
+  buildDbDocument
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
-  getSaveAndExitRecord
+  deleteSaveAndExitRecord,
+  getSaveAndExitRecord,
+  incrementInvalidPasswordAttempts
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -56,21 +55,9 @@ jest.mock('~/src/mongo.js', () => {
 })
 
 describe('save-and-exit-repository', () => {
-  const recordInput = buildSubmissionMetaBase({
-    recordCreatedAt: new Date('2025-08-08'),
-    messageId: '23b3e93c-5bea-4bcc-ab27-be69ce82a190'
-  })
-  const message = buildSaveAndExitMessage()
-  const submissionRecordInput = buildSubmissionRecordDocument(
-    message,
-    recordInput
-  )
-  const submissionDocument = buildSubmissionRecordDocument(
-    message,
-    buildSubmissionRecordDocumentMeta({
-      ...submissionRecordInput
-    })
-  )
+  const submissionDocument = buildDbDocument()
+
+  const submissionRecordInput = structuredClone(buildDbDocument())
 
   beforeEach(() => {
     jest.mocked(db.collection).mockReturnValue(mockCollection)
@@ -105,7 +92,8 @@ describe('save-and-exit-repository', () => {
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
         ...submissionRecordInput,
-        expireAt: expect.any(Date)
+        expireAt: expect.any(Date),
+        invalidPasswordAttempts: 0
       })
       expect(session).toEqual({ session: mockSession })
     })
@@ -115,6 +103,76 @@ describe('save-and-exit-repository', () => {
       await expect(
         createSaveAndExitRecord(submissionRecordInput, mockSession)
       ).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('incrementInvalidPasswordAttempts', () => {
+    it('should increment record', async () => {
+      jest.mocked(
+        mockCollection.findOneAndUpdate.mockResolvedValueOnce({
+          ...submissionRecordInput,
+          expireAt: expect.any(Date),
+          invalidPasswordAttempts: 1
+        })
+      )
+      const res = await incrementInvalidPasswordAttempts('123')
+      const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(updated).toEqual({
+        magicLinkId: '123'
+      })
+      expect(res).toEqual({
+        ...submissionRecordInput,
+        expireAt: expect.any(Date),
+        invalidPasswordAttempts: 1
+      })
+      expect(mockCollection.deleteOne).not.toHaveBeenCalled()
+    })
+
+    it('should delete record if increment max threshold reached', async () => {
+      jest.mocked(
+        mockCollection.findOneAndUpdate.mockResolvedValueOnce({
+          ...submissionRecordInput,
+          expireAt: expect.any(Date),
+          invalidPasswordAttempts: 3
+        })
+      )
+      const res = await incrementInvalidPasswordAttempts('123')
+      const [updated] = mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(updated).toEqual({
+        magicLinkId: '123'
+      })
+      expect(res.form).toBeDefined()
+      expect(mockCollection.deleteOne).toHaveBeenCalled()
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.findOneAndUpdate.mockRejectedValueOnce(new Error('Failed'))
+      await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
+        new Error('Failed')
+      )
+    })
+
+    it('should handle not found', async () => {
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(undefined)
+      await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
+        new Error('Save and exit record 123 not found')
+      )
+    })
+  })
+
+  describe('deleteSaveAndExitRecord', () => {
+    it('should delete a save-and-exit record', async () => {
+      jest.mocked(mockCollection.deleteOne.mockResolvedValueOnce({}))
+      await deleteSaveAndExitRecord('123')
+      const [deletedCall] = mockCollection.deleteOne.mock.calls[0]
+      expect(deletedCall).toEqual({ magicLinkId: '123' })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.deleteOne.mockRejectedValueOnce(new Error('Failed'))
+      await expect(deleteSaveAndExitRecord('123')).rejects.toThrow(
+        new Error('Failed')
+      )
     })
   })
 })

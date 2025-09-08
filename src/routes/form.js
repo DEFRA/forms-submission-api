@@ -1,17 +1,16 @@
-import {
-  formSubmitPayloadSchema,
-  saveAndExitMessageData
-} from '@defra/forms-model'
+import { formSubmitPayloadSchema } from '@defra/forms-model'
+import Joi from 'joi'
 
+import { magicLinkSchema } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 export default [
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
+   * @satisfies {ServerRoute}
    */
   ({
     method: 'POST',
@@ -43,39 +42,49 @@ export default [
   ({
     method: 'GET',
     path: '/save-and-exit/{link}',
+    /**
+     * @param {RequestLinkGet} request
+     */
     async handler(request) {
       const { link } = request.params
 
-      return validateSavedLink(link)
-    },
-    options: {
-      auth: false
-    }
-  }),
-
-  /**
-   * @satisfies {ServerRoute<{ Payload: RequestSubmit }>}
-   */
-  ({
-    method: 'POST',
-    path: '/save-and-exit',
-    /**
-     * @param {RequestSaveAndExit} request
-     */
-    async handler(request) {
-      const { payload } = request
-
-      const state = await validateAndGetSavedState(payload)
-
-      return {
-        message: 'Save-and-exit retrieved successfully',
-        result: { state }
-      }
+      return getSavedLinkDetails(link)
     },
     options: {
       auth: false,
       validate: {
-        payload: saveAndExitMessageData
+        params: Joi.object().keys({
+          link: magicLinkSchema
+        })
+      }
+    }
+  }),
+
+  /**
+   * @satisfies {ServerRoute}
+   */
+  ({
+    method: 'POST',
+    path: '/save-and-exit/{link}',
+    /**
+     * @param {RequestValidateSaveAndExit} request
+     */
+    async handler(request) {
+      const { params, payload } = request
+      const { link } = params
+      const { securityAnswer } = payload
+
+      return validateSavedLinkCredentials(link, securityAnswer)
+    },
+    options: {
+      auth: false,
+      validate: {
+        params: Joi.object().keys({
+          link: magicLinkSchema
+        }),
+        payload: Joi.object({
+          securityAnswer: Joi.string().required()
+        })
       }
     }
   })
@@ -83,5 +92,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestSaveAndExit, RequestSubmit } from '~/src/api/types.js'
+ * @import { RequestValidateSaveAndExit, RequestSubmit, RequestLinkGet } from '~/src/api/types.js'
  */

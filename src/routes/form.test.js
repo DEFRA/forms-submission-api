@@ -4,8 +4,8 @@ import { StatusCodes } from 'http-status-codes'
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import {
-  validateAndGetSavedState,
-  validateSavedLink
+  getSavedLinkDetails,
+  validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/mongo.js')
@@ -16,6 +16,11 @@ jest.mock('~/src/tasks/receive-messages.js')
 describe('Forms route', () => {
   /** @type {Server} */
   let server
+
+  /**
+   * @type {UUID}
+   */
+  const GUID_EMPTY = '00000000-0000-0000-0000-000000000000'
 
   beforeAll(async () => {
     server = await createServer()
@@ -93,10 +98,6 @@ describe('Forms route', () => {
         ]
       }
 
-      /**
-       * @type {UUID}
-       */
-      const GUID_EMPTY = '00000000-0000-0000-0000-000000000000'
       const submitResponse = {
         main: GUID_EMPTY,
         repeaters: {
@@ -141,27 +142,38 @@ describe('Forms route', () => {
 
   describe('Save and exit', () => {
     test('Testing GET /save-and-exit route returns record', async () => {
-      jest.mocked(validateSavedLink).mockResolvedValueOnce({
-        formId: '12345',
-        question: SecurityQuestionsEnum.MemorablePlace
+      jest.mocked(getSavedLinkDetails).mockResolvedValueOnce({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        question: SecurityQuestionsEnum.MemorablePlace,
+        invalidPasswordAttempts: 0
       })
       const response = await server.inject({
         method: 'GET',
-        url: '/save-and-exit/abcdefg'
+        url: `/save-and-exit/${GUID_EMPTY}`
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        formId: '12345',
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: 'draft'
+        },
         question: 'memorable-place'
       })
     })
 
     test('Testing POST /save-and-exit route fails if with invalid payload', async () => {
-      jest.mocked(validateAndGetSavedState).mockResolvedValue({})
+      // @ts-expect-error - invalid type due to invalid payload
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
-        url: '/save-and-exit',
+        url: `/save-and-exit/${GUID_EMPTY}`,
         payload: {
           something: 'that is not valid'
         }
@@ -170,37 +182,43 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
       expect(response.result).toMatchObject({
         error: 'Bad Request',
-        message:
-          '"formId" is required. "email" is required. "state" is required. "something" is not allowed'
+        message: '"securityAnswer" is required. "something" is not allowed'
       })
     })
 
     test('Testing POST /save-and-exit route is successful with valid payload', async () => {
-      jest
-        .mocked(validateAndGetSavedState)
-        .mockResolvedValue({ formField1: '123' })
+      jest.mocked(validateSavedLinkCredentials).mockResolvedValue({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        state: {
+          formField1: '123'
+        },
+        invalidPasswordAttempts: 0,
+        securityQuestion: SecurityQuestionsEnum.MemorablePlace,
+        validPassword: true
+      })
       const response = await server.inject({
         method: 'POST',
-        url: '/save-and-exit',
+        url: `/save-and-exit/${GUID_EMPTY}`,
         payload: {
-          formId: '12345',
-          security: {
-            question: SecurityQuestionsEnum.MemorablePlace,
-            answer: 'answer'
-          },
-          formStatus: {
-            status: FormStatus.Draft,
-            isPreview: false
-          },
-          email: 'my-email@test.com',
-          state: {}
+          securityAnswer: 'answer'
         }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Save-and-exit retrieved successfully',
-        result: { state: { formField1: '123' } }
+        validPassword: true,
+        state: {
+          formField1: '123'
+        },
+        form: {
+          id: '12345'
+        },
+        invalidPasswordAttempts: 0
       })
     })
   })

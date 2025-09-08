@@ -1,44 +1,35 @@
-import { ObjectId } from 'mongodb'
+import Boom from '@hapi/boom'
 
 /**
  * @typedef {object} Ttl
  * @property {Date} expireAt - Time to live
- * @typedef {RunnerRecordInput & Ttl} RunnerRecordInputWithTtl
+ * @typedef {SaveAndExitRecord & Ttl} RunnerRecordFull
  */
 
 import { config } from '~/src/config/index.js'
+import { addDays } from '~/src/helpers/date-helper.js'
 import { getErrorMessage } from '~/src/helpers/error-message.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
-
-/**
- * @param {Date} date
- * @param {number} days
- * @returns {Date}
- */
-export function addDays(date, days) {
-  const result = new Date(date)
-  result.setDate(result.getDate() + days)
-  return result
-}
+const maxInvalidPasswordAttempts = 3
 
 /**
  * Gets a record based on id
  * @param {string} id
- * @returns { Promise<WithId<RunnerRecord> | null> }
+ * @returns { Promise<WithId<RunnerRecordFull> | null> }
  */
 export async function getSaveAndExitRecord(id) {
   logger.info('Reading save-and-exit records')
 
-  const coll = /** @type {Collection<RunnerRecord>} */ (
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
-    const result = await coll.findOne({ _id: new ObjectId(id) })
+    const result = await coll.findOne({ magicLinkId: id })
 
     logger.info('Read save-and-exit records')
 
@@ -54,14 +45,14 @@ export async function getSaveAndExitRecord(id) {
 
 /**
  * Creates a save-and-exit record from SubmissionRecordInput
- * @param {RunnerRecordInput} recordInput
+ * @param {SaveAndExitRecord} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
  */
 export async function createSaveAndExitRecord(recordInput, session) {
-  logger.info(`Inserting ${recordInput.messageId}`)
+  logger.info(`Inserting ${recordInput.magicLinkId}`)
 
-  const coll = /** @type {Collection<RunnerRecordInputWithTtl>} */ (
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -69,24 +60,88 @@ export async function createSaveAndExitRecord(recordInput, session) {
     const res = await coll.insertOne(
       {
         ...recordInput,
-        expireAt: addDays(new Date(), expiryInDays)
+        expireAt: addDays(new Date(), expiryInDays),
+        invalidPasswordAttempts: 0
       },
       { session }
     )
 
-    logger.info(`Inserted ${recordInput.messageId}`)
+    logger.info(`Inserted ${recordInput.magicLinkId}`)
 
     return res.insertedId
   } catch (err) {
     logger.error(
       err,
-      `Failed to insert ${recordInput.messageId} - ${getErrorMessage(err)} `
+      `Failed to insert ${recordInput.magicLinkId} - ${getErrorMessage(err)} `
     )
     throw err
   }
 }
 
 /**
- * @import { RunnerRecordInput, RunnerRecord } from '@defra/forms-model'
- * @import { ClientSession, Collection, WithId } from 'mongodb'
+ * Increment invalid password attempts on a record based on id
+ * @param {string} id
+ * @returns { Promise<WithId<RunnerRecordFull>> }
+ */
+export async function incrementInvalidPasswordAttempts(id) {
+  logger.info('Increment invalid password attempts')
+
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.findOneAndUpdate(
+      { magicLinkId: id },
+      { $inc: { invalidPasswordAttempts: 1 } },
+      { returnDocument: 'after' }
+    )
+
+    if (!result) {
+      throw Boom.notFound(`Save and exit record ${id} not found`)
+    }
+
+    if (result.invalidPasswordAttempts >= maxInvalidPasswordAttempts) {
+      logger.info(
+        'Reached max number of invalid password - record being deleted'
+      )
+      await coll.deleteOne({ magicLinkId: id })
+    }
+
+    logger.info('Incremented invalid password attempts')
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to increment invalid password attempts - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * Deletes a save-and-exit record
+ * @param {string} id - message id/magic link id
+ */
+export async function deleteSaveAndExitRecord(id) {
+  logger.info(`Deleting ${id}`)
+
+  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    await coll.deleteOne({ magicLinkId: id })
+
+    logger.info(`Deleted ${id}`)
+  } catch (err) {
+    logger.error(err, `Failed to delete ${id} - ${getErrorMessage(err)} `)
+    throw err
+  }
+}
+
+/**
+ * @import { SaveAndExitRecord } from '@defra/forms-model'
+ * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  */

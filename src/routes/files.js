@@ -13,7 +13,7 @@ import {
 
 export default [
   /**
-   * @satisfies {ServerRoute<{ Payload: RequestFileCreate }>}
+   * @satisfies {ServerRoute}
    */
   {
     method: 'POST',
