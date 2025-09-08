@@ -81,7 +81,7 @@ export async function createSaveAndExitRecord(recordInput, session) {
 /**
  * Increment invalid password attempts on a record based on id
  * @param {string} id
- * @returns { Promise<WithId<RunnerRecordFull> | null> }
+ * @returns { Promise<WithId<RunnerRecordFull>> }
  */
 export async function incrementInvalidPasswordAttempts(id) {
   logger.info('Increment invalid password attempts')
@@ -93,11 +93,12 @@ export async function incrementInvalidPasswordAttempts(id) {
   try {
     const result = await coll.findOneAndUpdate(
       { magicLinkId: id },
-      { $inc: { invalidPasswordAttempts: 1 } }
+      { $inc: { invalidPasswordAttempts: 1 } },
+      { returnDocument: 'after' }
     )
 
     if (!result) {
-      throw Boom.notFound()
+      throw Boom.notFound(`Save and exit record ${id} not found`)
     }
 
     if (result.invalidPasswordAttempts >= maxInvalidPasswordAttempts) {
@@ -105,7 +106,6 @@ export async function incrementInvalidPasswordAttempts(id) {
         'Reached max number of invalid password - record being deleted'
       )
       await coll.deleteOne({ magicLinkId: id })
-      return null
     }
 
     logger.info('Incremented invalid password attempts')

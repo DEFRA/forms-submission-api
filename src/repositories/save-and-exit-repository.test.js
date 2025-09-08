@@ -141,7 +141,7 @@ describe('save-and-exit-repository', () => {
       expect(updated).toEqual({
         magicLinkId: '123'
       })
-      expect(res).toBeNull()
+      expect(res.form).toBeDefined()
       expect(mockCollection.deleteOne).toHaveBeenCalled()
     })
 
@@ -155,7 +155,7 @@ describe('save-and-exit-repository', () => {
     it('should handle not found', async () => {
       mockCollection.findOneAndUpdate.mockResolvedValueOnce(undefined)
       await expect(incrementInvalidPasswordAttempts('123')).rejects.toThrow(
-        new Error('Not Found')
+        new Error('Save and exit record 123 not found')
       )
     })
   })

@@ -4,13 +4,8 @@
  * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
  * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
  * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
- * @typedef {Request<{ Server: { db: Db }, Payload: ValidateSaveAndExitPayload }>} RequestValidateSaveAndExit
- */
-
-/**
- * @typedef {object} ValidateSaveAndExitPayload
- * @property {string} magicLinkId - key contained in magic link
- * @property {string} securityAnswer - security answer provided by user
+ * @typedef {Request<{ Server: { db: Db }, Params: { link: string } }>} RequestLinkGet
+ * @typedef {Request<{ Server: { db: Db }, Params: { link: string }, Payload: { securityAnswer: string } }>} RequestValidateSaveAndExit
  */
 
 /**

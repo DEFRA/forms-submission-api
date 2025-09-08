@@ -17,6 +17,11 @@ describe('Forms route', () => {
   /** @type {Server} */
   let server
 
+  /**
+   * @type {UUID}
+   */
+  const GUID_EMPTY = '00000000-0000-0000-0000-000000000000'
+
   beforeAll(async () => {
     server = await createServer()
     await server.initialize()
@@ -93,10 +98,6 @@ describe('Forms route', () => {
         ]
       }
 
-      /**
-       * @type {UUID}
-       */
-      const GUID_EMPTY = '00000000-0000-0000-0000-000000000000'
       const submitResponse = {
         main: GUID_EMPTY,
         repeaters: {
@@ -153,7 +154,7 @@ describe('Forms route', () => {
       })
       const response = await server.inject({
         method: 'GET',
-        url: '/save-and-exit/abcdefg'
+        url: `/save-and-exit/${GUID_EMPTY}`
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -172,7 +173,7 @@ describe('Forms route', () => {
       jest.mocked(validateSavedLinkCredentials).mockResolvedValue({})
       const response = await server.inject({
         method: 'POST',
-        url: '/save-and-exit',
+        url: `/save-and-exit/${GUID_EMPTY}`,
         payload: {
           something: 'that is not valid'
         }
@@ -181,8 +182,7 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
       expect(response.result).toMatchObject({
         error: 'Bad Request',
-        message:
-          '"magicLinkId" is required. "securityAnswer" is required. "something" is not allowed'
+        message: '"securityAnswer" is required. "something" is not allowed'
       })
     })
 
@@ -199,20 +199,19 @@ describe('Forms route', () => {
         },
         invalidPasswordAttempts: 0,
         securityQuestion: SecurityQuestionsEnum.MemorablePlace,
-        result: 'Success'
+        validPassword: true
       })
       const response = await server.inject({
         method: 'POST',
-        url: '/save-and-exit',
+        url: `/save-and-exit/${GUID_EMPTY}`,
         payload: {
-          securityAnswer: 'answer',
-          magicLinkId: 'some-magic-link'
+          securityAnswer: 'answer'
         }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        result: 'Success',
+        validPassword: true,
         state: {
           formField1: '123'
         },

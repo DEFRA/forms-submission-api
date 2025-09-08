@@ -3,7 +3,8 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitRecord,
-  getSaveAndExitRecord
+  getSaveAndExitRecord,
+  incrementInvalidPasswordAttempts
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   getSavedLinkDetails,
@@ -27,24 +28,29 @@ describe('save-and-exit service', () => {
 
     test('should return error result if incorrect security answer (invalid encryption)', async () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      const res = await validateSavedLinkCredentials({
-        securityAnswer: 'invalid',
-        magicLinkId: 'some-magic-link'
+      jest.mocked(incrementInvalidPasswordAttempts).mockResolvedValueOnce({
+        ...submissionDocument,
+        invalidPasswordAttempts: 1
       })
-      expect(res.result).toBe('Invalid security answer')
+      const res = await validateSavedLinkCredentials(
+        'invalid',
+        'some-magic-link'
+      )
+      expect(res.validPassword).toBe(false)
       expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
     })
 
     test('should return error result if incorrect security answer (valid encryption but wrong answer)', async () => {
+      jest.mocked(incrementInvalidPasswordAttempts).mockResolvedValueOnce({
+        ...submissionDocument,
+        invalidPasswordAttempts: 1
+      })
       const submissionDocument2 = structuredClone(submissionDocument)
       submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$cW4DLWbXvQagUDNVUHgRtQ$aaT6McioURZqWOMnnOX8Kqun8ZmL0z+ucROI7nFnsdc'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
-      const res = await validateSavedLinkCredentials({
-        securityAnswer: 'a2',
-        magicLinkId: 'some-magic-link'
-      })
-      expect(res.result).toBe('Invalid security answer')
+      const res = await validateSavedLinkCredentials('a2', 'some-magic-link')
+      expect(res.validPassword).toBe(false)
       expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
     })
 
@@ -53,16 +59,12 @@ describe('save-and-exit service', () => {
       submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument2)
-      const res = await validateSavedLinkCredentials({
-        securityAnswer: 'a3',
-        magicLinkId: 'some-magic-link'
-      })
+      const res = await validateSavedLinkCredentials('some-magic-link', 'a3')
       expect(res).toBeDefined()
       // @ts-expect-error - dynamic field names
       expect(res.state.formField1).toBe('val1')
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
-      // @ts-expect-error - field name may be missing
       expect(res.form.id).toBe('form-id')
       expect(deleteSaveAndExitRecord).toHaveBeenCalled()
     })

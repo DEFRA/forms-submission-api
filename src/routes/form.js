@@ -1,16 +1,12 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
+import { magicLinkSchema } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
 import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
-
-const validateSaveAndExitSchema = Joi.object({
-  magicLinkId: Joi.string().required(),
-  securityAnswer: Joi.string().required()
-})
 
 export default [
   /**
@@ -46,13 +42,21 @@ export default [
   ({
     method: 'GET',
     path: '/save-and-exit/{link}',
+    /**
+     * @param {RequestLinkGet} request
+     */
     async handler(request) {
       const { link } = request.params
 
       return getSavedLinkDetails(link)
     },
     options: {
-      auth: false
+      auth: false,
+      validate: {
+        params: Joi.object().keys({
+          link: magicLinkSchema
+        })
+      }
     }
   }),
 
@@ -61,21 +65,26 @@ export default [
    */
   ({
     method: 'POST',
-    path: '/save-and-exit',
+    path: '/save-and-exit/{link}',
     /**
      * @param {RequestValidateSaveAndExit} request
      */
     async handler(request) {
-      const { payload } = request
+      const { params, payload } = request
+      const { link } = params
+      const { securityAnswer } = payload
 
-      const result = await validateSavedLinkCredentials(payload)
-
-      return result
+      return validateSavedLinkCredentials(link, securityAnswer)
     },
     options: {
       auth: false,
       validate: {
-        payload: validateSaveAndExitSchema
+        params: Joi.object().keys({
+          link: magicLinkSchema
+        }),
+        payload: Joi.object({
+          securityAnswer: Joi.string().required()
+        })
       }
     }
   })
@@ -83,5 +92,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestValidateSaveAndExit, RequestSubmit } from '~/src/api/types.js'
+ * @import { RequestValidateSaveAndExit, RequestSubmit, RequestLinkGet } from '~/src/api/types.js'
  */

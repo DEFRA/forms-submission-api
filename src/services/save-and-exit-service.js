@@ -17,14 +17,10 @@ const INVALID_MAGIC_LINK = 'Invalid magic link'
  * @param {string} magicLinkId
  */
 export async function getSavedLinkDetails(magicLinkId) {
-  if (!magicLinkId) {
-    throw Boom.badRequest(INVALID_MAGIC_LINK)
-  }
-
   const record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
-    throw Boom.badRequest(INVALID_MAGIC_LINK)
+    throw Boom.notFound(INVALID_MAGIC_LINK)
   }
 
   return {
@@ -36,11 +32,13 @@ export async function getSavedLinkDetails(magicLinkId) {
 
 /**
  * Validate the full details of the save-and-exit credentials
- * @param {ValidateSaveAndExitPayload} payload
+ * @param {string} magicLinkId - key contained in magic link
+ * @param {string} securityAnswer - security answer provided by user
  */
-export async function validateSavedLinkCredentials(payload) {
-  const { magicLinkId, securityAnswer } = payload
-
+export async function validateSavedLinkCredentials(
+  magicLinkId,
+  securityAnswer
+) {
   let record = await getSaveAndExitRecord(magicLinkId)
 
   if (!record) {
@@ -57,21 +55,19 @@ export async function validateSavedLinkCredentials(payload) {
     )
   }
 
-  if (!validPassword) {
-    record = await incrementInvalidPasswordAttempts(magicLinkId)
-  } else {
+  if (validPassword) {
+    // Once a valid password has been provided, delete the save and exit record
     await deleteSaveAndExitRecord(magicLinkId)
+  } else {
+    // Otherwise, increment the password attempts and return updated record
+    record = await incrementInvalidPasswordAttempts(magicLinkId)
   }
 
   return {
-    form: record?.form,
-    state: !validPassword ? {} : record?.state,
-    invalidPasswordAttempts: record?.invalidPasswordAttempts,
-    securityQuestion: record?.security.question,
-    result: !validPassword ? 'Invalid security answer' : 'Success'
+    form: record.form,
+    state: !validPassword ? {} : record.state,
+    invalidPasswordAttempts: record.invalidPasswordAttempts,
+    securityQuestion: record.security.question,
+    validPassword
   }
 }
-
-/**
- * @import { ValidateSaveAndExitPayload } from '~/src/api/types.js'
- */
