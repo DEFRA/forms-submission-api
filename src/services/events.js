@@ -84,7 +84,7 @@ export function constructEmailContent(document, formTitle) {
   const emailBody = `# Form progress saved
   Your progress with ${formTitle} has been saved.
 
-  [Continue with your form](${document.form.baseUrl}/save-and-exit-resume/${document.form.id}/${document.magicLinkId})
+  [Continue with your form](${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId})
 
   ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
