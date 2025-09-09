@@ -133,7 +133,7 @@ describe('save-and-exit-repository', () => {
         mockCollection.findOneAndUpdate.mockResolvedValueOnce({
           ...submissionRecordInput,
           expireAt: expect.any(Date),
-          invalidPasswordAttempts: 3
+          invalidPasswordAttempts: 5
         })
       )
       const res = await incrementInvalidPasswordAttempts('123')
