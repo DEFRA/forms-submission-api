@@ -1,7 +1,12 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
-import { magicLinkSchema } from '~/src/models/form.js'
+import {
+  formSubmitResponseSchema,
+  getSavedLinkResponseSchema,
+  magicLinkSchema,
+  validateSavedLinkResponseSchema
+} from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
 import {
   getSavedLinkDetails,
@@ -36,10 +41,9 @@ export default [
       },
       response: {
         status: {
-          200: Joi.object({
-            message: Joi.string().required()
-          })
-        }
+          200: formSubmitResponseSchema
+        },
+        sample: 0
       }
     }
   }),
@@ -65,6 +69,12 @@ export default [
         params: Joi.object().keys({
           link: magicLinkSchema
         })
+      },
+      response: {
+        status: {
+          200: getSavedLinkResponseSchema
+        },
+        sample: 0
       }
     }
   }),
@@ -95,6 +105,12 @@ export default [
         payload: Joi.object({
           securityAnswer: Joi.string().required()
         })
+      },
+      response: {
+        status: {
+          200: validateSavedLinkResponseSchema
+        },
+        sample: 0
       }
     }
   })
