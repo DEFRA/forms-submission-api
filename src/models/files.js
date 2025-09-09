@@ -60,3 +60,21 @@ export const filePersistPayloadSchema = Joi.object()
     persistedRetrievalKey: Joi.string().required()
   })
   .required()
+
+// Response schemas
+export const fileRetrievalResponseSchema = Joi.object({
+  message: Joi.string().required(),
+  retrievalKeyIsCaseSensitive: Joi.boolean().required()
+})
+
+export const fileIngestResponseSchema = Joi.object({
+  message: Joi.string().required()
+})
+
+export const fileAccessResponseSchema = Joi.object({
+  message: Joi.string().required()
+})
+
+export const filePersistResponseSchema = Joi.object({
+  message: Joi.string().required()
+})

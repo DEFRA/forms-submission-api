@@ -29,9 +29,17 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: formSubmitPayloadSchema
+      },
+      response: {
+        status: {
+          200: Joi.object({
+            message: Joi.string().required()
+          })
+        }
       }
     }
   }),
@@ -51,6 +59,7 @@ export default [
       return getSavedLinkDetails(link)
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         params: Joi.object().keys({
@@ -77,6 +86,7 @@ export default [
       return validateSavedLinkCredentials(link, securityAnswer)
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         params: Joi.object().keys({

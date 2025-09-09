@@ -1,8 +1,12 @@
 import {
   fileAccessPayloadSchema,
+  fileAccessResponseSchema,
   fileIngestPayloadSchema,
+  fileIngestResponseSchema,
   filePersistPayloadSchema,
-  fileRetrievalParamsSchema
+  filePersistResponseSchema,
+  fileRetrievalParamsSchema,
+  fileRetrievalResponseSchema
 } from '~/src/models/files.js'
 import {
   checkFileStatus,
@@ -31,6 +35,7 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: fileIngestPayloadSchema,
@@ -49,6 +54,12 @@ export default [
             .code(200)
             .takeover()
         }
+      },
+      response: {
+        status: {
+          200: fileIngestResponseSchema
+        },
+        sample: 0
       }
     }
   },
@@ -74,9 +85,16 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         params: fileRetrievalParamsSchema
+      },
+      response: {
+        status: {
+          200: fileRetrievalResponseSchema
+        },
+        sample: 0
       }
     }
   }),
@@ -101,8 +119,15 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       validate: {
         payload: fileAccessPayloadSchema
+      },
+      response: {
+        status: {
+          200: fileAccessResponseSchema
+        },
+        sample: 0
       }
     }
   }),
@@ -127,9 +152,16 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: filePersistPayloadSchema
+      },
+      response: {
+        status: {
+          200: filePersistResponseSchema
+        },
+        sample: 0
       }
     }
   })
