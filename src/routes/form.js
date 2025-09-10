@@ -53,10 +53,7 @@ export default [
     async handler(request) {
       const { link } = request.params
 
-      return {
-        ...(await getSavedLinkDetails(link)),
-        invalid: true
-      }
+      return getSavedLinkDetails(link)
     },
     options: {
       tags: ['api'],
