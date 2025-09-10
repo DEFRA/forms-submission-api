@@ -32,6 +32,9 @@ export async function createServer() {
   const server = hapi.server({
     port: config.get('port'),
     routes: {
+      response: {
+        sample: 0
+      },
       auth: {
         mode: 'required'
       },

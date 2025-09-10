@@ -39,8 +39,7 @@ export default [
       response: {
         status: {
           200: formSubmitResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   }),
@@ -54,7 +53,10 @@ export default [
     async handler(request) {
       const { link } = request.params
 
-      return getSavedLinkDetails(link)
+      return {
+        ...(await getSavedLinkDetails(link)),
+        invalid: true
+      }
     },
     options: {
       tags: ['api'],
@@ -67,8 +69,7 @@ export default [
       response: {
         status: {
           200: getSavedLinkResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   }),
@@ -100,8 +101,7 @@ export default [
       response: {
         status: {
           200: validateSavedLinkResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   })

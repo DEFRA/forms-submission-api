@@ -58,8 +58,7 @@ export default [
       response: {
         status: {
           200: fileIngestResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   },
@@ -90,8 +89,7 @@ export default [
       response: {
         status: {
           200: fileRetrievalResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   }),
@@ -120,8 +118,7 @@ export default [
       response: {
         status: {
           200: fileAccessResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   }),
@@ -151,8 +148,7 @@ export default [
       response: {
         status: {
           200: filePersistResponseSchema
-        },
-        sample: 0
+        }
       }
     }
   })
