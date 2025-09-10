@@ -14,7 +14,7 @@ import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
-const maxInvalidPasswordAttempts = 3
+const maxInvalidPasswordAttempts = 5
 
 /**
  * Gets a record based on id
