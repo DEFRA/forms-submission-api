@@ -1,13 +1,17 @@
 /**
  * @typedef {Request<{ Server: { db: Db }, Payload: UploadPayload }>} RequestFileCreate
- * @typedef {Request<{ Server: { db: Db }, Params: { fileId: string } }>} RequestFileGet
- * @typedef {Request<{ Server: { db: Db }, Payload: { fileId: string, retrievalKey: string } }>} RequestFileLinkCreate
- * @typedef {Request<{ Server: { db: Db }, Payload: { files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string } }>} RequestFilePersist
- * @typedef {Request<{ Server: { db: Db }, Payload: SubmitPayload }>} RequestSubmit
- * @typedef {Request<{ Server: { db: Db }, Params: { link: string } }>} RequestLinkGet
- * @typedef {Request<{ Server: { db: Db }, Params: { link: string }, Payload: { securityAnswer: string } }>} RequestValidateSaveAndExit
  */
 
+/**
+ * @typedef {{ fileId: string }} FileRetrievalPayload
+ * @typedef {{ fileId: string, retrievalKey: string }} FileAccessPayload
+ * @typedef {{ files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string }} PersistedRetrievalPayload
+ */
+
+/**
+ * @typedef {{ link: string }} GetSavedLinkParams
+ * @typedef {{ Params: { link: string }, Payload: { securityAnswer: string }}} ValidateSaveAndExit
+ */
 /**
  * @typedef {object} FileUploadStatus
  * @property {string} fileId - uuid of the file
@@ -34,7 +38,7 @@
  */
 
 /**
- * @import { FormStatus, SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
+ * @import { SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */

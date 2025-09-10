@@ -15,14 +15,11 @@ import {
 
 export default [
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute<{ Payload: SubmitPayload }>}
    */
   ({
     method: 'POST',
     path: '/submit',
-    /**
-     * @param {RequestSubmit} request
-     */
     async handler(request) {
       const { payload } = request
 
@@ -49,14 +46,11 @@ export default [
   }),
 
   /**
-   * @type {ServerRoute}
+   * @type {ServerRoute<{ Params: GetSavedLinkParams }>}
    */
   ({
     method: 'GET',
     path: '/save-and-exit/{link}',
-    /**
-     * @param {RequestLinkGet} request
-     */
     async handler(request) {
       const { link } = request.params
 
@@ -80,14 +74,11 @@ export default [
   }),
 
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute< ValidateSaveAndExit >}
    */
   ({
     method: 'POST',
     path: '/save-and-exit/{link}',
-    /**
-     * @param {RequestValidateSaveAndExit} request
-     */
     async handler(request) {
       const { params, payload } = request
       const { link } = params
@@ -118,5 +109,6 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestValidateSaveAndExit, RequestSubmit, RequestLinkGet } from '~/src/api/types.js'
+ * @import { SubmitPayload } from '@defra/forms-model'
+ * @import { GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
  */
