@@ -1,8 +1,12 @@
 import {
   fileAccessPayloadSchema,
+  fileAccessResponseSchema,
   fileIngestPayloadSchema,
+  fileIngestResponseSchema,
   filePersistPayloadSchema,
-  fileRetrievalParamsSchema
+  filePersistResponseSchema,
+  fileRetrievalParamsSchema,
+  fileRetrievalResponseSchema
 } from '~/src/models/files.js'
 import {
   checkFileStatus,
@@ -31,6 +35,7 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: fileIngestPayloadSchema,
@@ -49,19 +54,21 @@ export default [
             .code(200)
             .takeover()
         }
+      },
+      response: {
+        status: {
+          200: fileIngestResponseSchema
+        }
       }
     }
   },
 
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute<{ Payload: FileRetrievalPayload }>}
    */
   ({
     method: 'GET',
     path: '/file/{fileId}',
-    /**
-     * @param {RequestFileGet} request
-     */
     async handler(request) {
       const { fileId } = request.params
 
@@ -74,22 +81,25 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         params: fileRetrievalParamsSchema
+      },
+      response: {
+        status: {
+          200: fileRetrievalResponseSchema
+        }
       }
     }
   }),
 
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute<{ Payload: FileAccessPayload }>}
    */
   ({
     method: 'POST',
     path: '/file/link',
-    /**
-     * @param {RequestFileLinkCreate} request
-     */
     async handler(request) {
       const { payload } = request
       const { fileId, retrievalKey } = payload
@@ -101,21 +111,24 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       validate: {
         payload: fileAccessPayloadSchema
+      },
+      response: {
+        status: {
+          200: fileAccessResponseSchema
+        }
       }
     }
   }),
 
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute<{ Payload: PersistedRetrievalPayload }>}
    */
   ({
     method: 'POST',
     path: '/files/persist',
-    /**
-     * @param {RequestFilePersist} request
-     */
     async handler(request) {
       const { payload } = request
       const { files, persistedRetrievalKey } = payload
@@ -127,9 +140,15 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: filePersistPayloadSchema
+      },
+      response: {
+        status: {
+          200: filePersistResponseSchema
+        }
       }
     }
   })
@@ -137,5 +156,5 @@ export default [
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
- * @import { RequestFileCreate, RequestFileGet, RequestFileLinkCreate, RequestFilePersist } from '~/src/api/types.js'
+ * @import { FileAccessPayload, FileRetrievalPayload, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */

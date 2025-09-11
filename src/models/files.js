@@ -13,6 +13,7 @@ const fileUploadStatusSchema = Joi.object()
   })
   .required()
   .unknown(true)
+  .label('fileUploadStatus')
 
 // below we use .unknown(true) as extras don't need to be a show stopper
 // just validate the bits we care about and let everything else through
@@ -32,12 +33,14 @@ export const fileIngestPayloadSchema = Joi.object()
   })
   .required()
   .unknown(true)
+  .label('fileIngestPayload')
 
 export const fileRetrievalParamsSchema = Joi.object()
   .keys({
     fileId: Joi.string().required()
   })
   .required()
+  .label('fileRetrievalParams')
 
 export const fileAccessPayloadSchema = Joi.object()
   .keys({
@@ -45,6 +48,7 @@ export const fileAccessPayloadSchema = Joi.object()
     retrievalKey: Joi.string().required()
   })
   .required()
+  .label('fileAccessPayload')
 
 export const filePersistPayloadSchema = Joi.object()
   .keys({
@@ -53,10 +57,29 @@ export const filePersistPayloadSchema = Joi.object()
         Joi.object({
           fileId: Joi.string().required(),
           initiatedRetrievalKey: Joi.string().required()
-        })
+        }).label('fileDetails')
       )
       .max(1000) // to prevent any malicious users but not any legitimate users
       .required(),
     persistedRetrievalKey: Joi.string().required()
   })
   .required()
+  .label('filePersistPayload')
+
+// Response schemas
+export const fileRetrievalResponseSchema = Joi.object({
+  message: Joi.string().required(),
+  retrievalKeyIsCaseSensitive: Joi.boolean().required()
+}).label('fileRetrievalResponse')
+
+export const fileIngestResponseSchema = Joi.object({
+  message: Joi.string().required()
+}).label('fileIngestResponse')
+
+export const fileAccessResponseSchema = Joi.object({
+  message: Joi.string().required()
+}).label('fileAccessResponse')
+
+export const filePersistResponseSchema = Joi.object({
+  message: Joi.string().required()
+}).label('filePersistResponse')

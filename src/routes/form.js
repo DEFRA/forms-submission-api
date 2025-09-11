@@ -1,7 +1,12 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
-import { magicLinkSchema } from '~/src/models/form.js'
+import {
+  formSubmitResponseSchema,
+  getSavedLinkResponseSchema,
+  magicLinkSchema,
+  validateSavedLinkResponseSchema
+} from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
 import {
   getSavedLinkDetails,
@@ -10,14 +15,11 @@ import {
 
 export default [
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute<{ Payload: SubmitPayload }>}
    */
   ({
     method: 'POST',
     path: '/submit',
-    /**
-     * @param {RequestSubmit} request
-     */
     async handler(request) {
       const { payload } = request
 
@@ -29,46 +31,54 @@ export default [
       }
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
         payload: formSubmitPayloadSchema
+      },
+      response: {
+        status: {
+          200: formSubmitResponseSchema
+        }
       }
     }
   }),
 
   /**
-   * @type {ServerRoute}
+   * @type {ServerRoute<{ Params: GetSavedLinkParams }>}
    */
   ({
     method: 'GET',
     path: '/save-and-exit/{link}',
-    /**
-     * @param {RequestLinkGet} request
-     */
     async handler(request) {
       const { link } = request.params
 
       return getSavedLinkDetails(link)
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
-        params: Joi.object().keys({
-          link: magicLinkSchema
-        })
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('getSavedLinkParams')
+      },
+      response: {
+        status: {
+          200: getSavedLinkResponseSchema
+        }
       }
     }
   }),
 
   /**
-   * @satisfies {ServerRoute}
+   * @satisfies {ServerRoute< ValidateSaveAndExit >}
    */
   ({
     method: 'POST',
     path: '/save-and-exit/{link}',
-    /**
-     * @param {RequestValidateSaveAndExit} request
-     */
     async handler(request) {
       const { params, payload } = request
       const { link } = params
@@ -77,14 +87,22 @@ export default [
       return validateSavedLinkCredentials(link, securityAnswer)
     },
     options: {
+      tags: ['api'],
       auth: false,
       validate: {
-        params: Joi.object().keys({
-          link: magicLinkSchema
-        }),
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('validateSavedLinkParams'),
         payload: Joi.object({
           securityAnswer: Joi.string().required()
-        })
+        }).label('validateSavedLinkPayload')
+      },
+      response: {
+        status: {
+          200: validateSavedLinkResponseSchema
+        }
       }
     }
   })
@@ -92,5 +110,6 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { RequestValidateSaveAndExit, RequestSubmit, RequestLinkGet } from '~/src/api/types.js'
+ * @import { SubmitPayload } from '@defra/forms-model'
+ * @import { GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
  */

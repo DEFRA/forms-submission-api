@@ -12,10 +12,22 @@ See [docs/](docs/) for documentation.
     - [Development](#development)
     - [Production](#production)
     - [Npm scripts](#npm-scripts)
+  - [Integration Tests](#integration-tests)
+    - [Prerequisites](#prerequisites)
+    - [Running Integration Tests](#running-integration-tests)
+      - [Quick Start](#quick-start)
+      - [Manual Step-by-Step Execution](#manual-step-by-step-execution)
+    - [What the Integration Tests Cover](#what-the-integration-tests-cover)
+    - [Test Environment Details](#test-environment-details)
+    - [Test Reports](#test-reports)
+    - [Troubleshooting](#troubleshooting)
+      - [Common Issues:](#common-issues)
+      - [Viewing Logs:](#viewing-logs)
   - [API endpoints](#api-endpoints)
   - [Docker](#docker)
     - [Development image](#development-image)
     - [Production image](#production-image)
+  - [Swagger](#swagger)
   - [Licence](#licence)
     - [About the licence](#about-the-licence)
 
@@ -235,6 +247,10 @@ Run:
 ```bash
 docker run -e GITHUB_API_TOKEN -p 3001:3001 forms-submission-api
 ```
+
+## Swagger
+
+When running locally, you can view swagger documentation on http://localhost:3002/documentation this is built automatically from the joi schema and Hapi endpoints using Swagger Hapi.
 
 ## Licence
 
