@@ -38,7 +38,7 @@
  */
 
 /**
- * @import { SaveAndExitMessageData, SubmitPayload } from '@defra/forms-model'
+ * @import { SaveAndExitMessageData } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
  * @import { Db } from 'mongodb'
  */
