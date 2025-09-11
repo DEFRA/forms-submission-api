@@ -57,7 +57,7 @@ export const filePersistPayloadSchema = Joi.object()
         Joi.object({
           fileId: Joi.string().required(),
           initiatedRetrievalKey: Joi.string().required()
-        })
+        }).label('fileDetails')
       )
       .max(1000) // to prevent any malicious users but not any legitimate users
       .required(),
