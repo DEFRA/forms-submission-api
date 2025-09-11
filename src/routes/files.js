@@ -156,5 +156,5 @@ export default [
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
- * @import { FileAccessPayload, FileRetrievalPayload, PersistedRetrievalPayload, RequestFileCreate, UploadPayload } from '~/src/api/types.js'
+ * @import { FileAccessPayload, FileRetrievalPayload, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */
