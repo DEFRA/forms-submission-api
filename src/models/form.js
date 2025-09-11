@@ -6,7 +6,7 @@ export const magicLinkSchema = Joi.string().uuid().required()
 export const formSubmitResponseSchema = Joi.object({
   main: Joi.string().required(),
   repeaters: Joi.array().items(Joi.object())
-})
+}).label('formSubmitResponse')
 
 export const getSavedLinkResponseSchema = Joi.object({
   form: {
@@ -17,7 +17,7 @@ export const getSavedLinkResponseSchema = Joi.object({
   },
   question: Joi.string().required(),
   invalidPasswordAttempts: Joi.number().min(0).required()
-})
+}).label('getSavedLinkResponse')
 
 export const validateSavedLinkResponseSchema = Joi.object({
   form: {
@@ -30,4 +30,4 @@ export const validateSavedLinkResponseSchema = Joi.object({
   securityQuestion: Joi.string().required(),
   invalidPasswordAttempts: Joi.number().min(0).required(),
   validPassword: Joi.boolean().required()
-})
+}).label('validateSavedLinkResponse')

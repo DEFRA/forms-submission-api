@@ -59,9 +59,11 @@ export default [
       tags: ['api'],
       auth: false,
       validate: {
-        params: Joi.object().keys({
-          link: magicLinkSchema
-        })
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('getSavedLinkParams')
       },
       response: {
         status: {
@@ -88,12 +90,14 @@ export default [
       tags: ['api'],
       auth: false,
       validate: {
-        params: Joi.object().keys({
-          link: magicLinkSchema
-        }),
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('validateSavedLinkParams'),
         payload: Joi.object({
           securityAnswer: Joi.string().required()
-        })
+        }).label('validateSavedLinkPayload')
       },
       response: {
         status: {
