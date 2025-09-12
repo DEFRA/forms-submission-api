@@ -67,7 +67,7 @@ export async function validateSavedLinkCredentials(
     form: record.form,
     state: !validPassword ? {} : record.state,
     invalidPasswordAttempts: record.invalidPasswordAttempts,
-    securityQuestion: record.security.question,
+    question: record.security.question,
     validPassword
   }
 }

@@ -198,7 +198,7 @@ describe('Forms route', () => {
           formField1: '123'
         },
         invalidPasswordAttempts: 0,
-        securityQuestion: SecurityQuestionsEnum.MemorablePlace,
+        question: SecurityQuestionsEnum.MemorablePlace,
         validPassword: true
       })
       const response = await server.inject({
