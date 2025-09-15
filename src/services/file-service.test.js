@@ -985,21 +985,30 @@ describe('Files service', () => {
       expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
         Bucket: expect.anything(),
         Key: expect.anything(),
-        Body: 'Do you have any food allergies?,Telephone number field\nPeanuts,07800 100200\n',
+        // stringContaining so BOM code can be ignored in string comparison
+        Body: expect.stringContaining(
+          'Do you have any food allergies?,Telephone number field\nPeanuts,07800 100200\n'
+        ),
         ContentType: 'text/csv'
       })
 
       expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
         Bucket: expect.anything(),
         Key: expect.anything(),
-        Body: 'Select a drink,Toppings,Quantity\nCoke,Pepperoni,2\nFanta,Ham,3\n',
+        // stringContaining so BOM code can be ignored in string comparison
+        Body: expect.stringContaining(
+          'Select a drink,Toppings,Quantity\nCoke,Pepperoni,2\nFanta,Ham,3\n'
+        ),
         ContentType: 'text/csv'
       })
 
       expect(s3Mock).toHaveReceivedCommandWith(PutObjectCommand, {
         Bucket: expect.anything(),
         Key: expect.anything(),
-        Body: 'Name,Age of pet,Address,Favourite drink\nSooty,1,"1 Home Street, Ashford, AB10 1AB","Coke, Fanta"\n',
+        // stringContaining so BOM code can be ignored in string comparison
+        Body: expect.stringContaining(
+          'Name,Age of pet,Address,Favourite drink\nSooty,1,"1 Home Street, Ashford, AB10 1AB","Coke, Fanta"\n'
+        ),
         ContentType: 'text/csv'
       })
 
