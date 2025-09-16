@@ -23,13 +23,15 @@ export const fileIngestPayloadSchema = Joi.object()
       retrievalKey: Joi.string().required()
     })
       .required()
-      .unknown(true),
+      .unknown(true)
+      .label('fileIngestMetadata'),
     form: Joi.object()
       .keys({
         file: fileUploadStatusSchema
       })
       .required()
       .unknown(true)
+      .label('fileIngestForm')
   })
   .required()
   .unknown(true)

@@ -5,7 +5,9 @@ export const magicLinkSchema = Joi.string().uuid().required()
 // Response schemas
 export const formSubmitResponseSchema = Joi.object({
   main: Joi.string().required(),
-  repeaters: Joi.array().items(Joi.object())
+  repeaters: Joi.array()
+    .items(Joi.object().label('formRepeater'))
+    .label('formRepeaters')
 }).label('formSubmitResponse')
 
 export const getSavedLinkResponseSchema = Joi.object({
