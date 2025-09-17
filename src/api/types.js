@@ -26,13 +26,14 @@
 
 /**
  * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
+ * @typedef {FormFileUploadStatus & { form?: { id: string, name: string, slug: string, pagePath: string }}} FormFileUploadStatusRecord
  * @typedef {SaveAndExitMessageData & { expiredAt: Date }} SaveAndExit
  */
 
 /**
  * @typedef {object} UploadPayload
  * @property {('initiated'|'pending'|'ready')} uploadStatus - Have all scans completed, can be initiated, pending or ready
- * @property {{retrievalKey: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
+ * @property {{retrievalKey: string, formId: string, formSlug: string, formName: string, pagePath: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
  * @property {Record<string, FileUploadStatus>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
  * @property {number} numberOfRejectedFiles - Total number of files that have been rejected by the uploader
  */

@@ -12,6 +12,15 @@ import { auth } from '~/test/fixtures/auth.js'
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
 
+const testFormMetadata = {
+  form: {
+    id: 'form-id',
+    slug: 'form-slug',
+    name: 'Form Name',
+    pagePath: '/page-path'
+  }
+}
+
 describe('Files route', () => {
   /** @type {Server} */
   let server
@@ -45,7 +54,11 @@ describe('Files route', () => {
         payload: {
           uploadStatus: 'ready',
           metadata: {
-            retrievalKey: 'test'
+            retrievalKey: 'test',
+            formId: 'form-id',
+            formSlug: 'form-slug',
+            formName: 'Form Name',
+            pagePath: '/page-path'
           },
           form: {
             'ignored-key': 'value',
@@ -66,7 +79,8 @@ describe('Files route', () => {
         retrievalKeyIsCaseSensitive: true,
         fileId: '12345',
         filename: 'test.txt',
-        retrievalKey: 'test-key'
+        retrievalKey: 'test-key',
+        ...testFormMetadata
       })
 
       const response = await server.inject({
@@ -85,7 +99,8 @@ describe('Files route', () => {
       jest.mocked(checkFileStatus).mockResolvedValue({
         fileId: '12345',
         filename: 'test.txt',
-        retrievalKey: 'test-key'
+        retrievalKey: 'test-key',
+        ...testFormMetadata
       })
 
       const response = await server.inject({

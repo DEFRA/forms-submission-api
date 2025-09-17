@@ -63,6 +63,22 @@ jest.mock('~/src/mongo.js', () => {
   }
 })
 
+const testFormMetadataPayload = {
+  formId: 'form-id',
+  formSlug: 'form-slug',
+  formName: 'Form Name',
+  pagePath: '/page-path'
+}
+
+const testFormMetadata = {
+  form: {
+    id: 'form-id',
+    slug: 'form-slug',
+    name: 'Form Name',
+    pagePath: '/page-path'
+  }
+}
+
 /**
  * @type {MongoServerError}
  */
@@ -102,7 +118,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -137,7 +154,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 1,
         uploadStatus: 'ready'
@@ -159,7 +177,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 1,
         uploadStatus: 'ready'
@@ -188,7 +207,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -211,7 +231,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -233,7 +254,8 @@ describe('Files service', () => {
           file: successfulFile
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -257,7 +279,8 @@ describe('Files service', () => {
           }
         },
         metadata: {
-          retrievalKey: 'test'
+          retrievalKey: 'test',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -295,7 +318,8 @@ describe('Files service', () => {
           }
         },
         metadata: {
-          retrievalKey: ''
+          retrievalKey: '',
+          ...testFormMetadataPayload
         },
         numberOfRejectedFiles: 0,
         uploadStatus: 'ready'
@@ -329,7 +353,8 @@ describe('Files service', () => {
         formId: '1234',
         retrievalKey: 'test',
         retrievalKeyIsCaseSensitive: true,
-        _id: new ObjectId()
+        _id: new ObjectId(),
+        ...testFormMetadata
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
@@ -349,7 +374,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -374,7 +400,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         _id: new ObjectId(),
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
@@ -402,7 +429,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -423,7 +451,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         _id: new ObjectId(),
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(false)
@@ -445,11 +474,12 @@ describe('Files service', () => {
     })
 
     it('should correctly handle case sensitivity for the retrieval key', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        ...testFormMetadata
       }
 
       const caseSensitiveKey = 'Some.Name@gov.uk'
@@ -477,11 +507,12 @@ describe('Files service', () => {
     })
 
     it('should move the file from staging to loaded and delete the old file', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       const expectedNewKey = 'loaded/dummy-file-123.txt'
@@ -537,18 +568,20 @@ describe('Files service', () => {
     })
 
     it('should fail if one item in the batch fails', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData2 = {
         ...successfulFile,
         s3Key: "staging/path-that-won't-exist.txt",
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -593,11 +626,12 @@ describe('Files service', () => {
     })
 
     it("should fail if the retrieval key doesn't match", async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(false)
@@ -624,11 +658,12 @@ describe('Files service', () => {
     })
 
     it('should handle nested input directories', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/extra-level/extra-level-two/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       const expectedNewKey = 'loaded/dummy-file-123.txt'
@@ -669,11 +704,12 @@ describe('Files service', () => {
     })
 
     it('should not allow a previously extended file to be extended again', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'loaded/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -697,12 +733,13 @@ describe('Files service', () => {
     })
 
     it('should fail if the S3 bucket is missing', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: 'loaded/dummy-file-123.txt',
         s3Bucket: undefined,
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -726,12 +763,13 @@ describe('Files service', () => {
     })
 
     it('should fail if the S3 key is missing', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const dummyData = {
         ...successfulFile,
         s3Key: undefined,
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -759,7 +797,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -788,11 +827,12 @@ describe('Files service', () => {
     })
 
     it('should update both retrievalKey and retrievalKeyIsCaseSensitive fields', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        ...testFormMetadata
       }
 
       jest.mocked(hash).mockResolvedValueOnce('hashedKey')
@@ -815,11 +855,12 @@ describe('Files service', () => {
     })
 
     it('should handle errors when updating multiple fields', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -848,11 +889,12 @@ describe('Files service', () => {
     })
 
     it('should handle unacknowledged database updates', async () => {
-      /** @type {FormFileUploadStatus} */
+      /** @type {FormFileUploadStatusRecord} */
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        ...testFormMetadata
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -1055,5 +1097,5 @@ describe('Files service', () => {
 
 /**
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FormFileUploadStatusRecord, FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

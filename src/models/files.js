@@ -20,18 +20,20 @@ const fileUploadStatusSchema = Joi.object()
 export const fileIngestPayloadSchema = Joi.object()
   .keys({
     metadata: Joi.object({
-      retrievalKey: Joi.string().required()
+      retrievalKey: Joi.string().required(),
+      formId: Joi.string().required(),
+      formSlug: Joi.string().required(),
+      formName: Joi.string().required(),
+      pagePath: Joi.string().required()
     })
       .required()
-      .unknown(true)
-      .label('fileIngestMetadata'),
+      .unknown(true),
     form: Joi.object()
       .keys({
         file: fileUploadStatusSchema
       })
       .required()
       .unknown(true)
-      .label('fileIngestForm')
   })
   .required()
   .unknown(true)

@@ -33,7 +33,8 @@ const ALREADY_INGESTED = 11000
  * @param {UploadPayload} uploadPayload
  */
 export async function ingestFile(uploadPayload) {
-  const { retrievalKey } = uploadPayload.metadata
+  const { retrievalKey, formId, formSlug, formName, pagePath } =
+    uploadPayload.metadata
   const { file: fileContainer } = uploadPayload.form
 
   await assertFileExists(
@@ -46,7 +47,7 @@ export async function ingestFile(uploadPayload) {
 
   const hashed = await argon2.hash(retrievalKey)
 
-  /** @type {FormFileUploadStatus} */
+  /** @type {FormFileUploadStatusRecord} */
   const dataToSave = {
     fileId: fileContainer.fileId,
     filename: fileContainer.filename,
@@ -54,7 +55,13 @@ export async function ingestFile(uploadPayload) {
     s3Key: fileContainer.s3Key,
     s3Bucket: fileContainer.s3Bucket,
     retrievalKey: hashed,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    form: {
+      id: formId,
+      slug: formSlug,
+      name: formName,
+      pagePath
+    }
   }
 
   try {
@@ -322,7 +329,7 @@ async function getAndVerify(fileId, retrievalKey) {
  * Checks if a file status exists for a given upload ID.
  * Throws a Not Found error if not in the database.
  * @param {string} fileId
- * @returns {Promise<FormFileUploadStatus>} Returns the file status object
+ * @returns {Promise<FormFileUploadStatusRecord>} Returns the file status object
  * @throws {Boom.notFound} - if the file status does not exist
  */
 export async function checkFileStatus(fileId) {
@@ -378,7 +385,7 @@ export async function submit(submitPayload) {
 }
 
 /**
- * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
+ * @import { SubmitPayload } from '@defra/forms-model'
  * @import { S3Client } from '@aws-sdk/client-s3'
- * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, FormFileUploadStatusRecord, UploadPayload } from '~/src/api/types.js'
  */

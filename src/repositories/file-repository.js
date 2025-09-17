@@ -22,12 +22,12 @@ export async function create(fileStatus) {
 /**
  * Retrieves a file status
  * @param {string} fileId
- * @returns {Promise<FormFileUploadStatus | null>}
+ * @returns {Promise<FormFileUploadStatusRecord | null>}
  */
 export async function getByFileId(fileId) {
   logger.info(`Retrieving file status for file ID ${fileId}`)
 
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+  const coll = /** @satisfies {Collection<FormFileUploadStatusRecord>}>} */ (
     db.collection(FILES_COLLECTION_NAME)
   )
 
@@ -40,7 +40,7 @@ export async function getByFileId(fileId) {
     )
 
     const fallbackColl =
-      /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+      /** @satisfies {Collection<FormFileUploadStatusRecord>}>} */ (
         db.collection('file-upload-status')
       )
 
@@ -138,6 +138,6 @@ async function updateFields(fileIds, fieldsToUpdate, session) {
 }
 
 /**
- * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, FormFileUploadStatusRecord } from '~/src/api/types.js'
  * @import { ClientSession, Collection } from 'mongodb'
  */

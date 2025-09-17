@@ -77,7 +77,14 @@ export default [
       return {
         message: 'Found',
         retrievalKeyIsCaseSensitive:
-          fileStatus.retrievalKeyIsCaseSensitive ?? true
+          fileStatus.retrievalKeyIsCaseSensitive ?? true,
+        filename: fileStatus.filename,
+        form: {
+          id: fileStatus.form?.id,
+          slug: fileStatus.form?.slug,
+          name: fileStatus.form?.name,
+          pagePath: fileStatus.form?.pagePath
+        }
       }
     },
     options: {
