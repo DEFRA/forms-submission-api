@@ -347,7 +347,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    it('should return undefined if file is found', async () => {
+    it('should return details if file is found', async () => {
       const uploadedFile = {
         ...successfulFile,
         formId: '1234',
@@ -355,6 +355,21 @@ describe('Files service', () => {
         retrievalKeyIsCaseSensitive: true,
         _id: new ObjectId(),
         ...testFormMetadata
+      }
+
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
+
+      const result = await checkFileStatus('1234')
+      expect(result).toEqual(uploadedFile)
+    })
+
+    it('should return details if file is found but missing form info', async () => {
+      const uploadedFile = {
+        ...successfulFile,
+        formId: '1234',
+        retrievalKey: 'test',
+        retrievalKeyIsCaseSensitive: true,
+        _id: new ObjectId()
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
