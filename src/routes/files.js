@@ -77,7 +77,8 @@ export default [
       return {
         message: 'Found',
         retrievalKeyIsCaseSensitive:
-          fileStatus.retrievalKeyIsCaseSensitive ?? true
+          fileStatus.retrievalKeyIsCaseSensitive ?? true,
+        filename: fileStatus.filename
       }
     },
     options: {
