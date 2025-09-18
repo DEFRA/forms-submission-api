@@ -5,12 +5,12 @@ const logger = createLogger()
 
 /**
  * Adds a file status to the database
- * @param {FormFileUploadStatus} fileStatus - file status
+ * @param {FormFileUploadStatusRecord} fileStatus - file status
  */
 export async function create(fileStatus) {
   logger.info(`Creating file status for file ID ${fileStatus.fileId}`)
 
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+  const coll = /** @satisfies {Collection<FormFileUploadStatusRecord>}>} */ (
     db.collection(FILES_COLLECTION_NAME)
   )
 

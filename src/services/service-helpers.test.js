@@ -33,6 +33,12 @@ describe('Service Helpers', () => {
     jest.mocked(repository.create).mockResolvedValue(undefined)
   })
 
+  const form = {
+    id: 'form-id',
+    name: 'Form Name',
+    slug: 'form-slug'
+  }
+
   describe('createMainCsvFile', () => {
     const mockMain = [
       { name: 'field1', title: 'Field 1', value: 'value1' },
@@ -40,7 +46,7 @@ describe('Service Helpers', () => {
     ]
 
     it('should create main CSV file successfully', async () => {
-      const result = await createMainCsvFile(mockMain, 'hashed-key', true)
+      const result = await createMainCsvFile(form, mockMain, 'hashed-key', true)
 
       expect(typeof result).toBe('string')
       expect(result).toMatch(/^[a-f0-9-]{36}$/) // UUID format
@@ -64,7 +70,12 @@ describe('Service Helpers', () => {
         s3Key: expect.stringContaining('loaded/'),
         s3Bucket: expect.any(String),
         retrievalKey: 'hashed-key',
-        retrievalKeyIsCaseSensitive: true
+        retrievalKeyIsCaseSensitive: true,
+        form: {
+          id: 'form-id',
+          name: 'Form Name',
+          slug: 'form-slug'
+        }
       })
     })
 
@@ -73,7 +84,7 @@ describe('Service Helpers', () => {
       jest.mocked(createS3File).mockRejectedValue(s3Error)
 
       await expect(
-        createMainCsvFile(mockMain, 'hashed-key', true)
+        createMainCsvFile(form, mockMain, 'hashed-key', true)
       ).rejects.toThrow('S3 upload failed')
 
       expect(repository.create).not.toHaveBeenCalled()
@@ -84,12 +95,12 @@ describe('Service Helpers', () => {
       jest.mocked(repository.create).mockRejectedValue(dbError)
 
       await expect(
-        createMainCsvFile(mockMain, 'hashed-key', true)
+        createMainCsvFile(form, mockMain, 'hashed-key', true)
       ).rejects.toThrow('Database error')
     })
 
     it('should handle empty main data', async () => {
-      const result = await createMainCsvFile([], 'hashed-key', false)
+      const result = await createMainCsvFile(form, [], 'hashed-key', false)
 
       expect(createCsv).toHaveBeenCalledWith([[], []])
       expect(result).toMatch(/^[a-f0-9-]{36}$/)
@@ -114,6 +125,7 @@ describe('Service Helpers', () => {
 
     it('should create repeater CSV file successfully', async () => {
       const result = await createRepeaterCsvFile(
+        form,
         mockRepeater,
         'hashed-key',
         false
@@ -146,6 +158,7 @@ describe('Service Helpers', () => {
       }
 
       const result = await createRepeaterCsvFile(
+        form,
         emptyRepeater,
         'hashed-key',
         false
@@ -160,7 +173,7 @@ describe('Service Helpers', () => {
       jest.mocked(createS3File).mockRejectedValue(s3Error)
 
       await expect(
-        createRepeaterCsvFile(mockRepeater, 'hashed-key', false)
+        createRepeaterCsvFile(form, mockRepeater, 'hashed-key', false)
       ).rejects.toThrow('S3 repeater upload failed')
     })
   })
@@ -181,6 +194,7 @@ describe('Service Helpers', () => {
 
     it('should process all repeater files successfully', async () => {
       const result = await processRepeaterFiles(
+        form,
         mockRepeaters,
         'hashed-key',
         true
@@ -196,7 +210,7 @@ describe('Service Helpers', () => {
     })
 
     it('should handle empty repeaters array', async () => {
-      const result = await processRepeaterFiles([], 'hashed-key', true)
+      const result = await processRepeaterFiles(form, [], 'hashed-key', true)
 
       expect(result).toEqual({})
       expect(createS3File).not.toHaveBeenCalled()
@@ -210,7 +224,7 @@ describe('Service Helpers', () => {
         .mockRejectedValueOnce(new Error('S3 failure'))
 
       await expect(
-        processRepeaterFiles(mockRepeaters, 'hashed-key', true)
+        processRepeaterFiles(form, mockRepeaters, 'hashed-key', true)
       ).rejects.toThrow('Failed to save repeater files')
 
       expect(createS3File).toHaveBeenCalledTimes(2)
@@ -220,7 +234,7 @@ describe('Service Helpers', () => {
       jest.mocked(createS3File).mockRejectedValue(new Error('All failed'))
 
       await expect(
-        processRepeaterFiles(mockRepeaters, 'hashed-key', true)
+        processRepeaterFiles(form, mockRepeaters, 'hashed-key', true)
       ).rejects.toThrow('Failed to save repeater files')
     })
   })

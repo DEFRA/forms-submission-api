@@ -11,12 +11,14 @@ const loadedPrefix = config.get('loadedPrefix')
 
 /**
  * Creates a main CSV file from submission data
+ * @param { FormDetailsPayload | undefined } form
  * @param {{name: string, title: string, value: string}[]} main - Main form data
  * @param {string} hashedRetrievalKey - Hashed retrieval key
  * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
  * @returns {Promise<string>} File ID
  */
 export async function createMainCsvFile(
+  form,
   main,
   hashedRetrievalKey,
   retrievalKeyIsCaseSensitive
@@ -37,7 +39,8 @@ export async function createMainCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    form
   })
 
   return fileId
@@ -45,12 +48,14 @@ export async function createMainCsvFile(
 
 /**
  * Creates a repeater CSV file from submission data
+ * @param { FormDetailsPayload | undefined } form
  * @param {SubmitRecordset} repeater - Repeater form data
  * @param {string} hashedRetrievalKey - Hashed retrieval key
  * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
  * @returns {Promise<{name: string, fileId: string}>} Repeater result
  */
 export async function createRepeaterCsvFile(
+  form,
   repeater,
   hashedRetrievalKey,
   retrievalKeyIsCaseSensitive
@@ -78,7 +83,8 @@ export async function createRepeaterCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    form
   })
 
   return { name: repeater.name, fileId }
@@ -86,12 +92,14 @@ export async function createRepeaterCsvFile(
 
 /**
  * Processes repeater files and handles failures
+ * @param { FormDetailsPayload | undefined } form
  * @param {SubmitRecordset[]} repeaters - Array of repeater data
  * @param {string} hashedRetrievalKey - Hashed retrieval key
  * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
  * @returns {Promise<Record<string, string>>} Map of repeater names to file IDs
  */
 export async function processRepeaterFiles(
+  form,
   repeaters,
   hashedRetrievalKey,
   retrievalKeyIsCaseSensitive
@@ -99,6 +107,7 @@ export async function processRepeaterFiles(
   const repeaterResults = await Promise.allSettled(
     repeaters.map((repeater) =>
       createRepeaterCsvFile(
+        form,
         repeater,
         hashedRetrievalKey,
         retrievalKeyIsCaseSensitive
@@ -120,5 +129,5 @@ export async function processRepeaterFiles(
 }
 
 /**
- * @import { SubmitRecordset } from '@defra/forms-model'
+ * @import { FormDetailsPayload, SubmitRecordset } from '@defra/forms-model'
  */
