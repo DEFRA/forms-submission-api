@@ -1,15 +1,18 @@
+import { getErrorMessage } from '@defra/forms-model'
+
 /**
  * Log and throw and error
  * @type {Lifecycle.Method}
  */
-export function failAction(request, h, error) {
-  const err = error instanceof Error ? error : new Error('Unknown error')
+export const failAction = (request, _h, err) => {
+  const message = getErrorMessage(err)
+
   request.logger.error(
     err,
-    `[validationFailed] Request validation failed for ${request.method} ${request.url.pathname} - ${err.message}`
+    `[validationFailed] Request validation failed - ${message}`
   )
 
-  throw error ?? new Error('Unknown error')
+  throw err instanceof Error ? err : new Error(message)
 }
 
 /**

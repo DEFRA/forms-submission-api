@@ -64,13 +64,14 @@ export async function ingestFile(uploadPayload) {
       err instanceof MongoServerError &&
       err.errorResponse.code === ALREADY_INGESTED
     ) {
-      const error = `File ID '${fileContainer.fileId}' has already been ingested`
+      const message = `File ID '${fileContainer.fileId}' has already been ingested`
+
       logger.error(
         err,
-        `[duplicateFileIngestion] ${error} - fileId: ${fileContainer.fileId} - code: ${ALREADY_INGESTED}`
+        `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${ALREADY_INGESTED}`
       )
 
-      throw Boom.badRequest(error)
+      throw Boom.badRequest(message)
     }
 
     throw err

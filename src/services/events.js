@@ -1,9 +1,8 @@
-import { submissionMessageSchema } from '@defra/forms-model'
+import { getErrorMessage, submissionMessageSchema } from '@defra/forms-model'
 import argon2 from 'argon2'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
-import { getErrorMessage } from '~/src/helpers/error-message.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'

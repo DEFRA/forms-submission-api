@@ -1,5 +1,7 @@
 import { chdir } from 'node:process'
 
+import { getErrorMessage } from '@defra/forms-model'
+
 import { createLogger } from '~/src/helpers/logging/logger.js'
 
 const logger = createLogger()
@@ -7,12 +9,14 @@ const logger = createLogger()
 // Move working directory to build output
 chdir(import.meta.dirname)
 
-import('~/src/server.js')
-  .then((server) => server.listen())
-  .catch((/** @type {unknown} */ error) => {
-    const err =
-      error instanceof Error ? error : new Error('Unknown startup error')
-    logger.info('Server failed to start :(')
-    logger.error(err, `[serverStartup] Server failed to start: ${err.message}`)
-    throw error
-  })
+try {
+  const server = await import('~/src/server.js')
+  await server.listen()
+} catch (err) {
+  logger.info('Server failed to start :(')
+  logger.error(
+    err,
+    `[serverStartup] Server failed to start - ${getErrorMessage(err)}`
+  )
+  throw err
+}
