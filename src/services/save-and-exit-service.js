@@ -49,8 +49,9 @@ export async function validateSavedLinkCredentials(
   let validPassword = false
   try {
     validPassword = await argon2.verify(record.security.answer, securityAnswer)
-  } catch {
+  } catch (err) {
     logger.error(
+      err,
       `Invalid password hash for save-and-exit id ${magicLinkId} - unable to decrypt`
     )
   }

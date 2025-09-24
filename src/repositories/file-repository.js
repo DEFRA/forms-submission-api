@@ -125,13 +125,14 @@ async function updateFields(fileIds, fieldsToUpdate, session) {
   )
 
   if (!result.acknowledged) {
-    const error = new Error(`Failed to update ${fieldNames}`)
+    const err = new Error(`Failed to update ${fieldNames}`)
+
     logger.error(
-      error,
+      err,
       `[mongodbUpdateFailure] Failed to update ${fieldNames} for ${fileIds.length} files - result not acknowledged`
     )
 
-    throw error
+    throw err
   }
 
   logger.info(`Updated ${fieldNames} for ${fileIds.length} file IDs`)

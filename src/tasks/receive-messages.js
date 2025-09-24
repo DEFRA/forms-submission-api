@@ -1,4 +1,5 @@
-import { getErrorMessage } from '~/src/helpers/error-message.js'
+import { getErrorMessage } from '@defra/forms-model'
+
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   receiveEventMessages,
