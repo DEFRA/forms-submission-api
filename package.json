@@ -48,7 +48,7 @@
     "@hapi/jwt": "^3.2.0",
     "@hapi/vision": "^7.0.3",
     "@types/content-disposition": "^0.5.8",
-    "argon2": "^0.41.1",
+    "argon2": "^0.44.0",
     "aws4": "^1.13.2",
     "content-disposition": "^0.5.4",
     "convict": "^6.2.4",
