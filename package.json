@@ -54,13 +54,13 @@
     "convict": "^6.2.4",
     "csv-stringify": "^6.5.2",
     "dotenv": "^16.4.7",
-    "hapi-pino": "^12.1.0",
+    "hapi-pino": "^13.0.0",
     "hapi-swagger": "^17.3.2",
     "http-status-codes": "^2.3.0",
     "joi": "^17.13.3",
     "mongodb": "^6.8.0",
-    "pino": "^9.7.0",
-    "pino-pretty": "^13.0.0",
+    "pino": "^10.0.0",
+    "pino-pretty": "^13.1.2",
     "proxy-agent": "^6.5.0"
   },
   "devDependencies": {
