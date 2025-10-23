@@ -25,7 +25,7 @@
     "test:watch": "jest --color --watch",
     "test:integration:setup": "docker compose -f docker-compose.integration-test.yml up -d oidc mongo_test localstack_test",
     "test:integration:start": "docker compose -f docker-compose.integration-test.yml up -d app_test",
-    "test:integration:wait": "echo 'Waiting for app...' && sleep 15 && bash -c 'count=0; max_attempts=36; until curl --fail http://localhost:3001/health; do echo \"Still waiting...\"; sleep 5; count=$$((count+1)); if [ $$count -ge $$max_attempts ]; then echo \"App failed to start within 3 minutes\"; exit 1; fi; done' && echo 'App ready!'",
+    "test:integration:wait": "./scripts/wait-for-app.sh",
     "test:integration:run": "docker compose -f docker-compose.integration-test.yml run --rm --entrypoint=\"\" newman sh -c \"npm install -g newman-reporter-htmlextra && newman run /etc/newman/forms-submission-api-ci-mock.postman_collection.json -e /etc/newman/forms-submission-api-ci-mock.postman_environment.json -r cli,json,htmlextra --reporter-json-export /etc/newman/reports/newman-summary.json --reporter-htmlextra-export /etc/newman/reports/newman-report.html --reporter-htmlextra-showConsoleLogs\"",
     "test:integration:stop": "docker compose -f docker-compose.integration-test.yml down -v --remove-orphans",
     "test:integration": "npm run test:integration:setup && npm run test:integration:start && npm run test:integration:wait && npm run test:integration:run; EXIT_CODE=$? && npm run test:integration:stop && exit $EXIT_CODE",
