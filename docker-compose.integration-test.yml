@@ -12,7 +12,7 @@ services:
       interval: 5s
       timeout: 30s
       start_period: 10s
-      retries: 30
+      retries: 12
     environment:
       MONGO_INITDB_DATABASE: forms-submission-api-test
     networks:
@@ -80,8 +80,8 @@ services:
         ]
       interval: 10s
       timeout: 10s
-      retries: 18
-      start_period: 90s
+      retries: 12
+      start_period: 60s
 
   app_test:
     build:
@@ -104,6 +104,9 @@ services:
       S3_BUCKET: 'test-forms-submission-bucket'
       S3_ENDPOINT: 'http://localstack_test:4566'
       LOADED_PREFIX: 'loaded'
+      NOTIFY_TEMPLATE_ID: 'mock-template-id'
+      NOTIFY_API_KEY: 'mock-api-key'
+      NOTIFY_REPLY_TO_ID: 'mock-reply-to-id'
     depends_on:
       mongo_test:
         condition: service_healthy
