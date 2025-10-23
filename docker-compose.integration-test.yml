@@ -104,6 +104,9 @@ services:
       S3_BUCKET: 'test-forms-submission-bucket'
       S3_ENDPOINT: 'http://localstack_test:4566'
       LOADED_PREFIX: 'loaded'
+      NOTIFY_TEMPLATE_ID: 'mock-template-id'
+      NOTIFY_API_KEY: 'mock-api-key'
+      NOTIFY_REPLY_TO_ID: 'mock-reply-to-id'
     depends_on:
       mongo_test:
         condition: service_healthy
