@@ -1,7 +1,7 @@
 import { createServer } from '~/src/api/server.js'
 
 jest.mock('~/src/mongo.js')
-jest.mock('~/src/tasks/receive-messages.js')
+jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 
 describe('Health route', () => {
   /** @type {Server} */

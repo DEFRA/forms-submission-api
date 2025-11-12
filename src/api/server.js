@@ -13,7 +13,7 @@ import { logRequests } from '~/src/plugins/log-requests.js'
 import { router } from '~/src/plugins/router.js'
 import { swagger } from '~/src/plugins/swagger.js'
 import { prepareSecureContext } from '~/src/secure-context.js'
-import { runTask } from '~/src/tasks/receive-messages.js'
+import { runTask as runSaveAndExitTask } from '~/src/tasks/receive-save-and-exit-messages.js'
 
 const isProduction = config.get('isProduction')
 
@@ -75,7 +75,7 @@ export async function createServer() {
   await server.register(swagger)
   await server.register(router)
 
-  await runTask()
+  await runSaveAndExitTask()
 
   return server
 }

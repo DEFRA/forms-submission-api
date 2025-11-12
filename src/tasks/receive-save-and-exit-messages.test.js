@@ -3,7 +3,10 @@ import {
   receiveMessageTimeout
 } from '~/src/messaging/event.js'
 import { processSubmissionEvents } from '~/src/services/events.js'
-import { runTask, runTaskOnce } from '~/src/tasks/receive-messages.js'
+import {
+  runTask,
+  runTaskOnce
+} from '~/src/tasks/receive-save-and-exit-messages.js'
 
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/services/events.js')
