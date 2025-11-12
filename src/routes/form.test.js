@@ -12,6 +12,7 @@ jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
+jest.mock('~/src/tasks/receive-submission-messages.js')
 
 describe('Forms route', () => {
   /** @type {Server} */
