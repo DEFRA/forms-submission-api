@@ -15,6 +15,7 @@ jest.mock('~/src/helpers/logging/logger.js')
 
 describe('event', () => {
   const snsMock = mockClient(SQSClient)
+  const queueUrl = 'http://example.com'
   const messageId = '31cb6fff-8317-412e-8488-308d099034c4'
   const receiptHandle = 'YzAwNzQ3MGMtZGY5Mi0'
   const messageStub = {
@@ -32,7 +33,9 @@ describe('event', () => {
         Messages: [messageStub]
       }
       snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
-      await expect(receiveEventMessages()).resolves.toEqual(receivedMessage)
+      await expect(receiveEventMessages(queueUrl)).resolves.toEqual(
+        receivedMessage
+      )
     })
   })
 
@@ -46,9 +49,9 @@ describe('event', () => {
       }
 
       snsMock.on(DeleteMessageCommand).resolves(deleteResult)
-      await deleteEventMessage(messageStub)
+      await deleteEventMessage(queueUrl, messageStub)
       expect(snsMock).toHaveReceivedCommandWith(DeleteMessageCommand, {
-        QueueUrl: expect.any(String),
+        QueueUrl: queueUrl,
         ReceiptHandle: receiptHandle
       })
     })
