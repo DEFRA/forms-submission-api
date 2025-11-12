@@ -1,53 +1,57 @@
 import { getErrorMessage } from '@defra/forms-model'
 
+import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   receiveEventMessages,
   receiveMessageTimeout
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/events.js'
+import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
 
+const queueUrl = config.get('saveAndExitQueueUrl')
 const logger = createLogger()
 
 /**
  * @returns {Promise<void>}
  */
 export async function runTaskOnce() {
-  logger.info('Receiving queue messages')
+  logger.info('Receiving save and exit queue messages')
 
   try {
-    const result = await receiveEventMessages()
+    const result = await receiveEventMessages(queueUrl)
     const messages = result.Messages
     const messageCount = messages ? messages.length : 0
 
-    logger.info(`Received ${messageCount} queue messages`)
+    logger.info(`Received ${messageCount} save and exit queue messages`)
 
     if (messages && messageCount) {
-      logger.info('Processing queue messages')
+      logger.info('Processing save and exit queue messages')
 
       const { processed } = await processSubmissionEvents(messages)
 
-      logger.info(`Processed ${processed.length} queue messages`)
+      logger.info(`Processed ${processed.length} save and exit queue messages`)
     }
   } catch (err) {
     logger.error(
       err,
-      `[runTaskOnce] Receive messages task failed - ${getErrorMessage(err)}`
+      `[runTaskOnce] Receive save and exit messages task failed - ${getErrorMessage(err)}`
     )
   }
 }
 
 /**
- * Task to poll for messages and store the result in the DB
+ * Task to poll for save and exit messages and store the result in the DB
  * @returns {Promise<void>}
  */
 export async function runTask() {
   await runTaskOnce()
 
-  logger.info(`Adding task to stack in ${receiveMessageTimeout} milliseconds`)
+  logger.info(
+    `Adding save and exit task to stack in ${receiveMessageTimeout} milliseconds`
+  )
 
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   setTimeout(runTask, receiveMessageTimeout)
 
-  logger.info(`Added task to stack`)
+  logger.info(`Added save and exit task to stack`)
 }

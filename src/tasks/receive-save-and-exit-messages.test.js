@@ -2,7 +2,7 @@ import {
   receiveMessageTimeout,
   receiveMessages
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/events.js'
+import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
 import {
   runTask,
   runTaskOnce
