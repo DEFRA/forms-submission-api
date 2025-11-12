@@ -14,7 +14,6 @@ import { router } from '~/src/plugins/router.js'
 import { swagger } from '~/src/plugins/swagger.js'
 import { prepareSecureContext } from '~/src/secure-context.js'
 import { runTask as runSaveAndExitTask } from '~/src/tasks/receive-save-and-exit-messages.js'
-import { runTask as runSubmissionTask } from '~/src/tasks/receive-submission-messages.js'
 
 const isProduction = config.get('isProduction')
 
@@ -77,7 +76,6 @@ export async function createServer() {
   await server.register(router)
 
   await runSaveAndExitTask()
-  await runSubmissionTask()
 
   return server
 }
