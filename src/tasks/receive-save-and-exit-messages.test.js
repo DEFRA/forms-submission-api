@@ -2,7 +2,7 @@ import {
   receiveMessageTimeout,
   receiveMessages
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
+import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 import {
   runTask,
   runTaskOnce
@@ -45,6 +45,9 @@ describe('receive-messages', () => {
         processed: [message]
       }
       jest.mocked(receiveMessages).mockResolvedValueOnce(receivedMessageResult)
+      jest
+        .mocked(receiveEventMessages)
+        .mockResolvedValueOnce(receivedMessageResult)
       jest
         .mocked(processSaveAndExitEvents)
         .mockResolvedValueOnce(processedEventResult)

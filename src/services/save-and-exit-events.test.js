@@ -17,8 +17,8 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import {
-  mapSubmissionMessageToData,
-  processSubmissionEvents
+  mapSaveAndExitMessageToData,
+  processSaveAndExitEvents
 } from '~/src/services/save-and-exit-events.js'
 
 jest.mock('~/src/messaging/event.js')

@@ -6,7 +6,7 @@ import {
   receiveEventMessages,
   receiveMessageTimeout
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
+import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 
 const queueUrl = config.get('saveAndExitQueueUrl')
 const logger = createLogger()
@@ -27,7 +27,7 @@ export async function runTaskOnce() {
     if (messages && messageCount) {
       logger.info('Processing save and exit queue messages')
 
-      const { processed } = await processSubmissionEvents(messages)
+      const { processed } = await processSaveAndExitEvents(messages)
 
       logger.info(`Processed ${processed.length} save and exit queue messages`)
     }
