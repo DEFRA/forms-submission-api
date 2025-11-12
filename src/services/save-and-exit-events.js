@@ -138,7 +138,7 @@ export async function processSaveAndExitEvents(messages) {
     } catch (err) {
       logger.error(
         err,
-        `[processSaveAndExitEvents] Failed to process message - ${getErrorMessage(err)}`
+        `[processSaveAndExitEvents] Failed to insert message - ${getErrorMessage(err)}`
       )
       throw err
     } finally {
