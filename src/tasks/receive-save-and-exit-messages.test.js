@@ -2,7 +2,7 @@ import {
   receiveEventMessages,
   receiveMessageTimeout
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
+import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 import {
   runTask,
   runTaskOnce
@@ -48,16 +48,16 @@ describe('receive-messages', () => {
         .mocked(receiveEventMessages)
         .mockResolvedValueOnce(receivedMessageResult)
       jest
-        .mocked(processSubmissionEvents)
+        .mocked(processSaveAndExitEvents)
         .mockResolvedValueOnce(processedEventResult)
       await runTaskOnce()
-      expect(processSubmissionEvents).toHaveBeenCalledWith([message])
+      expect(processSaveAndExitEvents).toHaveBeenCalledWith([message])
     })
 
     it('should handle undefined messages', async () => {
       jest.mocked(receiveEventMessages).mockResolvedValueOnce({})
       await runTaskOnce()
-      expect(processSubmissionEvents).not.toHaveBeenCalled()
+      expect(processSaveAndExitEvents).not.toHaveBeenCalled()
     })
   })
 
@@ -71,7 +71,7 @@ describe('receive-messages', () => {
       jest.mocked(receiveEventMessages).mockResolvedValueOnce({
         Messages: []
       })
-      jest.mocked(processSubmissionEvents).mockResolvedValueOnce({
+      jest.mocked(processSaveAndExitEvents).mockResolvedValueOnce({
         failed: [],
         processed: []
       })

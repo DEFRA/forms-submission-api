@@ -17,8 +17,8 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import {
-  mapSubmissionMessageToData,
-  processSubmissionEvents
+  mapSaveAndExitMessageToData,
+  processSaveAndExitEvents
 } from '~/src/services/save-and-exit-events.js'
 
 jest.mock('~/src/messaging/event.js')
@@ -78,39 +78,41 @@ describe('events', () => {
     })
 
     it('should map the message to data', async () => {
-      expect(await mapSubmissionMessageToData(submissionEventMessage)).toEqual({
-        messageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
-        parsedContent: {
-          messageCreatedAt: expect.any(Date),
-          category: SubmissionEventMessageCategory.RUNNER,
-          createdAt: new Date('2025-07-23T00:00:00.000Z'),
-          data: {
-            form: {
-              id: '689b7ab1d0eeac9711a7fb33',
-              title: 'My First Form',
-              isPreview: false,
-              status: 'draft',
-              baseUrl: 'http://localhost:3009'
+      expect(await mapSaveAndExitMessageToData(submissionEventMessage)).toEqual(
+        {
+          messageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
+          parsedContent: {
+            messageCreatedAt: expect.any(Date),
+            category: SubmissionEventMessageCategory.RUNNER,
+            createdAt: new Date('2025-07-23T00:00:00.000Z'),
+            data: {
+              form: {
+                id: '689b7ab1d0eeac9711a7fb33',
+                title: 'My First Form',
+                isPreview: false,
+                status: 'draft',
+                baseUrl: 'http://localhost:3009'
+              },
+              email: 'my-email@test.com',
+              security: {
+                question: SecurityQuestionsEnum.MemorablePlace,
+                answer: expect.any(String)
+              },
+              state: {
+                formField1: 'val1',
+                formField2: 'val2'
+              }
             },
-            email: 'my-email@test.com',
-            security: {
-              question: SecurityQuestionsEnum.MemorablePlace,
-              answer: expect.any(String)
-            },
-            state: {
-              formField1: 'val1',
-              formField2: 'val2'
-            }
-          },
-          schemaVersion: 1,
-          type: SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT,
-          source: SubmissionEventMessageSource.FORMS_RUNNER
+            schemaVersion: 1,
+            type: SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT,
+            source: SubmissionEventMessageSource.FORMS_RUNNER
+          }
         }
-      })
+      )
     })
 
     it('should allow unknown fields the message', async () => {
-      const event = await mapSubmissionMessageToData({
+      const event = await mapSaveAndExitMessageToData({
         ...submissionEventMessage,
         // @ts-expect-error - unknown field
         unknownField: 'visible'
@@ -125,7 +127,7 @@ describe('events', () => {
         submissionEventMessage
 
       await expect(
-        mapSubmissionMessageToData(auditEventMessageWithoutMessageId)
+        mapSaveAndExitMessageToData(auditEventMessageWithoutMessageId)
       ).rejects.toThrow(new Error('Unexpected missing Message.MessageId'))
     })
 
@@ -134,7 +136,7 @@ describe('events', () => {
       const { Body, ...auditEventMessageWithoutBody } = submissionEventMessage
 
       await expect(
-        mapSubmissionMessageToData(auditEventMessageWithoutBody)
+        mapSaveAndExitMessageToData(auditEventMessageWithoutBody)
       ).rejects.toThrow(new Error('Unexpected empty Message.Body'))
     })
 
@@ -156,7 +158,7 @@ describe('events', () => {
       })
 
       await expect(
-        mapSubmissionMessageToData(submissionEventMessage)
+        mapSaveAndExitMessageToData(submissionEventMessage)
       ).rejects.toThrow(
         new ValidationError(
           '"createdAt" is required',
@@ -263,7 +265,7 @@ describe('events', () => {
         createdAt: expect.any(Date)
       }
 
-      const result = await processSubmissionEvents(messages)
+      const result = await processSaveAndExitEvents(messages)
       expect(createSaveAndExitRecord).toHaveBeenCalledTimes(3)
       expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped1,
@@ -311,7 +313,7 @@ describe('events', () => {
       jest
         .mocked(deleteEventMessage)
         .mockRejectedValueOnce(new Error('error in delete'))
-      const result = await processSubmissionEvents(messages2)
+      const result = await processSaveAndExitEvents(messages2)
 
       expect(result).toEqual({
         processed: expect.any(Array),

@@ -20,7 +20,7 @@ const notifyReplyToId = config.get('notifyReplyToId')
  * @param {Message} message
  * @returns { Promise<{ messageId: string, parsedContent: SaveAndExitMessage}> }
  */
-export async function mapSubmissionMessageToData(message) {
+export async function mapSaveAndExitMessageToData(message) {
   if (!message.MessageId) {
     throw new Error('Unexpected missing Message.MessageId')
   }
@@ -55,7 +55,7 @@ export async function mapSubmissionMessageToData(message) {
  * @param {{ messageId: string, parsedContent: SaveAndExitMessage}} message
  * @returns {SaveAndExitRecord}
  */
-export function mapSubmissionDataToDocument(message) {
+export function mapSaveAndExitDataToDocument(message) {
   const { form, security, state, email } = message.parsedContent.data
   return {
     magicLinkId: message.messageId,
@@ -107,7 +107,7 @@ export function constructEmailContent(document, formTitle) {
  * @param {Message[]} messages
  * @returns {Promise<{ processed: Message[]; failed: any[] }>}
  */
-export async function processSubmissionEvents(messages) {
+export async function processSaveAndExitEvents(messages) {
   /**
    * @param {Message} message
    */
@@ -116,8 +116,8 @@ export async function processSubmissionEvents(messages) {
 
     try {
       return await session.withTransaction(async () => {
-        const data = await mapSubmissionMessageToData(message)
-        const document = mapSubmissionDataToDocument(data)
+        const data = await mapSaveAndExitMessageToData(message)
+        const document = mapSaveAndExitDataToDocument(data)
 
         await createSaveAndExitRecord(document, session)
 
