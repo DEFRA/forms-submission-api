@@ -191,11 +191,17 @@ export const config = convict({
     default: '',
     env: 'SQS_ENDPOINT'
   },
-  sqsEventsQueueUrl: {
-    doc: 'SQS queue URL',
+  saveAndExitQueueUrl: {
+    doc: 'SQS queue URL for save and exit messages',
     format: String,
     default: '',
-    env: 'EVENTS_SQS_QUEUE_URL'
+    env: 'SAVE_AND_EXIT_QUEUE_URL'
+  },
+  submissionQueueUrl: {
+    doc: 'SQS queue URL for submission messages',
+    format: String,
+    default: '',
+    env: 'SUBMISSION_QUEUE_URL'
   },
   receiveMessageTimeout: {
     doc: 'The wait time between each poll in milliseconds',

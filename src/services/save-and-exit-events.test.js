@@ -19,7 +19,7 @@ import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-reposi
 import {
   mapSubmissionMessageToData,
   processSubmissionEvents
-} from '~/src/services/events.js'
+} from '~/src/services/save-and-exit-events.js'
 
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/repositories/save-and-exit-repository.js')
@@ -278,9 +278,18 @@ describe('events', () => {
         expect.anything()
       )
       expect(deleteEventMessage).toHaveBeenCalledTimes(3)
-      expect(deleteEventMessage).toHaveBeenCalledWith(message1)
-      expect(deleteEventMessage).toHaveBeenCalledWith(message2)
-      expect(deleteEventMessage).toHaveBeenCalledWith(message3)
+      expect(deleteEventMessage).toHaveBeenCalledWith(
+        expect.any(String),
+        message1
+      )
+      expect(deleteEventMessage).toHaveBeenCalledWith(
+        expect.any(String),
+        message2
+      )
+      expect(deleteEventMessage).toHaveBeenCalledWith(
+        expect.any(String),
+        message3
+      )
 
       expect(result).toEqual({
         processed: messages,

@@ -2,14 +2,14 @@ import {
   receiveEventMessages,
   receiveMessageTimeout
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/events.js'
+import { processSubmissionEvents } from '~/src/services/save-and-exit-events.js'
 import {
   runTask,
   runTaskOnce
 } from '~/src/tasks/receive-save-and-exit-messages.js'
 
 jest.mock('~/src/messaging/event.js')
-jest.mock('~/src/services/events.js')
+jest.mock('~/src/services/save-and-exit-events.js')
 
 jest.mock('~/src/helpers/logging/logger.js', () => ({
   createLogger: jest.fn().mockImplementation(() => {

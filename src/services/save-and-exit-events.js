@@ -11,6 +11,7 @@ import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
+const queueUrl = config.get('saveAndExitQueueUrl')
 const expiryInDays = config.get('saveAndExitExpiryInDays')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
@@ -128,7 +129,7 @@ export async function processSubmissionEvents(messages) {
 
         logger.info(`Deleting ${message.MessageId}`)
 
-        await deleteEventMessage(message)
+        await deleteEventMessage(queueUrl, message)
 
         logger.info(`Deleted ${message.MessageId}`)
 
@@ -152,7 +153,7 @@ export async function processSubmissionEvents(messages) {
     .map((result) => result.value)
   const savedMessage = processed.map((item) => item.MessageId).join(',')
 
-  logger.info(`Inserted save-and-exit records: ${savedMessage}`)
+  logger.info(`Inserted save and exit records: ${savedMessage}`)
 
   const failed = results
     .filter((result) => result.status === 'rejected')
@@ -161,7 +162,7 @@ export async function processSubmissionEvents(messages) {
   if (failed.length) {
     const failedMessage = failed.map((item) => getErrorMessage(item)).join(',')
 
-    logger.info(`Failed to insert save-and-exit records: ${failedMessage}`)
+    logger.info(`Failed to insert save and exit records: ${failedMessage}`)
   }
 
   return { processed, failed }
