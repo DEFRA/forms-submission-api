@@ -111,7 +111,7 @@ export async function processSaveAndExitEvents(messages) {
   /**
    * @param {Message} message
    */
-  async function createSaveAndExitEvent(message) {
+  async function processSaveAndExitEvent(message) {
     const session = client.startSession()
 
     try {
@@ -127,18 +127,18 @@ export async function processSaveAndExitEvents(messages) {
         )
         await sendNotification(emailContent)
 
-        logger.info(`Deleting ${message.MessageId}`)
+        logger.info(`Deleting save and exit message ${message.MessageId}`)
 
         await deleteEventMessage(queueUrl, message)
 
-        logger.info(`Deleted ${message.MessageId}`)
+        logger.info(`Deleted save and exit message ${message.MessageId}`)
 
         return message
       })
     } catch (err) {
       logger.error(
         err,
-        `[createSaveAndExitEvent] Failed to insert message - ${getErrorMessage(err)}`
+        `[processSaveAndExitEvents] Failed to insert message - ${getErrorMessage(err)}`
       )
       throw err
     } finally {
@@ -146,7 +146,9 @@ export async function processSaveAndExitEvents(messages) {
     }
   }
 
-  const results = await Promise.allSettled(messages.map(createSaveAndExitEvent))
+  const results = await Promise.allSettled(
+    messages.map(processSaveAndExitEvent)
+  )
 
   const processed = results
     .filter((result) => result.status === 'fulfilled')
