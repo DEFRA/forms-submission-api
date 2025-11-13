@@ -13,7 +13,7 @@ const logger = createLogger()
 const INVALID_MAGIC_LINK = 'Invalid magic link'
 
 /**
- * Validate the save-and-exit link (just verify link id at this stage)
+ * Validate the save and exit link (just verify link id at this stage)
  * @param {string} magicLinkId
  */
 export async function getSavedLinkDetails(magicLinkId) {
@@ -31,7 +31,7 @@ export async function getSavedLinkDetails(magicLinkId) {
 }
 
 /**
- * Validate the full details of the save-and-exit credentials
+ * Validate the full details of the save and exit credentials
  * @param {string} magicLinkId - key contained in magic link
  * @param {string} securityAnswer - security answer provided by user
  */
@@ -52,7 +52,7 @@ export async function validateSavedLinkCredentials(
   } catch (err) {
     logger.error(
       err,
-      `Invalid password hash for save-and-exit id ${magicLinkId} - unable to decrypt`
+      `Invalid password hash for save and exit id ${magicLinkId} - unable to decrypt`
     )
   }
 

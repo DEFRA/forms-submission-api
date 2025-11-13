@@ -64,7 +64,7 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('getSaveAndExitRecord', () => {
-    it('should get save-and-exit record', async () => {
+    it('should get save and exit record', async () => {
       mockCollection.findOne.mockReturnValueOnce(submissionDocument)
       const submissionRecord = await getSaveAndExitRecord(
         STUB_SUBMISSION_RECORD_ID
@@ -72,7 +72,7 @@ describe('save-and-exit-repository', () => {
       expect(submissionRecord).toEqual(submissionDocument)
     })
 
-    it('should handle get save-and-exit record failures', async () => {
+    it('should handle get save and exit record failures', async () => {
       mockCollection.findOne.mockImplementation(() => {
         throw new Error('an error')
       })
@@ -83,7 +83,7 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('createSaveAndExitRecord', () => {
-    it('should create a save-and-exit record', async () => {
+    it('should create a save and exit record', async () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
@@ -161,7 +161,7 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('deleteSaveAndExitRecord', () => {
-    it('should delete a save-and-exit record', async () => {
+    it('should delete a save and exit record', async () => {
       jest.mocked(mockCollection.deleteOne.mockResolvedValueOnce({}))
       await deleteSaveAndExitRecord('123')
       const [deletedCall] = mockCollection.deleteOne.mock.calls[0]

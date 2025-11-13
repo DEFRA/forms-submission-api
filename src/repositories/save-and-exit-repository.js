@@ -22,7 +22,7 @@ const maxInvalidPasswordAttempts = 5
  * @returns { Promise<WithId<RunnerRecordFull> | null> }
  */
 export async function getSaveAndExitRecord(id) {
-  logger.info('Reading save-and-exit records')
+  logger.info('Reading save and exit record')
 
   const coll = /** @type {Collection<RunnerRecordFull>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
@@ -31,20 +31,20 @@ export async function getSaveAndExitRecord(id) {
   try {
     const result = await coll.findOne({ magicLinkId: id })
 
-    logger.info('Read save-and-exit records')
+    logger.info('Read save and exit record')
 
     return result
   } catch (err) {
     logger.error(
       err,
-      `Failed to read save-and-exit records - ${getErrorMessage(err)}`
+      `Failed to read save and exit records - ${getErrorMessage(err)}`
     )
     throw err
   }
 }
 
 /**
- * Creates a save-and-exit record from SubmissionRecordInput
+ * Creates a save and exit record from SubmissionRecordInput
  * @param {SaveAndExitRecord} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
@@ -121,7 +121,7 @@ export async function incrementInvalidPasswordAttempts(id) {
 }
 
 /**
- * Deletes a save-and-exit record
+ * Deletes a save and exit record
  * @param {string} id - message id/magic link id
  */
 export async function deleteSaveAndExitRecord(id) {
