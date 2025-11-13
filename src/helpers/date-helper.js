@@ -16,6 +16,6 @@ export function addDays(date, days) {
  */
 export function addMonths(date, months) {
   const result = new Date(date)
-  result.setMonth(result.getMonth() + months)
+  result.setDate(result.getMonth() + months)
   return result
 }

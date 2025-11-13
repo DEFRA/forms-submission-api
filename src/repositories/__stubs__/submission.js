@@ -17,6 +17,25 @@ export function buildDbDocument() {
 }
 
 /**
+ * @typedef {Omit<
+ *   FormAdapterSubmissionMessageMeta,
+ *   'schemaVersion' | 'timestamp' | 'status'
+ * > & {
+ *   schemaVersion: number
+ *   status: string
+ *   timestamp: string
+ * }} FormAdapterSubmissionMessageMetaSerialised
+ */
+
+/**
+ * @typedef {{
+ *   meta: FormAdapterSubmissionMessageMetaSerialised
+ *   data: FormAdapterSubmissionMessageData
+ *   result: FormAdapterSubmissionMessageResult
+ * }} FormAdapterSubmissionMessagePayloadSerialised
+ */
+
+/**
  * Builds a FormAdapterSubmissionMessageMeta stub - this is the metadata after de-serialisation
  * @param {Partial<FormAdapterSubmissionMessageMeta>} partialFormAdapterSubmissionMessageMeta
  * @returns {FormAdapterSubmissionMessageMeta}
@@ -35,6 +54,28 @@ export function buildFormAdapterSubmissionMessageMetaStub(
     isPreview: false,
     notificationEmail: 'info@example.com',
     ...partialFormAdapterSubmissionMessageMeta
+  }
+}
+
+/**
+ * Builds a Form Submission Event Message stub - this is the event received over SQS
+ * @param {Partial<FormAdapterSubmissionMessageMetaSerialised>} partialFormAdapterSubmissionMessageMetaSerialised
+ * @returns {FormAdapterSubmissionMessageMetaSerialised}
+ */
+export function buildFormAdapterSubmissionMessageMetaSerialised(
+  partialFormAdapterSubmissionMessageMetaSerialised = {}
+) {
+  return {
+    schemaVersion: 1,
+    timestamp: '2025-08-22T18:15:10.785Z',
+    referenceNumber: '576-225-943',
+    formName: 'Order a pizza',
+    formId: '68a8b0449ab460290c28940a',
+    formSlug: 'order-a-pizza',
+    status: 'live',
+    isPreview: false,
+    notificationEmail: 'info@example.com',
+    ...partialFormAdapterSubmissionMessageMetaSerialised
   }
 }
 
@@ -109,7 +150,57 @@ export function buildFormAdapterSubmissionMessagePayloadStub(
 }
 
 /**
+ * Builds a Form Submission Event Message stub
+ * @param {Partial<FormAdapterSubmissionMessagePayloadSerialised>} partialFormAdapterSubmissionMessagePayload
+ * @returns {FormAdapterSubmissionMessagePayloadSerialised}
+ */
+export function buildFormAdapterSubmissionMessagePayloadSerialisedStub(
+  partialFormAdapterSubmissionMessagePayload = {}
+) {
+  return {
+    meta: buildFormAdapterSubmissionMessageMetaSerialised(),
+    data: buildFormAdapterSubmissionMessageData(),
+    result: buildFormAdapterSubmissionMessageResult(),
+    ...partialFormAdapterSubmissionMessagePayload
+  }
+}
+
+/**
+ * @param {Partial<FormAdapterSubmissionMessage>} partialFormSubmissionMessage
+ * @returns {FormAdapterSubmissionMessage}
+ */
+export function buildFormAdapterSubmissionMessage(
+  partialFormSubmissionMessage = {}
+) {
+  return {
+    ...buildFormAdapterSubmissionMessagePayloadStub(),
+    messageId: '1668fba2-386c-4e2e-a348-a241e4193d08',
+    recordCreatedAt: new Date('2025-08-26'),
+    ...partialFormSubmissionMessage
+  }
+}
+
+/**
+ * SQS Message stub builder
+ * @param {FormAdapterSubmissionMessagePayloadSerialised} messageBody
+ * @param {Partial<Message>} message
+ * @returns {Message}
+ */
+export function buildMessageStub(messageBody, message = {}) {
+  return {
+    Body: JSON.stringify(messageBody),
+    MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
+    MessageAttributes: {},
+    MessageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
+    ReceiptHandle:
+      'YTBkZjk3ZTAtODA4ZC00NTQ5LTg4MzMtOWY3NjA2MDJlMjUxIGFybjphd3M6c3FzOmV1LXdlc3QtMjowMDAwMDAwMDAwMDA6Zm9ybXNfYXVkaXRfZXZlbnRzIGZiYWZiMTdlLTg2ZjAtNGFjNi1iODY0LTNmMzJjZDYwYjIyOCAxNzUzMzU0ODY4LjgzMjUzMzQ=',
+    ...message
+  }
+}
+
+/**
  * @import { WithId } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
- * @import { FormAdapterSubmissionMessageResult, FormAdapterSubmissionMessagePayload, FormAdapterSubmissionMessageMeta, FormAdapterSubmissionMessageData } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { Message } from '@aws-sdk/client-sqs'
+ * @import { FormAdapterSubmissionMessage, FormAdapterSubmissionMessageResult, FormAdapterSubmissionMessagePayload, FormAdapterSubmissionMessageMeta, FormAdapterSubmissionMessageData } from '@defra/forms-engine-plugin/engine/types.js'
  */

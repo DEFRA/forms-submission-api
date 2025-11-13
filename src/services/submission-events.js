@@ -3,6 +3,7 @@ import { getErrorMessage } from '@defra/forms-model'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
+import { addMonths } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
@@ -50,12 +51,8 @@ export function mapSubmissionMessageToData(message) {
  * @returns {FormSubmissionDocument}
  */
 export function mapSubmissionDataToDocument(message) {
-  const now = new Date()
-  const recordCreatedAt = now
-  const expireAt = new Date(now)
-
-  // Record set to expire after 9 months
-  expireAt.setMonth(now.getMonth() + 9)
+  const recordCreatedAt = new Date()
+  const expireAt = addMonths(recordCreatedAt, 9)
 
   return {
     ...message.parsedContent,
