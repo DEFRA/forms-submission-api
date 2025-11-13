@@ -3,9 +3,8 @@ import { getErrorMessage } from '@defra/forms-model'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
-import { addMonths } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { deleteMessage } from '~/src/messaging/event.js'
+import { deleteEventMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
 
@@ -51,14 +50,9 @@ export function mapSubmissionMessageToData(message) {
  * @returns {FormSubmissionDocument}
  */
 export function mapSubmissionDataToDocument(message) {
-  const months = 9
-  const recordCreatedAt = new Date()
-  const expireAt = addMonths(recordCreatedAt, months)
-
   return {
     ...message.parsedContent,
-    recordCreatedAt,
-    expireAt
+    createdAt: new Date()
   }
 }
 
@@ -67,11 +61,11 @@ export function mapSubmissionDataToDocument(message) {
  * @param {Message[]} messages
  * @returns {Promise<{ processed: Message[]; failed: any[] }>}
  */
-export async function processSubmissionMessages(messages) {
+export async function processSubmissionEvents(messages) {
   /**
    * @param {Message} message
    */
-  async function processSubmissionMessage(message) {
+  async function processSubmissionEvent(message) {
     const session = client.startSession()
 
     try {
@@ -83,7 +77,7 @@ export async function processSubmissionMessages(messages) {
 
         logger.info(`Deleting submission message ${message.MessageId}`)
 
-        await deleteMessage(queueUrl, message)
+        await deleteEventMessage(queueUrl, message)
 
         logger.info(`Deleted submission message ${message.MessageId}`)
 
@@ -100,9 +94,7 @@ export async function processSubmissionMessages(messages) {
     }
   }
 
-  const results = await Promise.allSettled(
-    messages.map(processSubmissionMessage)
-  )
+  const results = await Promise.allSettled(messages.map(processSubmissionEvent))
 
   const processed = results
     .filter((result) => result.status === 'fulfilled')

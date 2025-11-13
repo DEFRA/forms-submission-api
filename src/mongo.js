@@ -5,6 +5,7 @@ import { secureContext } from '~/src/secure-context.js'
 
 export const FILES_COLLECTION_NAME = 'files'
 export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
+export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
 
 /**
  * @type {Db}
@@ -47,7 +48,7 @@ export async function prepareDb(logger) {
   await filesColl.createIndex({ fileId: 1 }, { unique: true })
 
   /**
-   * @type {Collection<SaveAndExit>}
+   * @type {Collection<SaveAndExitDocument>}
    */
   const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
@@ -57,10 +58,10 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormSubmissionDocument>}
    */
-  const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
-  await submissionsColl.createIndex({ 'meta.formId': 1 })
-  await submissionsColl.createIndex({ 'meta.referenceNumber': 1 })
-  await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+  // const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
+  // TODO: DS - add any indexes or TTL
+  // await saveColl.createIndex({ 'meta.referenceNumber': 1 }, { unique: true })
+  // await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
@@ -70,5 +71,5 @@ export async function prepareDb(logger) {
 /**
  * @import { Collection, Db } from 'mongodb'
  * @import { Logger } from 'pino'
- * @import { FormFileUploadStatus, SaveAndExit } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, SaveAndExitDocument, FormSubmissionDocument } from '~/src/api/types.js'
  */
