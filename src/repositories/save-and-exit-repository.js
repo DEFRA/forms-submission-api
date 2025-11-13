@@ -4,7 +4,11 @@ import Boom from '@hapi/boom'
 import { config } from '~/src/config/index.js'
 import { addDays } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
+import {
+  SAVE_AND_EXIT_COLLECTION_NAME,
+  db,
+  saveAndExitColl as coll
+} from '~/src/mongo.js'
 
 const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
@@ -17,10 +21,6 @@ const maxInvalidPasswordAttempts = 5
  */
 export async function getSaveAndExitRecord(id) {
   logger.info('Reading save and exit record')
-
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
 
   try {
     const result = await coll.findOne({ magicLinkId: id })
@@ -45,10 +45,6 @@ export async function getSaveAndExitRecord(id) {
  */
 export async function createSaveAndExitRecord(recordInput, session) {
   logger.info(`Inserting ${recordInput.magicLinkId}`)
-
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
 
   try {
     const res = await coll.insertOne(
@@ -79,10 +75,6 @@ export async function createSaveAndExitRecord(recordInput, session) {
  */
 export async function incrementInvalidPasswordAttempts(id) {
   logger.info('Increment invalid password attempts')
-
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
 
   try {
     const result = await coll.findOneAndUpdate(

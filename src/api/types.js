@@ -31,7 +31,7 @@
  */
 
 /**
- * @typedef {FormAdapterSubmissionMessagePayload & { recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
+ * @typedef {FormAdapterSubmissionMessagePayload & { createdAt: Date }} FormSubmissionDocument
  */
 
 /**
@@ -46,5 +46,5 @@
  * @import { SaveAndExitRecord } from '@defra/forms-model'
  * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request } from '@hapi/hapi'
- * @import { Db } from 'mongodb'
+ * @import { Db, ObjectId } from 'mongodb'
  */

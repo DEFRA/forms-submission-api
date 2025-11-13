@@ -1,5 +1,5 @@
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { FILES_COLLECTION_NAME, db } from '~/src/mongo.js'
+import { FILES_COLLECTION_NAME, db, filesColl as coll } from '~/src/mongo.js'
 
 const logger = createLogger()
 
@@ -9,10 +9,6 @@ const logger = createLogger()
  */
 export async function create(fileStatus) {
   logger.info(`Creating file status for file ID ${fileStatus.fileId}`)
-
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
-    db.collection(FILES_COLLECTION_NAME)
-  )
 
   await coll.insertOne(fileStatus)
 
@@ -26,10 +22,6 @@ export async function create(fileStatus) {
  */
 export async function getByFileId(fileId) {
   logger.info(`Retrieving file status for file ID ${fileId}`)
-
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
-    db.collection(FILES_COLLECTION_NAME)
-  )
 
   let value = await coll.findOne({ fileId })
 
@@ -75,10 +67,6 @@ export async function updateS3Keys(updateFiles, session) {
     }
   })
 
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
-    db.collection(FILES_COLLECTION_NAME)
-  )
-
   return coll.bulkWrite(ops, { session })
 }
 
@@ -111,10 +99,6 @@ export async function updateRetrievalKeys(
 async function updateFields(fileIds, fieldsToUpdate, session) {
   const fieldNames = Object.keys(fieldsToUpdate).join(', ')
   logger.info(`Updating ${fieldNames} for ${fileIds.length} file IDs`)
-
-  const coll = /** @satisfies {Collection<FormFileUploadStatus>} */ (
-    db.collection(FILES_COLLECTION_NAME)
-  )
 
   const result = await coll.updateMany(
     { fileId: { $in: fileIds } },

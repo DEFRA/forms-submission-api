@@ -1,7 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
+import { submissionsColl } from '~/src/mongo.js'
 
 const logger = createLogger()
 
@@ -13,12 +13,8 @@ const logger = createLogger()
 export async function getSubmissionRecord(id) {
   logger.info('Reading submission record')
 
-  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
-    db.collection(SUBMISSIONS_COLLECTION_NAME)
-  )
-
   try {
-    const result = await coll.findOne({ magicLinkId: id })
+    const result = await submissionsColl.findOne({ magicLinkId: id })
 
     logger.info('Read submission record')
 
@@ -39,13 +35,11 @@ export async function getSubmissionRecord(id) {
  * @returns {Promise<ObjectId>} newId
  */
 export async function createSubmissionRecord(document, session) {
+  // todo: unique ref
   logger.info(`Inserting submission ${document.meta.referenceNumber}`)
 
   try {
-    const coll = /** @type {Collection<FormSubmissionDocument>} */ (
-      db.collection(SUBMISSIONS_COLLECTION_NAME)
-    )
-    const res = await coll.insertOne(document, { session })
+    const res = await submissionsColl.insertOne(document, { session })
 
     logger.info(
       `Inserted submission ${document.meta.referenceNumber} as ${res.insertedId.toString()}`
@@ -62,6 +56,6 @@ export async function createSubmissionRecord(document, session) {
 }
 
 /**
- * @import { ClientSession, ObjectId, WithId, Collection } from 'mongodb'
+ * @import { ClientSession, ObjectId, WithId } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
