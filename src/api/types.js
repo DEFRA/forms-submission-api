@@ -31,7 +31,7 @@
  */
 
 /**
- * @typedef {FormAdapterSubmissionMessagePayload & { createdAt: Date }} FormSubmissionDocument
+ * @typedef {FormAdapterSubmissionMessagePayload & { recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
  */
 
 /**

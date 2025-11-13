@@ -50,9 +50,17 @@ export function mapSubmissionMessageToData(message) {
  * @returns {FormSubmissionDocument}
  */
 export function mapSubmissionDataToDocument(message) {
+  const now = new Date()
+  const recordCreatedAt = now
+  const expireAt = new Date(now)
+
+  // Record set to expire after 9 months
+  expireAt.setMonth(now.getMonth() + 9)
+
   return {
     ...message.parsedContent,
-    createdAt: new Date()
+    recordCreatedAt,
+    expireAt
   }
 }
 
