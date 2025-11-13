@@ -103,10 +103,10 @@ export function buildMessageFromRunnerMessage(
 }
 
 /**
- * @returns {WithId<SaveAndExitDocument>}
+ * @returns {WithId<RunnerRecordFull>}
  */
 export function buildDbDocument() {
-  return /** @type {WithId<SaveAndExitDocument>} */ ({
+  return /** @type {WithId<RunnerRecordFull>} */ ({
     magicLinkId: 'magic-id',
     form: {
       id: 'form-id',
@@ -133,5 +133,5 @@ export function buildDbDocument() {
  * @import { WithId } from 'mongodb'
  * @import { SaveAndExitMessage, } from '@defra/forms-model'
  * @import { Message } from '@aws-sdk/client-sqs'
- * @import { SaveAndExitDocument } from '~/src/api/types.js'
+ * @import { RunnerRecordFull } from '~/src/repositories/save-and-exit-repository.js'
  */

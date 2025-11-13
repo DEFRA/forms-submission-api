@@ -12,7 +12,6 @@
  * @typedef {{ link: string }} GetSavedLinkParams
  * @typedef {{ Params: { link: string }, Payload: { securityAnswer: string }}} ValidateSaveAndExit
  */
-
 /**
  * @typedef {object} FileUploadStatus
  * @property {string} fileId - uuid of the file
@@ -27,11 +26,7 @@
 
 /**
  * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
- * @typedef {SaveAndExitRecord & { expireAt: Date }} SaveAndExitDocument
- */
-
-/**
- * @typedef {FormAdapterSubmissionMessagePayload & { createdAt: Date }} FormSubmissionDocument
+ * @typedef {SaveAndExitMessageData & { expiredAt: Date }} SaveAndExit
  */
 
 /**
@@ -43,8 +38,7 @@
  */
 
 /**
- * @import { SaveAndExitRecord } from '@defra/forms-model'
- * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { SaveAndExitMessageData } from '@defra/forms-model'
  * @import { Request } from '@hapi/hapi'
- * @import { Db, ObjectId } from 'mongodb'
+ * @import { Db } from 'mongodb'
  */
