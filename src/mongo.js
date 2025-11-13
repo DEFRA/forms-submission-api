@@ -58,10 +58,13 @@ export async function prepareDb(logger) {
   /**
    * @type {Collection<FormSubmissionDocument>}
    */
-  // const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
-  // TODO: DS - add any indexes or TTL
-  // await saveColl.createIndex({ 'meta.referenceNumber': 1 }, { unique: true })
-  // await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+  const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
+  await submissionsColl.createIndex({ 'meta.formId': 1 })
+  await submissionsColl.createIndex(
+    { 'meta.referenceNumber': 1 },
+    { unique: true }
+  )
+  await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
