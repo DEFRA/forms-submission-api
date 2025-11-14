@@ -58,6 +58,7 @@ describe('submission repository', () => {
   const submissionRecordInput = structuredClone(buildDbDocument())
 
   beforeEach(() => {
+    // @ts-expect-error - test stub
     jest.mocked(db.collection).mockReturnValue(mockCollection)
   })
 
