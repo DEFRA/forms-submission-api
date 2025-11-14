@@ -39,7 +39,6 @@ export async function getSubmissionRecord(id) {
  * @returns {Promise<ObjectId>} newId
  */
 export async function createSubmissionRecord(document, session) {
-  // todo: unique ref
   logger.info(`Inserting submission ${document.meta.referenceNumber}`)
 
   try {
