@@ -279,19 +279,10 @@ describe('events', () => {
         expectedMapped3,
         expect.anything()
       )
-      expect(deleteEventMessage).toHaveBeenCalledTimes(3)
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message1
-      )
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message2
-      )
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message3
-      )
+      expect(deleteMessage).toHaveBeenCalledTimes(3)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message1)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message2)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message3)
 
       expect(result).toEqual({
         processed: messages,

@@ -3,8 +3,8 @@ import { getErrorMessage } from '@defra/forms-model'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
-  receiveEventMessages,
-  receiveMessageTimeout
+  receiveMessageTimeout,
+  receiveMessages
 } from '~/src/messaging/event.js'
 import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 
@@ -18,7 +18,7 @@ export async function runTaskOnce() {
   logger.info('Receiving save and exit queue messages')
 
   try {
-    const result = await receiveEventMessages(queueUrl)
+    const result = await receiveMessages(queueUrl)
     const messages = result.Messages
     const messageCount = messages ? messages.length : 0
 

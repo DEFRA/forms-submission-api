@@ -3,10 +3,10 @@ import { getErrorMessage } from '@defra/forms-model'
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
-  receiveEventMessages,
-  receiveMessageTimeout
+  receiveMessageTimeout,
+  receiveMessages
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/submission-events.js'
+import { processSubmissionMessages } from '~/src/services/submission-events.js'
 
 const queueUrl = config.get('submissionQueueUrl')
 
@@ -19,7 +19,7 @@ export async function runTaskOnce() {
   logger.info('Receiving submission queue messages')
 
   try {
-    const result = await receiveEventMessages(queueUrl)
+    const result = await receiveMessages(queueUrl)
     const messages = result.Messages
     const messageCount = messages ? messages.length : 0
 
@@ -28,7 +28,7 @@ export async function runTaskOnce() {
     if (messages && messageCount) {
       logger.info('Processing submission queue messages')
 
-      const { processed } = await processSubmissionEvents(messages)
+      const { processed } = await processSubmissionMessages(messages)
 
       logger.info(`Processed ${processed.length} submission queue messages`)
     }

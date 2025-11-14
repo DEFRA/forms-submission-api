@@ -46,9 +46,6 @@ describe('receive-messages', () => {
       }
       jest.mocked(receiveMessages).mockResolvedValueOnce(receivedMessageResult)
       jest
-        .mocked(receiveEventMessages)
-        .mockResolvedValueOnce(receivedMessageResult)
-      jest
         .mocked(processSaveAndExitEvents)
         .mockResolvedValueOnce(processedEventResult)
       await runTaskOnce()

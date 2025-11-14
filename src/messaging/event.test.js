@@ -30,9 +30,7 @@ describe('event', () => {
         Messages: [messageStub]
       }
       snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
-      await expect(receiveEventMessages(queueUrl)).resolves.toEqual(
-        receivedMessage
-      )
+      await expect(receiveMessages(queueUrl)).resolves.toEqual(receivedMessage)
     })
   })
 
@@ -46,7 +44,7 @@ describe('event', () => {
       }
 
       snsMock.on(DeleteMessageCommand).resolves(deleteResult)
-      await deleteEventMessage(queueUrl, messageStub)
+      await deleteMessage(queueUrl, messageStub)
       expect(snsMock).toHaveReceivedCommandWith(DeleteMessageCommand, {
         QueueUrl: queueUrl,
         ReceiptHandle: receiptHandle

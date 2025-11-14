@@ -129,7 +129,7 @@ export async function processSaveAndExitEvents(messages) {
 
         logger.info(`Deleting save and exit message ${message.MessageId}`)
 
-        await deleteEventMessage(queueUrl, message)
+        await deleteMessage(queueUrl, message)
 
         logger.info(`Deleted save and exit message ${message.MessageId}`)
 
