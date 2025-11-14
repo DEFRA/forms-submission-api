@@ -73,6 +73,7 @@ describe('file repository', () => {
   }
 
   beforeEach(() => {
+    // @ts-expect-error - test stub
     jest.mocked(db.collection).mockReturnValue(mockCollection)
   })
 

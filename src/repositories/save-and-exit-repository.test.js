@@ -60,6 +60,7 @@ describe('save-and-exit-repository', () => {
   const submissionRecordInput = structuredClone(buildDbDocument())
 
   beforeEach(() => {
+    // @ts-expect-error - test stub
     jest.mocked(db.collection).mockReturnValue(mockCollection)
   })
 
