@@ -1,6 +1,6 @@
 import {
-  receiveEventMessages,
-  receiveMessageTimeout
+  receiveMessageTimeout,
+  receiveMessages
 } from '~/src/messaging/event.js'
 import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 import {
@@ -44,9 +44,7 @@ describe('receive-messages', () => {
         failed: [],
         processed: [message]
       }
-      jest
-        .mocked(receiveEventMessages)
-        .mockResolvedValueOnce(receivedMessageResult)
+      jest.mocked(receiveMessages).mockResolvedValueOnce(receivedMessageResult)
       jest
         .mocked(processSaveAndExitEvents)
         .mockResolvedValueOnce(processedEventResult)
@@ -55,7 +53,7 @@ describe('receive-messages', () => {
     })
 
     it('should handle undefined messages', async () => {
-      jest.mocked(receiveEventMessages).mockResolvedValueOnce({})
+      jest.mocked(receiveMessages).mockResolvedValueOnce({})
       await runTaskOnce()
       expect(processSaveAndExitEvents).not.toHaveBeenCalled()
     })
@@ -68,7 +66,7 @@ describe('receive-messages', () => {
         // @ts-expect-error - mocking timeout with void
         .mockImplementation(voidFn)
 
-      jest.mocked(receiveEventMessages).mockResolvedValueOnce({
+      jest.mocked(receiveMessages).mockResolvedValueOnce({
         Messages: []
       })
       jest.mocked(processSaveAndExitEvents).mockResolvedValueOnce({
@@ -84,9 +82,7 @@ describe('receive-messages', () => {
         .spyOn(global, 'setTimeout')
         // @ts-expect-error - mocking timeout with void
         .mockImplementation(voidFn)
-      jest
-        .mocked(receiveEventMessages)
-        .mockRejectedValue(new Error('any error'))
+      jest.mocked(receiveMessages).mockRejectedValue(new Error('any error'))
       await runTask()
       expect(setTimeoutSpy).toHaveBeenCalledWith(runTask, receiveMessageTimeout)
     })

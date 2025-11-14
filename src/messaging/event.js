@@ -16,7 +16,7 @@ const visibilityTimeout = config.get('visibilityTimeout')
  * @param {string} queueUrl - the SQS queue url
  * @returns {Promise<ReceiveMessageResult>}
  */
-export function receiveEventMessages(queueUrl) {
+export function receiveMessages(queueUrl) {
   /**
    * @type {ReceiveMessageCommandInput}
    */
@@ -36,7 +36,7 @@ export function receiveEventMessages(queueUrl) {
  * @param {Message} message - the received message
  * @returns {Promise<DeleteMessageCommandOutput>}
  */
-export function deleteEventMessage(queueUrl, message) {
+export function deleteMessage(queueUrl, message) {
   const command = new DeleteMessageCommand({
     QueueUrl: queueUrl,
     ReceiptHandle: message.ReceiptHandle

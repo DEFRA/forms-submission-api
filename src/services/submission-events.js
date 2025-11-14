@@ -5,7 +5,7 @@ import Joi from 'joi'
 import { config } from '~/src/config/index.js'
 import { addMonths } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { deleteEventMessage } from '~/src/messaging/event.js'
+import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
 
@@ -66,11 +66,11 @@ export function mapSubmissionDataToDocument(message) {
  * @param {Message[]} messages
  * @returns {Promise<{ processed: Message[]; failed: any[] }>}
  */
-export async function processSubmissionEvents(messages) {
+export async function processSubmissionMessages(messages) {
   /**
    * @param {Message} message
    */
-  async function processSubmissionEvent(message) {
+  async function processSubmissionMessage(message) {
     const session = client.startSession()
 
     try {
@@ -82,7 +82,7 @@ export async function processSubmissionEvents(messages) {
 
         logger.info(`Deleting submission message ${message.MessageId}`)
 
-        await deleteEventMessage(queueUrl, message)
+        await deleteMessage(queueUrl, message)
 
         logger.info(`Deleted submission message ${message.MessageId}`)
 
@@ -99,7 +99,9 @@ export async function processSubmissionEvents(messages) {
     }
   }
 
-  const results = await Promise.allSettled(messages.map(processSubmissionEvent))
+  const results = await Promise.allSettled(
+    messages.map(processSubmissionMessage)
+  )
 
   const processed = results
     .filter((result) => result.status === 'fulfilled')

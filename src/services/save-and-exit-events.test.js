@@ -7,7 +7,7 @@ import {
 import { ValidationError } from 'joi'
 import { pino } from 'pino'
 
-import { deleteEventMessage } from '~/src/messaging/event.js'
+import { deleteMessage } from '~/src/messaging/event.js'
 import { prepareDb } from '~/src/mongo.js'
 import {
   buildMessage,
@@ -279,19 +279,10 @@ describe('events', () => {
         expectedMapped3,
         expect.anything()
       )
-      expect(deleteEventMessage).toHaveBeenCalledTimes(3)
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message1
-      )
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message2
-      )
-      expect(deleteEventMessage).toHaveBeenCalledWith(
-        expect.any(String),
-        message3
-      )
+      expect(deleteMessage).toHaveBeenCalledTimes(3)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message1)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message2)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message3)
 
       expect(result).toEqual({
         processed: messages,
@@ -307,11 +298,11 @@ describe('events', () => {
         .mockRejectedValueOnce(new Error('error in create'))
       // @ts-expect-error - record not found
       jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
-      jest.mocked(deleteEventMessage).mockResolvedValueOnce({
+      jest.mocked(deleteMessage).mockResolvedValueOnce({
         $metadata: { httpStatusCode: 200 }
       })
       jest
-        .mocked(deleteEventMessage)
+        .mocked(deleteMessage)
         .mockRejectedValueOnce(new Error('error in delete'))
       const result = await processSaveAndExitEvents(messages2)
 

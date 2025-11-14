@@ -4,7 +4,7 @@ import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { deleteEventMessage } from '~/src/messaging/event.js'
+import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { sendNotification } from '~/src/services/notify.js'
@@ -129,7 +129,7 @@ export async function processSaveAndExitEvents(messages) {
 
         logger.info(`Deleting save and exit message ${message.MessageId}`)
 
-        await deleteEventMessage(queueUrl, message)
+        await deleteMessage(queueUrl, message)
 
         logger.info(`Deleted save and exit message ${message.MessageId}`)
 

@@ -1,8 +1,8 @@
 import {
-  receiveEventMessages,
-  receiveMessageTimeout
+  receiveMessageTimeout,
+  receiveMessages
 } from '~/src/messaging/event.js'
-import { processSubmissionEvents } from '~/src/services/submission-events.js'
+import { processSubmissionMessages } from '~/src/services/submission-events.js'
 import {
   runTask,
   runTaskOnce
@@ -44,20 +44,18 @@ describe('receive-messages', () => {
         failed: [],
         processed: [message]
       }
+      jest.mocked(receiveMessages).mockResolvedValueOnce(receivedMessageResult)
       jest
-        .mocked(receiveEventMessages)
-        .mockResolvedValueOnce(receivedMessageResult)
-      jest
-        .mocked(processSubmissionEvents)
+        .mocked(processSubmissionMessages)
         .mockResolvedValueOnce(processedEventResult)
       await runTaskOnce()
-      expect(processSubmissionEvents).toHaveBeenCalledWith([message])
+      expect(processSubmissionMessages).toHaveBeenCalledWith([message])
     })
 
     it('should handle undefined messages', async () => {
-      jest.mocked(receiveEventMessages).mockResolvedValueOnce({})
+      jest.mocked(receiveMessages).mockResolvedValueOnce({})
       await runTaskOnce()
-      expect(processSubmissionEvents).not.toHaveBeenCalled()
+      expect(processSubmissionMessages).not.toHaveBeenCalled()
     })
   })
 
@@ -68,10 +66,10 @@ describe('receive-messages', () => {
         // @ts-expect-error - mocking timeout with void
         .mockImplementation(voidFn)
 
-      jest.mocked(receiveEventMessages).mockResolvedValueOnce({
+      jest.mocked(receiveMessages).mockResolvedValueOnce({
         Messages: []
       })
-      jest.mocked(processSubmissionEvents).mockResolvedValueOnce({
+      jest.mocked(processSubmissionMessages).mockResolvedValueOnce({
         failed: [],
         processed: []
       })
@@ -84,9 +82,7 @@ describe('receive-messages', () => {
         .spyOn(global, 'setTimeout')
         // @ts-expect-error - mocking timeout with void
         .mockImplementation(voidFn)
-      jest
-        .mocked(receiveEventMessages)
-        .mockRejectedValue(new Error('any error'))
+      jest.mocked(receiveMessages).mockRejectedValue(new Error('any error'))
       await runTask()
       expect(setTimeoutSpy).toHaveBeenCalledWith(runTask, receiveMessageTimeout)
     })

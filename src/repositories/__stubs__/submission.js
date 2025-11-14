@@ -166,39 +166,6 @@ export function buildFormAdapterSubmissionMessagePayloadSerialisedStub(
 }
 
 /**
- * @param {Partial<FormAdapterSubmissionMessage>} partialFormSubmissionMessage
- * @returns {FormAdapterSubmissionMessage}
- */
-export function buildFormAdapterSubmissionMessage(
-  partialFormSubmissionMessage = {}
-) {
-  return {
-    ...buildFormAdapterSubmissionMessagePayloadStub(),
-    messageId: '1668fba2-386c-4e2e-a348-a241e4193d08',
-    recordCreatedAt: new Date('2025-08-26'),
-    ...partialFormSubmissionMessage
-  }
-}
-
-/**
- * SQS Message stub builder
- * @param {FormAdapterSubmissionMessagePayloadSerialised} messageBody
- * @param {Partial<Message>} message
- * @returns {Message}
- */
-export function buildMessageStub(messageBody, message = {}) {
-  return {
-    Body: JSON.stringify(messageBody),
-    MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
-    MessageAttributes: {},
-    MessageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
-    ReceiptHandle:
-      'YTBkZjk3ZTAtODA4ZC00NTQ5LTg4MzMtOWY3NjA2MDJlMjUxIGFybjphd3M6c3FzOmV1LXdlc3QtMjowMDAwMDAwMDAwMDA6Zm9ybXNfYXVkaXRfZXZlbnRzIGZiYWZiMTdlLTg2ZjAtNGFjNi1iODY0LTNmMzJjZDYwYjIyOCAxNzUzMzU0ODY4LjgzMjUzMzQ=',
-    ...message
-  }
-}
-
-/**
  * @import { WithId } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  * @import { Message } from '@aws-sdk/client-sqs'
