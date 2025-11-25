@@ -379,7 +379,7 @@ export async function submit(submitPayload) {
 }
 
 /**
- * @import { SubmitPayload, SubmitRecordset } from '@defra/forms-model'
+ * @import { SubmitPayload } from '@defra/forms-model'
  * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */
