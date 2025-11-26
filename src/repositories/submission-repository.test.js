@@ -1,12 +1,12 @@
 import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
-  STUB_SUBMISSION_RECORD_ID,
+  STUB_FORM_ID,
   buildDbDocument
 } from '~/src/repositories/__stubs__/submission.js'
 import {
   createSubmissionRecord,
-  getSubmissionRecord
+  getSubmissionRecords
 } from '~/src/repositories/submission-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -62,12 +62,10 @@ describe('submission repository', () => {
     jest.mocked(db.collection).mockReturnValue(mockCollection)
   })
 
-  describe('getSubmissionRecord', () => {
-    it('should get submission record', async () => {
+  describe('getSubmissionRecords', () => {
+    it('should get submission records', async () => {
       mockCollection.findOne.mockReturnValueOnce(submissionDocument)
-      const submissionRecord = await getSubmissionRecord(
-        STUB_SUBMISSION_RECORD_ID
-      )
+      const submissionRecord = await getSubmissionRecords(STUB_FORM_ID)
       expect(submissionRecord).toEqual(submissionDocument)
     })
 
@@ -75,9 +73,9 @@ describe('submission repository', () => {
       mockCollection.findOne.mockImplementation(() => {
         throw new Error('an error')
       })
-      await expect(
-        getSubmissionRecord(STUB_SUBMISSION_RECORD_ID)
-      ).rejects.toThrow(new Error('an error'))
+      await expect(getSubmissionRecords(STUB_FORM_ID)).rejects.toThrow(
+        new Error('an error')
+      )
     })
   })
 
