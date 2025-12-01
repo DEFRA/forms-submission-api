@@ -4,23 +4,31 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
+const SUBMISSION_RECORDS_LIMIT = 2000
 
 /**
- * Gets a record based on id
- * @param {string} id
- * @returns { Promise<WithId<FormSubmissionDocument> | null> }
+ * Gets submission records based on formId
+ * @param {string} formId - the form id
+ * @param {number} [limit] - the max number of records to return
+ * @returns { Promise<WithId<FormSubmissionDocument>[]> }
  */
-export async function getSubmissionRecord(id) {
-  logger.info('Reading submission record')
+export async function getSubmissionRecords(
+  formId,
+  limit = SUBMISSION_RECORDS_LIMIT
+) {
+  logger.info('Reading submission records')
 
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
 
   try {
-    const result = await coll.findOne({ magicLinkId: id })
+    const result = await coll
+      .find({ 'meta.formId': formId })
+      .limit(Math.max(SUBMISSION_RECORDS_LIMIT, limit))
+      .toArray()
 
-    logger.info('Read submission record')
+    logger.info('Read submission records')
 
     return result
   } catch (err) {

@@ -120,5 +120,37 @@ export async function processRepeaterFiles(
 }
 
 /**
+ * Creates a submission XLSX file from submission data
+ * @param {Buffer} workbook - The submission file
+ * @param {string} hashedRetrievalKey - Hashed retrieval key
+ * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
+ * @returns {Promise<{fileId: string}>} The file id
+ */
+export async function createSubmissionXlsxFile(
+  workbook,
+  hashedRetrievalKey,
+  retrievalKeyIsCaseSensitive
+) {
+  const fileId = randomUUID()
+  const fileKey = `${loadedPrefix}/${fileId}`
+  const contentType =
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+
+  await createS3File(fileKey, workbook, contentType, getS3Client())
+
+  await repository.create({
+    fileId,
+    filename: `${fileId}.xlsx`,
+    contentType,
+    s3Key: fileKey,
+    s3Bucket,
+    retrievalKey: hashedRetrievalKey,
+    retrievalKeyIsCaseSensitive
+  })
+
+  return { fileId }
+}
+
+/**
  * @import { SubmitRecordset } from '@defra/forms-model'
  */
