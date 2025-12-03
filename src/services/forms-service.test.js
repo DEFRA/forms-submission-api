@@ -123,10 +123,7 @@ describe('Forms service', () => {
       await getFormDefinition(metadata.id, FormStatus.Live)
 
       expect(getJson).toHaveBeenCalledWith(
-        new URL(
-          `/forms/${metadata.id}/definition`,
-          MANAGER_URL
-        )
+        new URL(`/forms/${metadata.id}/definition`, MANAGER_URL)
       )
     })
   })
@@ -148,7 +145,8 @@ describe('Forms service', () => {
       expect(getJson).toHaveBeenCalledWith(
         new URL(
           `/forms/${metadata.id}/versions/${versionNumber}/definition`,
-          MANAGER_URL)
+          MANAGER_URL
+        )
       )
     })
   })
