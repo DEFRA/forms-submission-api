@@ -1,5 +1,5 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
-import { hasRepeater } from '@defra/forms-model'
+import { ComponentType, hasRepeater } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import xlsx from 'xlsx'
@@ -30,26 +30,125 @@ export async function generateSubmissionsFile(formId) {
 
   const { title, notificationEmail } = await readFormMetadata(formId)
 
-  // Get all submission records for the form
-  const records = await readSubmissionRecords(formId)
+  /**
+   * Cache for FormModels
+   * @type {Map<number | undefined, FormModel>}
+   */
+  const models = new Map()
 
-  // From the submission records, work out the unique form definition versions
-  const versions = findUniqueFormDefinitionVersions(records, formId)
+  /**
+   * Array of worksheet rows
+   * @type {Map<string, string>[]}
+   */
+  const rows = []
 
-  // Fetch all the unique form definitions
-  const formDefinitions = await fetchFormDefinitions(versions, formId)
+  /**
+   * Map of unique components
+   * @type {Map<string, Component>}
+   */
+  const components = new Map()
 
-  // Build a `FormModel` for each form definition
-  const formModels = buildFormModels(formDefinitions, formId, versions)
+  /**
+   * Map of worksheet columns
+   * @type {Map<string, string>}
+   */
+  const headers = new Map()
 
-  // Work out the unique form components
-  const uniqueComponents = findUniqueComponents(formModels, formId)
+  /**
+   * Adds component and column header to the maps
+   * @param {Component} component - the form component
+   * @param {string} [key] - the header key
+   * @param {string} [value] - the header value
+   */
+  function addHeader(component, key = component.name, value = component.label) {
+    if (!components.has(component.name)) {
+      components.set(component.name, component)
+    }
+
+    if (!headers.has(key)) {
+      headers.set(key, value)
+    }
+  }
+
+  /**
+   * Fetches form definition and metadata version or gets them from cache
+   * @param {number | undefined} versionNumber - the form version
+   */
+  async function getFormModel(versionNumber) {
+    if (models.has(versionNumber)) {
+      return models.get(versionNumber)
+    } else {
+      const formDefinition = await getFormDefinitionVersion(
+        formId,
+        versionNumber
+      )
+      const formModel = new FormModel(formDefinition, {
+        basePath: '',
+        versionNumber
+      })
+
+      models.set(versionNumber, formModel)
+
+      return formModel
+    }
+  }
+
+  for await (const record of getSubmissionRecords(formId)) {
+    /** @type {Map<string, string>} */
+    const row = new Map()
+    const versionNumber = record.meta.versionMetadata?.versionNumber
+    const formModel = await getFormModel(versionNumber)
+
+    formModel?.componentMap.forEach((component, key) => {
+      /**
+       * Extracts the component value from the provided data
+       * @param {Record<string, any>} data - the answers data
+       */
+      function getValue(data) {
+        return key in data
+          ? component.getDisplayStringFromFormValue(data[key])
+          : undefined
+      }
+
+      if (hasRepeater(component.page.pageDef)) {
+        const repeaterName = component.page.pageDef.repeat.options.name
+        const hasRepeaterData = repeaterName in record.data.repeaters
+        const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
+
+        for (let index = 0; index < items.length; index++) {
+          const value = getValue(items[index])
+          const componentKey = `${component.name} ${index + 1}`
+          const componentValue = `${component.label} ${index + 1}`
+
+          row.set(componentKey, value)
+          addHeader(component, componentKey, componentValue)
+        }
+      } else if (component.type === ComponentType.FileUploadField) {
+        const files = record.data.files[component.name]
+        const fileCount = Array.isArray(files) ? files.length : 0
+
+        row.set(component.name, fileCount.toString())
+        addHeader(component)
+      } else {
+        const value = getValue(record.data.main)
+
+        row.set(component.name, value)
+        addHeader(component)
+      }
+    })
+
+    rows.push(row)
+  }
 
   // Build the Excel workbook
-  const workbook = buildExcelFile(formId, records, uniqueComponents)
+  const workbook = buildExcelFile(
+    formId,
+    sortHeaders(components, headers),
+    rows
+  )
 
   // Save the Excel workbook to S3
-  const fileId = await saveFileToS3(notificationEmail, workbook, formId)
+  const fileId = await saveFileToS3(workbook, formId, notificationEmail)
 
   // Finally send the submission file download email
   await sendSubmissionsFileEmail(formId, title, notificationEmail, fileId)
@@ -84,197 +183,73 @@ async function readFormMetadata(formId) {
 }
 
 /**
- * Read all submission records
- * @param {string} formId - the form id
+ * Sort headers to ensure repeaters are:
+ * Pizza 1, Quantity 1, Pizza 2, Quantity 2 rather than
+ * Pizza 1, Pizza 2, Quantity 1, Quantity 2
+ * @param {Map<string, Component>} components - the unique components map
+ * @param {Map<string, string>} headers - the unsorted headers
  */
-async function readSubmissionRecords(formId) {
-  logger.info(`Reading submission records for form ${formId}`)
+function sortHeaders(components, headers) {
+  const componentNames = components.keys().toArray()
 
-  const records = await getSubmissionRecords(formId)
-
-  logger.info(`Read ${records.length} submission records for form ${formId}`)
-
-  return records
-}
-
-/**
- * Finds unique form definition versions from all the submission
- * @param {FormSubmissionDocument[]} records - the form submission records
- * @param {string} formId - the form id
- */
-function findUniqueFormDefinitionVersions(records, formId) {
-  /** @type {Set<number>} */
-  const uniqueVersions = new Set()
-
-  records.forEach((rec) => {
-    if (rec.meta.versionMetadata) {
-      uniqueVersions.add(rec.meta.versionMetadata.versionNumber)
-    }
-  })
-
-  // Reverse to ensure latest component version takes priority
-  const versions = uniqueVersions.values().toArray().reverse()
-
-  logger.info(
-    `Found ${versions.length} unique form versions across ${records.length} records for form ${formId}`
-  )
-
-  return versions
-}
-
-/**
- * Fetch all of the unique form definition versions
- * @param {number[]} versions - the unique form definition versions
- * @param {string} formId - the form id
- */
-async function fetchFormDefinitions(versions, formId) {
-  logger.info(`Fetching ${versions.length} form definitions for form ${formId}`)
-
-  // TODO: DS - limit the number of fetches here
-  const formDefinitions = await Promise.all(
-    versions.map((version) => getFormDefinitionVersion(formId, version))
-  )
-
-  logger.info(
-    `Fetched ${formDefinitions.length} form definitions for form ${formId}`
-  )
-
-  return formDefinitions
-}
-
-/**
- * Build all the form models
- * @param {FormDefinition[]} formDefinitions - the form definitions
- * @param {string} formId - the form id
- * @param {number[]} versions
- */
-function buildFormModels(formDefinitions, formId, versions) {
-  logger.info(
-    `Building ${formDefinitions.length} form models for form ${formId}`
-  )
-
-  const formModels = formDefinitions.map(
-    (def, idx) =>
-      new FormModel(def, { basePath: '', versionNumber: versions.at(idx) })
-  )
-
-  logger.info(`Built ${formModels.length} form models for form ${formId}`)
-
-  return formModels
-}
-
-/**
- * Find the unique components across all form models
- * @param {FormModel[]} formModels
- * @param {string} formId - the form id
- */
-function findUniqueComponents(formModels, formId) {
-  const uniqueComponents = new Set(
-    ...formModels.flatMap((model) => model.componentMap)
-  )
-    .values()
+  return headers
+    .entries()
     .toArray()
-    .filter(([, component]) => component.isFormComponent)
+    .sort((a, b) => {
+      const partsA = a[0].split(' ')
+      const partsB = b[0].split(' ')
+      const nameA = partsA[0]
+      const nameB = partsB[0]
 
-  logger.info(
-    `Found ${uniqueComponents.length} unique form components across ${formModels.length} form models for form ${formId}`
-  )
+      // If a and b are components from the same repeater
+      // page, then order them by their repeater index
+      if (partsA.length === 2 && partsB.length === 2) {
+        const repeaterComponentA = components.get(nameA)
+        const repeaterComponentB = components.get(nameB)
 
-  return uniqueComponents
-}
-
-/**
- * Find the maximum number of repeater items across all submissions
- * @param {PageRepeat} repeaterPage - the repeater page
- * @param {FormSubmissionDocument[]} submissions - the form submissions
- */
-function getMaxRepeaterItems(repeaterPage, submissions) {
-  const name = repeaterPage.repeat.options.name
-
-  return Math.max(
-    ...submissions.map((submission) => {
-      const repeaterData = submission.data.repeaters
-      return name in repeaterData ? repeaterData[name].length : 0
-    })
-  )
-}
-
-/**
- *
- * @param {string} formId - the form id
- * @param {FormSubmissionDocument[]} records - the form submission records
- * @param {[string, Component][]} uniqueComponents - the unique components
- */
-function buildExcelFile(formId, records, uniqueComponents) {
-  logger.info(`Building the XLSX file for form ${formId}`)
-
-  const processedRepeaters = new Set()
-
-  /** @type {string[]} */
-  const headers = []
-
-  /** @type {string[][]} */
-  const values = Array.from(new Array(records.length), () => [])
-
-  uniqueComponents.forEach(([, component]) => {
-    /**
-     *
-     * @param {Component} component - the component to add values for
-     * @param {string} [repeaterName] - the repeater name
-     * @param {number} [repeaterIndex] - the repeater index
-     */
-    function addValues(component, repeaterName, repeaterIndex) {
-      records.forEach((record, i) => {
-        const key = component.name
-
-        let data
-        if (!repeaterName) {
-          data = record.data.main
-        } else if (
-          repeaterName in record.data.repeaters &&
-          typeof repeaterIndex === 'number'
-        ) {
-          data = record.data.repeaters[repeaterName][repeaterIndex]
-        }
-
-        values[i].push(
-          data && key in data
-            ? component.getDisplayStringFromFormValue(data[key])
-            : undefined
-        )
-      })
-    }
-
-    if (hasRepeater(component.page.pageDef)) {
-      if (!processedRepeaters.has(component.page.pageDef)) {
-        processedRepeaters.add(component.page.pageDef)
-        const maxRepeaterItems = getMaxRepeaterItems(component.page, records)
-
-        if (maxRepeaterItems > 0) {
-          const repeaterName = component.page.pageDef.repeat.options.name
-          const repeaterComponents = uniqueComponents.filter(
-            ([, c]) => c.page === component.page
-          )
-
-          for (let index = 0; index < maxRepeaterItems; index++) {
-            repeaterComponents.forEach(([, c]) => {
-              headers.push(`${c.label} ${index + 1}`)
-              addValues(c, repeaterName, index)
-            })
-          }
+        if (repeaterComponentA.page === repeaterComponentB.page) {
+          return Number(partsA[1]) - Number(partsB[1])
         }
       }
-    } else {
-      headers.push(component.label)
-      addValues(component)
-    }
+
+      // Otherwise sort them using their unique index
+      const idxA = componentNames.indexOf(nameA)
+      const idxB = componentNames.indexOf(nameB)
+
+      return idxA - idxB
+    })
+}
+
+/**
+ * Build an xlsx workbook from the headers and rows
+ * @param {string} formId - the form id
+ * @param {[string, string][]} headers - the file header
+ * @param {Map<string, string>[]} rows - the data rows
+ */
+function buildExcelFile(formId, headers, rows) {
+  logger.info(`Building the XLSX file for form ${formId}`)
+
+  const wsHeaders = headers.map(([, label]) => label)
+
+  /** @type {(string | undefined)[][]} */
+  const wsRows = []
+
+  rows.forEach((row) => {
+    /** @type {(string | undefined)[]} */
+    const wsRow = []
+
+    headers.forEach(([key]) => {
+      wsRow.push(row.get(key))
+    })
+
+    wsRows.push(wsRow)
   })
 
   // Create an excel file from the data and save
-  const worksheet = xlsx.utils.aoa_to_sheet([headers, ...values])
+  const worksheet = xlsx.utils.aoa_to_sheet([wsHeaders, ...wsRows])
   const workbook = xlsx.utils.book_new()
 
-  xlsx.utils.book_append_sheet(workbook, worksheet, 'Sheet 1')
+  xlsx.utils.book_append_sheet(workbook, worksheet)
 
   logger.info(`Built the XLSX file for form ${formId}`)
 
@@ -283,11 +258,11 @@ function buildExcelFile(formId, records, uniqueComponents) {
 
 /**
  * Save the Excel file to S3
- * @param {string} notificationEmail - the form notification email for the retrieval key
- * @param {*} workbook - the Excel wookbook
+ * @param {WorkBook} workbook - the Excel wookbook
  * @param {string} formId - the form id
+ * @param {string} notificationEmail - the form notification email for the retrieval key
  */
-async function saveFileToS3(notificationEmail, workbook, formId) {
+async function saveFileToS3(workbook, formId, notificationEmail) {
   logger.info(`Saving the XLSX file to S3 for form ${formId}`)
 
   const buffer = xlsx.write(workbook, {
@@ -362,7 +337,6 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 }
 
 /**
- * @import { FormDefinition, PageRepeat } from '@defra/forms-model'
- * @import { FormSubmissionDocument } from '~/src/api/types.js'
+ * @import { WorkBook } from 'xlsx'
  * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  */

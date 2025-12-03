@@ -63,17 +63,22 @@ describe('submission repository', () => {
   })
 
   describe('getSubmissionRecords', () => {
-    it('should get submission records', async () => {
-      mockCollection.findOne.mockReturnValueOnce(submissionDocument)
-      const submissionRecord = await getSubmissionRecords(STUB_FORM_ID)
-      expect(submissionRecord).toEqual(submissionDocument)
+    it('should get submission records cursor', () => {
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { next: () => submissionDocument }
+        })
+      })
+      const submissionRecord = getSubmissionRecords(STUB_FORM_ID)
+      expect(submissionRecord.next()).toEqual(submissionDocument)
     })
 
-    it('should handle get submission record failures', async () => {
-      mockCollection.findOne.mockImplementation(() => {
+    it('should handle get submission record failures', () => {
+      mockCollection.find.mockImplementation(() => {
         throw new Error('an error')
       })
-      await expect(getSubmissionRecords(STUB_FORM_ID)).rejects.toThrow(
+
+      expect(() => getSubmissionRecords(STUB_FORM_ID)).toThrow(
         new Error('an error')
       )
     })
