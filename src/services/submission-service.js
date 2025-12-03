@@ -71,7 +71,7 @@ export async function generateSubmissionsFile(formId) {
   }
 
   /**
-   * Fetches form definition and metadata version or gets them from cache
+   * Fetches form definition and builds the form model or gets them from cache
    * @param {number | undefined} versionNumber - the form version
    */
   async function getFormModel(versionNumber) {
