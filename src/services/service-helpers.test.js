@@ -1,9 +1,11 @@
 import { jest } from '@jest/globals'
+import xlsx from 'xlsx'
 
 import * as repository from '~/src/repositories/file-repository.js'
 import {
   createMainCsvFile,
   createRepeaterCsvFile,
+  createSubmissionXlsxFile,
   processRepeaterFiles
 } from '~/src/services/service-helpers.js'
 import { createCsv, createS3File, getS3Client } from '~/src/services/utils.js'
@@ -222,6 +224,26 @@ describe('Service Helpers', () => {
       await expect(
         processRepeaterFiles(mockRepeaters, 'hashed-key', true)
       ).rejects.toThrow('Failed to save repeater files')
+    })
+  })
+
+  describe('createSubmissionXlsxFile', () => {
+    it('should create submission XLSX file successfully', async () => {
+      const worksheet = xlsx.utils.aoa_to_sheet([['Col1', 'Col2']])
+      const workbook = xlsx.utils.book_new()
+
+      xlsx.utils.book_append_sheet(workbook, worksheet)
+
+      const buffer = xlsx.write(workbook, {
+        bookType: 'xlsx',
+        type: 'buffer'
+      })
+
+      const result = await createSubmissionXlsxFile(buffer, 'hashed-key', false)
+
+      expect(result).toEqual({
+        fileId: expect.stringMatching(/^[a-f0-9-]{36}$/)
+      })
     })
   })
 })
