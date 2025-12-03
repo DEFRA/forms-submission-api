@@ -4,8 +4,7 @@ import {
   GetObjectCommand,
   HeadObjectCommand,
   NoSuchKey,
-  NotFound,
-  PutObjectCommand
+  NotFound
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
@@ -26,7 +25,6 @@ import { getS3Client } from '~/src/services/utils.js'
 
 const logger = createLogger()
 const loadedPrefix = config.get('loadedPrefix')
-const s3Bucket = config.get('s3Bucket')
 
 const ALREADY_INGESTED = 11000
 
@@ -287,24 +285,6 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     oldS3Key,
     newS3Key
   }
-}
-
-/**
- * Create a file in S3.
- * @param {string} key - the key of the file
- * @param {string} body - file body
- * @param {string} contentType - content type
- * @param {S3Client} client - S3 client
- */
-export function createS3File(key, body, contentType, client) {
-  return client.send(
-    new PutObjectCommand({
-      Bucket: s3Bucket,
-      Key: key,
-      Body: body,
-      ContentType: contentType
-    })
-  )
 }
 
 /**
