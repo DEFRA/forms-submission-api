@@ -7,12 +7,14 @@ import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
+import { generateSubmissionsFile } from '~/src/services/submission-service.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
+jest.mock('~/src/services/submission-service.js')
 
 describe('Forms route', () => {
   /** @type {Server} */
@@ -220,6 +222,38 @@ describe('Forms route', () => {
           id: '12345'
         },
         invalidPasswordAttempts: 0
+      })
+    })
+  })
+
+  describe('Generate submissions file', () => {
+    test('Testing POST /submissions/{formId} route is successful with valid params', async () => {
+      jest.mocked(generateSubmissionsFile).mockResolvedValue({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/submissions/688131eeff67f889d52c66cc'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+    })
+
+    test('Testing POST /submissions/{formId} route fails if with invalid params', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/submissions/invalid-form-id'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message:
+          '"formId" must only contain hexadecimal characters. "formId" length must be 24 characters long'
       })
     })
   })

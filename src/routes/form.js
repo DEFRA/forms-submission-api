@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 import {
   formSubmitResponseSchema,
+  generateSubmissionsFileResponseSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
   validateSavedLinkResponseSchema
@@ -132,7 +133,7 @@ export default [
       },
       response: {
         status: {
-          200: validateSavedLinkResponseSchema
+          200: generateSubmissionsFileResponseSchema
         }
       }
     }
