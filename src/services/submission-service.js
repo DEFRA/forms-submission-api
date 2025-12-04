@@ -181,12 +181,12 @@ async function readFormMetadata(formId) {
   const { title, notificationEmail } = await getFormMetadataById(formId)
 
   if (!notificationEmail) {
-    const msg = `No notification email configured forformId: ${formId}`
+    const msg = `No notification email configured for formId: ${formId}`
 
     logger.error(msg)
 
     throw Boom.badRequest(
-      `No notification email configured forformId: ${formId}`
+      `No notification email configured for formId: ${formId}`
     )
   }
 
