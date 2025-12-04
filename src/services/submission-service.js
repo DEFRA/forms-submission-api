@@ -144,7 +144,7 @@ export async function generateSubmissionsFile(formId) {
   const workbook = buildExcelFile(
     formId,
     sortHeaders(components, headers),
-    rows
+    rows.reverse()
   )
 
   // Save the Excel workbook to S3

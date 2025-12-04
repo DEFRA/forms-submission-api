@@ -77,14 +77,14 @@ describe('Submission service', () => {
 
       expect(sheetAsCsv).toBe(
         `Egg,Your email,Country,Phone number,Delivery address,Fave color,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
-Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",Egg,9,,,,,,,1,
-Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",Ham,2,Pineapple,1,Bacon,5,Cheese,3,1,
-Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",Cheese,2,Hawaian,12,Cheese,6,,,1,
-Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",Egg,1,Ham,2,Bacon,4,,,1,
-Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
-Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com
+Chocolate,,,,,,,,,,,,,,,
 Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,,,,,,,,,d@s.com
-Chocolate,,,,,,,,,,,,,,,`
+Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com
+Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
+Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",Egg,1,Ham,2,Bacon,4,,,1,
+Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",Cheese,2,Hawaian,12,Cheese,6,,,1,
+Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",Ham,2,Pineapple,1,Bacon,5,Cheese,3,1,
+Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",Egg,9,,,,,,,1,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
