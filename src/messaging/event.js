@@ -7,34 +7,36 @@ import { config } from '~/src/config/index.js'
 import { sqsClient } from '~/src/tasks/sqs.js'
 
 export const receiveMessageTimeout = config.get('receiveMessageTimeout')
-const queueUrl = config.get('sqsEventsQueueUrl')
+
 const maxNumberOfMessages = config.get('maxNumberOfMessages')
 const visibilityTimeout = config.get('visibilityTimeout')
 
 /**
- * @type {ReceiveMessageCommandInput}
- */
-const input = {
-  QueueUrl: queueUrl,
-  MaxNumberOfMessages: maxNumberOfMessages,
-  VisibilityTimeout: visibilityTimeout
-}
-
-/**
  * Receive event messages
+ * @param {string} queueUrl - the SQS queue url
  * @returns {Promise<ReceiveMessageResult>}
  */
-export function receiveEventMessages() {
+export function receiveMessages(queueUrl) {
+  /**
+   * @type {ReceiveMessageCommandInput}
+   */
+  const input = {
+    QueueUrl: queueUrl,
+    MaxNumberOfMessages: maxNumberOfMessages,
+    VisibilityTimeout: visibilityTimeout
+  }
+
   const command = new ReceiveMessageCommand(input)
   return sqsClient.send(command)
 }
 
 /**
  * Delete event message
- * @param {Message} message
+ * @param {string} queueUrl - the SQS queue url
+ * @param {Message} message - the received message
  * @returns {Promise<DeleteMessageCommandOutput>}
  */
-export function deleteEventMessage(message) {
+export function deleteMessage(queueUrl, message) {
   const command = new DeleteMessageCommand({
     QueueUrl: queueUrl,
     ReceiptHandle: message.ReceiptHandle

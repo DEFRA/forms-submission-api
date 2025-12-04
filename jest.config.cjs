@@ -40,7 +40,8 @@ module.exports = {
       '@defra/forms-model/.*',
       '@defra/hapi-tracing/.*',
       'nanoid', // Supports ESM only
-      'slug' // Supports ESM only
+      'slug', // Supports ESM only
+      '@defra/forms-engine-plugin'
     ].join('|')}/)`
   ]
 }

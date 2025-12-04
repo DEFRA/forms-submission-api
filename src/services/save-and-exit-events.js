@@ -4,13 +4,14 @@ import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { deleteEventMessage } from '~/src/messaging/event.js'
+import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
+const queueUrl = config.get('saveAndExitQueueUrl')
 const expiryInDays = config.get('saveAndExitExpiryInDays')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
@@ -19,7 +20,7 @@ const notifyReplyToId = config.get('notifyReplyToId')
  * @param {Message} message
  * @returns { Promise<{ messageId: string, parsedContent: SaveAndExitMessage}> }
  */
-export async function mapSubmissionMessageToData(message) {
+export async function mapSaveAndExitMessageToData(message) {
   if (!message.MessageId) {
     throw new Error('Unexpected missing Message.MessageId')
   }
@@ -54,7 +55,7 @@ export async function mapSubmissionMessageToData(message) {
  * @param {{ messageId: string, parsedContent: SaveAndExitMessage}} message
  * @returns {SaveAndExitRecord}
  */
-export function mapSubmissionDataToDocument(message) {
+export function mapSaveAndExitDataToDocument(message) {
   const { form, security, state, email } = message.parsedContent.data
   return {
     magicLinkId: message.messageId,
@@ -106,17 +107,17 @@ export function constructEmailContent(document, formTitle) {
  * @param {Message[]} messages
  * @returns {Promise<{ processed: Message[]; failed: any[] }>}
  */
-export async function processSubmissionEvents(messages) {
+export async function processSaveAndExitEvents(messages) {
   /**
    * @param {Message} message
    */
-  async function createSaveAndExitEvent(message) {
+  async function processSaveAndExitEvent(message) {
     const session = client.startSession()
 
     try {
       return await session.withTransaction(async () => {
-        const data = await mapSubmissionMessageToData(message)
-        const document = mapSubmissionDataToDocument(data)
+        const data = await mapSaveAndExitMessageToData(message)
+        const document = mapSaveAndExitDataToDocument(data)
 
         await createSaveAndExitRecord(document, session)
 
@@ -126,18 +127,18 @@ export async function processSubmissionEvents(messages) {
         )
         await sendNotification(emailContent)
 
-        logger.info(`Deleting ${message.MessageId}`)
+        logger.info(`Deleting save and exit message ${message.MessageId}`)
 
-        await deleteEventMessage(message)
+        await deleteMessage(queueUrl, message)
 
-        logger.info(`Deleted ${message.MessageId}`)
+        logger.info(`Deleted save and exit message ${message.MessageId}`)
 
         return message
       })
     } catch (err) {
       logger.error(
         err,
-        `[createSaveAndExitEvent] Failed to insert message - ${getErrorMessage(err)}`
+        `[processSaveAndExitEvents] Failed to process message - ${getErrorMessage(err)}`
       )
       throw err
     } finally {
@@ -145,14 +146,16 @@ export async function processSubmissionEvents(messages) {
     }
   }
 
-  const results = await Promise.allSettled(messages.map(createSaveAndExitEvent))
+  const results = await Promise.allSettled(
+    messages.map(processSaveAndExitEvent)
+  )
 
   const processed = results
     .filter((result) => result.status === 'fulfilled')
     .map((result) => result.value)
   const savedMessage = processed.map((item) => item.MessageId).join(',')
 
-  logger.info(`Inserted save-and-exit records: ${savedMessage}`)
+  logger.info(`Inserted save and exit records: ${savedMessage}`)
 
   const failed = results
     .filter((result) => result.status === 'rejected')
@@ -161,7 +164,7 @@ export async function processSubmissionEvents(messages) {
   if (failed.length) {
     const failedMessage = failed.map((item) => getErrorMessage(item)).join(',')
 
-    logger.info(`Failed to insert save-and-exit records: ${failedMessage}`)
+    logger.info(`Failed to insert save and exit records: ${failedMessage}`)
   }
 
   return { processed, failed }

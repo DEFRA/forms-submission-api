@@ -1,12 +1,6 @@
 import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 
-/**
- * @typedef {object} Ttl
- * @property {Date} expireAt - Time to live
- * @typedef {SaveAndExitRecord & Ttl} RunnerRecordFull
- */
-
 import { config } from '~/src/config/index.js'
 import { addDays } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
@@ -19,32 +13,32 @@ const maxInvalidPasswordAttempts = 5
 /**
  * Gets a record based on id
  * @param {string} id
- * @returns { Promise<WithId<RunnerRecordFull> | null> }
+ * @returns { Promise<WithId<SaveAndExitDocument> | null> }
  */
 export async function getSaveAndExitRecord(id) {
-  logger.info('Reading save-and-exit records')
+  logger.info('Reading save and exit record')
 
-  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
     const result = await coll.findOne({ magicLinkId: id })
 
-    logger.info('Read save-and-exit records')
+    logger.info('Read save and exit record')
 
     return result
   } catch (err) {
     logger.error(
       err,
-      `Failed to read save-and-exit records - ${getErrorMessage(err)}`
+      `Failed to read save and exit records - ${getErrorMessage(err)}`
     )
     throw err
   }
 }
 
 /**
- * Creates a save-and-exit record from SubmissionRecordInput
+ * Creates a save and exit record from SubmissionRecordInput
  * @param {SaveAndExitRecord} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
@@ -52,7 +46,7 @@ export async function getSaveAndExitRecord(id) {
 export async function createSaveAndExitRecord(recordInput, session) {
   logger.info(`Inserting ${recordInput.magicLinkId}`)
 
-  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -81,12 +75,12 @@ export async function createSaveAndExitRecord(recordInput, session) {
 /**
  * Increment invalid password attempts on a record based on id
  * @param {string} id
- * @returns { Promise<WithId<RunnerRecordFull>> }
+ * @returns { Promise<WithId<SaveAndExitDocument>> }
  */
 export async function incrementInvalidPasswordAttempts(id) {
   logger.info('Increment invalid password attempts')
 
-  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -121,13 +115,13 @@ export async function incrementInvalidPasswordAttempts(id) {
 }
 
 /**
- * Deletes a save-and-exit record
+ * Deletes a save and exit record
  * @param {string} id - message id/magic link id
  */
 export async function deleteSaveAndExitRecord(id) {
   logger.info(`Deleting ${id}`)
 
-  const coll = /** @type {Collection<RunnerRecordFull>} */ (
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -144,4 +138,5 @@ export async function deleteSaveAndExitRecord(id) {
 /**
  * @import { SaveAndExitRecord } from '@defra/forms-model'
  * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
+ * @import { SaveAndExitDocument } from '~/src/api/types.js'
  */

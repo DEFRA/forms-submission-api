@@ -73,6 +73,7 @@ describe('file repository', () => {
   }
 
   beforeEach(() => {
+    // @ts-expect-error - test stub
     jest.mocked(db.collection).mockReturnValue(mockCollection)
   })
 
@@ -110,7 +111,7 @@ describe('file repository', () => {
   })
 
   describe('create', () => {
-    it('should create a save-and-exit record', async () => {
+    it('should create a file record', async () => {
       await create(fileDocument)
       const [insertedFileCall] = mockCollection.insertOne.mock.calls[0]
       expect(insertedFileCall).toEqual(fileDocument)

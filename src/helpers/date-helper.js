@@ -8,3 +8,14 @@ export function addDays(date, days) {
   result.setDate(result.getDate() + days)
   return result
 }
+
+/**
+ * @param {Date} date
+ * @param {number} months
+ * @returns {Date}
+ */
+export function addMonths(date, months) {
+  const result = new Date(date)
+  result.setMonth(result.getMonth() + months)
+  return result
+}
