@@ -268,8 +268,7 @@ function buildExcelFile(formId, headers, rows) {
     /** @type {(string | undefined)[]} */
     const wsRow = []
 
-    wsRow.push(row.get(SUBMISSION_REF_HEADER))
-    wsRow.push(row.get(SUBMISSION_DATE_HEADER))
+    wsRow.push(row.get(SUBMISSION_REF_HEADER), row.get(SUBMISSION_DATE_HEADER))
 
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
