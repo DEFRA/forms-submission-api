@@ -21,6 +21,10 @@ const designerUrl = config.get('designerUrl')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 
+
+const SUBMISSION_REF_HEADER = 'SubmissionRef'
+const SUBMISSION_DATE_HEADER = 'SubmissionDate'
+
 /**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
@@ -96,8 +100,13 @@ export async function generateSubmissionsFile(formId) {
   for await (const record of getSubmissionRecords(formId)) {
     /** @type {Map<string, string>} */
     const row = new Map()
+    const submissionRef = record.meta.referenceNumber
+    const submissionDate = record.meta.timestamp
     const versionNumber = record.meta.versionMetadata?.versionNumber
     const formModel = await getFormModel(versionNumber)
+
+    row.set(SUBMISSION_REF_HEADER, submissionRef)
+    row.set(SUBMISSION_DATE_HEADER, String(submissionDate))
 
     formModel?.componentMap.forEach((component, key) => {
       /**
@@ -226,7 +235,9 @@ function sortHeaders(components, headers) {
 function buildExcelFile(formId, headers, rows) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
-  const wsHeaders = headers.map(([, label]) => label)
+  const wsHeaders = ['Submission reference number', 'Submission date'].concat(
+    headers.map(([, label]) => label)
+  )
 
   /** @type {(string | undefined)[][]} */
   const wsRows = []
@@ -234,6 +245,9 @@ function buildExcelFile(formId, headers, rows) {
   rows.forEach((row) => {
     /** @type {(string | undefined)[]} */
     const wsRow = []
+
+    wsRow.push(row.get(SUBMISSION_REF_HEADER))
+    wsRow.push(row.get(SUBMISSION_DATE_HEADER))
 
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
