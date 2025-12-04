@@ -8,6 +8,7 @@ import {
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 import { generateSubmissionsFile } from '~/src/services/submission-service.js'
+import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -234,7 +235,8 @@ describe('Forms route', () => {
 
       const response = await server.inject({
         method: 'POST',
-        url: '/submissions/688131eeff67f889d52c66cc'
+        url: '/submissions/688131eeff67f889d52c66cc',
+        auth
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -246,7 +248,8 @@ describe('Forms route', () => {
     test('Testing POST /submissions/{formId} route fails if with invalid params', async () => {
       const response = await server.inject({
         method: 'POST',
-        url: '/submissions/invalid-form-id'
+        url: '/submissions/invalid-form-id',
+        auth
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
@@ -255,6 +258,15 @@ describe('Forms route', () => {
         message:
           '"formId" must only contain hexadecimal characters. "formId" length must be 24 characters long'
       })
+    })
+
+    test('Testing POST /submissions/{formId} route fails if without auth', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/submissions/688131eeff67f889d52c66cc'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
   })
 })
