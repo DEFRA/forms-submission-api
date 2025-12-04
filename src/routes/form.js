@@ -127,7 +127,6 @@ export default [
     },
     options: {
       tags: ['api'],
-      auth: false,
       validate: {
         params: Joi.object()
           .keys({
