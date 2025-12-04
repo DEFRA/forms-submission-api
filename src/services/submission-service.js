@@ -190,34 +190,31 @@ async function readFormMetadata(formId) {
  * @param {Map<string, string>} headers - the unsorted headers
  */
 function sortHeaders(components, headers) {
-  const componentNames = components.keys().toArray()
+  const componentNames = Array.from(components.keys())
 
-  return headers
-    .entries()
-    .toArray()
-    .sort((a, b) => {
-      const partsA = a[0].split(' ')
-      const partsB = b[0].split(' ')
-      const nameA = partsA[0]
-      const nameB = partsB[0]
+  return Array.from(headers.entries()).sort((a, b) => {
+    const partsA = a[0].split(' ')
+    const partsB = b[0].split(' ')
+    const nameA = partsA[0]
+    const nameB = partsB[0]
 
-      // If a and b are components from the same repeater
-      // page, then order them by their repeater index
-      if (partsA.length === 2 && partsB.length === 2) {
-        const repeaterComponentA = components.get(nameA)
-        const repeaterComponentB = components.get(nameB)
+    // If a and b are components from the same repeater
+    // page, then order them by their repeater index
+    if (partsA.length === 2 && partsB.length === 2) {
+      const repeaterComponentA = components.get(nameA)
+      const repeaterComponentB = components.get(nameB)
 
-        if (repeaterComponentA.page === repeaterComponentB.page) {
-          return Number(partsA[1]) - Number(partsB[1])
-        }
+      if (repeaterComponentA.page === repeaterComponentB.page) {
+        return Number(partsA[1]) - Number(partsB[1])
       }
+    }
 
-      // Otherwise sort them using their unique index
-      const idxA = componentNames.indexOf(nameA)
-      const idxB = componentNames.indexOf(nameB)
+    // Otherwise sort them using their unique index
+    const idxA = componentNames.indexOf(nameA)
+    const idxB = componentNames.indexOf(nameB)
 
-      return idxA - idxB
-    })
+    return idxA - idxB
+  })
 }
 
 /**
