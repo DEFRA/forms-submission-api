@@ -4,7 +4,7 @@ import { FormStatus } from '@defra/forms-model'
 import { addDays } from '~/src/helpers/date-helper.js'
 
 export const STUB_FORM_ID = '688131eeff67f889d52c66cc'
-export const STUB_SUBMISSION_RECORD_ID = '68948579d5659369f1e634c6'
+export const STUB_SUBMISSION_RECORD_ID = '68d284ef5fa1a0fb2ede066a'
 
 /**
  * @returns {WithId<FormSubmissionDocument>}
