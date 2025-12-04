@@ -21,7 +21,6 @@ const designerUrl = config.get('designerUrl')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 
-
 const SUBMISSION_REF_HEADER = 'SubmissionRef'
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
 
