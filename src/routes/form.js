@@ -119,7 +119,11 @@ export default [
       const { params } = request
       const { formId } = params
 
-      return generateSubmissionsFile(formId)
+      await generateSubmissionsFile(formId)
+
+      return {
+        message: 'Generate file success'
+      }
     },
     options: {
       tags: ['api'],

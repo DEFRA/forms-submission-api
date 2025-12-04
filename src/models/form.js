@@ -35,5 +35,5 @@ export const validateSavedLinkResponseSchema = Joi.object({
 }).label('validateSavedLinkResponse')
 
 export const generateSubmissionsFileResponseSchema = Joi.object({
-  fileId: Joi.string().required()
+  message: Joi.string().required()
 }).label('generateSubmissionsFileResponse')

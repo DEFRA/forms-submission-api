@@ -239,7 +239,7 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+        message: 'Generate file success'
       })
     })
 
