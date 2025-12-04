@@ -67,7 +67,7 @@ export async function getFormDefinition(id, state) {
 /**
  * Retrieves a form definition from the form manager for a given id
  * @param {string} id - the id of the form
- * @param {number | undefined} versionNumber - the version of the form
+ * @param {number} versionNumber - the version of the form
  */
 export async function getFormDefinitionVersion(id, versionNumber) {
   const getJsonByType = /** @type {typeof getJson<FormDefinition>} */ (getJson)

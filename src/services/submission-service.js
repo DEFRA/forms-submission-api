@@ -32,31 +32,8 @@ const SUBMISSION_DATE_HEADER = 'SubmissionDate'
 export async function generateSubmissionsFile(formId) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
+  const { components, headers, models, rows } = createCaches()
   const { title, notificationEmail } = await readFormMetadata(formId)
-
-  /**
-   * Cache for FormModels
-   * @type {Map<number | undefined, FormModel>}
-   */
-  const models = new Map()
-
-  /**
-   * Array of worksheet rows
-   * @type {Map<string, string>[]}
-   */
-  const rows = []
-
-  /**
-   * Map of unique components
-   * @type {Map<string, Component>}
-   */
-  const components = new Map()
-
-  /**
-   * Map of worksheet columns
-   * @type {Map<string, string>}
-   */
-  const headers = new Map()
 
   /**
    * Adds component and column header to the maps
@@ -76,7 +53,7 @@ export async function generateSubmissionsFile(formId) {
 
   /**
    * Fetches form definition and builds the form model or gets them from cache
-   * @param {number | undefined} versionNumber - the form version
+   * @param {number} versionNumber - the form version
    */
   async function getFormModel(versionNumber) {
     if (models.has(versionNumber)) {
@@ -100,13 +77,11 @@ export async function generateSubmissionsFile(formId) {
   for await (const record of getSubmissionRecords(formId)) {
     /** @type {Map<string, string>} */
     const row = new Map()
-    const submissionRef = record.meta.referenceNumber
-    const submissionDate = record.meta.timestamp
-    const versionNumber = record.meta.versionMetadata?.versionNumber
+    const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
     const formModel = await getFormModel(versionNumber)
 
     row.set(SUBMISSION_REF_HEADER, submissionRef)
-    row.set(SUBMISSION_DATE_HEADER, String(submissionDate))
+    row.set(SUBMISSION_DATE_HEADER, submissionDate.toISOString())
 
     formModel?.componentMap.forEach((component, key) => {
       /**
@@ -168,6 +143,36 @@ export async function generateSubmissionsFile(formId) {
 }
 
 /**
+ * Create the caches used while generating the submission file
+ */
+function createCaches() {
+  /**
+   * Cache for FormModels
+   * @type {Map<number | undefined, FormModel>}
+   */
+  const models = new Map()
+
+  /**
+   * Array of worksheet rows
+   * @type {Map<string, string>[]}
+   */
+  const rows = []
+
+  /**
+   * Map of unique components
+   * @type {Map<string, Component>}
+   */
+  const components = new Map()
+
+  /**
+   * Map of worksheet columns
+   * @type {Map<string, string>}
+   */
+  const headers = new Map()
+  return { components, headers, models, rows }
+}
+
+/**
  * Read form metadata
  * @param {string} formId - the form id
  */
@@ -189,6 +194,23 @@ async function readFormMetadata(formId) {
   logger.info(`Read metadata for form ${formId}`)
 
   return { title, notificationEmail }
+}
+
+/**
+ * Extract the metadata details
+ * @param {FormSubmissionDocument} record
+ */
+function extractMeta(record) {
+  const meta = record.meta
+  const submissionRef = meta.referenceNumber
+  const submissionDate = new Date(meta.timestamp)
+  const versionNumber = meta.versionMetadata?.versionNumber
+
+  if (!versionNumber) {
+    throw new Error('Unexpected empty version number in metadata')
+  }
+
+  return { versionNumber, submissionRef, submissionDate }
 }
 
 /**
@@ -350,4 +372,5 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 /**
  * @import { WorkBook } from 'xlsx'
  * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
+ * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
