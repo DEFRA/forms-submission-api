@@ -94,7 +94,7 @@
     "husky": "^9.1.7",
     "jest": "^30.0.5",
     "lint-staged": "^15.3.0",
-    "oidc-client-ts": "^3.1.0",
+    "oidc-client-ts": "^3.4.1",
     "prettier": "^3.4.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
