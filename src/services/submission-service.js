@@ -112,7 +112,7 @@ export async function generateSubmissionsFile(formId) {
 
         row.set(component.name, fileCount.toString())
         addHeader(component)
-      } else {
+      } else if (component.isFormComponent) {
         const value = getValue(record.data.main)
 
         row.set(component.name, value)
