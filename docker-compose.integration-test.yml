@@ -104,6 +104,11 @@ services:
       S3_BUCKET: 'test-forms-submission-bucket'
       S3_ENDPOINT: 'http://localstack_test:4566'
       LOADED_PREFIX: 'loaded'
+      DESIGNER_URL: 'http://localhost:3000'
+      MANAGER_URL: 'http://localhost:3001'
+      NOTIFY_API_KEY: 'dummy'
+      NOTIFY_REPLY_TO_ID: 'dummy'
+      NOTIFY_TEMPLATE_ID: 'dummy'
     depends_on:
       mongo_test:
         condition: service_healthy
