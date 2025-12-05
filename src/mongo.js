@@ -61,6 +61,7 @@ export async function prepareDb(logger) {
   const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
   await submissionsColl.createIndex({ 'meta.formId': 1 })
   await submissionsColl.createIndex({ 'meta.referenceNumber': 1 })
+  await submissionsColl.createIndex({ 'meta.timestamp': -1 })
   await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)

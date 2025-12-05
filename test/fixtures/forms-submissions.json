@@ -1,0 +1,478 @@
+[
+  {
+    "_id": "692ecd66e0a12b4afa8d5946",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-12-02T11:24:38.324Z",
+      "referenceNumber": "8C2-7E8-189",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "enrique.chase@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 43,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "kinder@egg.com",
+        "dGCWRr": "E",
+        "kETlcf": "12345",
+        "EvxgyY": {
+          "uprn": "200003232008",
+          "addressLine1": "Orchards",
+          "addressLine2": "Forest Hill, Village",
+          "town": "Town",
+          "postcode": "M15 5TX"
+        },
+        "MXYIAq": ["A", "C"]
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Egg",
+            "YFKeCx": 9
+          }
+        ]
+      },
+      "files": {
+        "mDXTYw": [
+          {
+            "fileId": "e0f661ac-e9be-44ed-a156-e9128a89ce47",
+            "fileName": "space.jpeg",
+            "userDownloadLink": "http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47"
+          }
+        ]
+      }
+    },
+    "result": {
+      "files": {
+        "main": "af80464c-47d1-4c90-8b6b-114f852ff48a",
+        "repeaters": {
+          "ZQJhLL": "01c99d21-57f4-4603-b2e1-695483dea881"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-12-02T11:28:38.659Z",
+    "expireAt": "2026-09-02T10:28:38.659Z"
+  },
+  {
+    "_id": "692dadf84978ae7d00ab63a7",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-12-01T15:02:08.103Z",
+      "referenceNumber": "450-904-A2C",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "enrique.chase@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 43,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "enrique.chase@defra.gov.uk",
+        "dGCWRr": "D",
+        "kETlcf": "+447930696579",
+        "EvxgyY": {
+          "uprn": "100023336956",
+          "addressLine1": "Prime Minister & First Lord Of The Treasury 10",
+          "addressLine2": "Downing Street",
+          "town": "London",
+          "postcode": "SW1A 2AA"
+        },
+        "MXYIAq": ["A", "C"]
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Ham",
+            "YFKeCx": 2
+          },
+          {
+            "YTjNmh": "Pineapple",
+            "YFKeCx": 1
+          },
+          {
+            "YTjNmh": "Bacon",
+            "YFKeCx": 5
+          },
+          {
+            "YTjNmh": "Cheese",
+            "YFKeCx": 3
+          }
+        ]
+      },
+      "files": {
+        "mDXTYw": [
+          {
+            "fileId": "207a6520-f311-4862-9d46-360d14918b4f",
+            "fileName": "Page groups.jpg",
+            "userDownloadLink": "http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f"
+          }
+        ]
+      }
+    },
+    "result": {
+      "files": {
+        "main": "3a581080-9d7e-4a88-b2ce-a66e8cf75cd2",
+        "repeaters": {
+          "ZQJhLL": "90da8924-1ecc-4543-ad44-3c9894b37264"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-12-01T15:02:16.687Z",
+    "expireAt": "2026-09-01T14:02:16.687Z"
+  },
+  {
+    "_id": "6929dc8bdef67d43d9da0546",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-28T17:31:48.731Z",
+      "referenceNumber": "8CC-882-665",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 43,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "kinder@egg.com",
+        "dGCWRr": "A",
+        "kETlcf": "123456789",
+        "EvxgyY": {
+          "uprn": "200003232010",
+          "addressLine1": "House name",
+          "addressLine2": "Forest Hill, Village",
+          "town": "Town",
+          "postcode": "M15 5TX"
+        },
+        "MXYIAq": ["A", "C"]
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Cheese",
+            "YFKeCx": 2
+          },
+          {
+            "YTjNmh": "Hawaian",
+            "YFKeCx": 12
+          },
+          {
+            "YTjNmh": "Cheese",
+            "YFKeCx": 6
+          }
+        ]
+      },
+      "files": {
+        "mDXTYw": [
+          {
+            "fileId": "99d51a43-8121-4368-8b52-1ae93ebb9b61",
+            "fileName": "Page groups.jpg",
+            "userDownloadLink": "http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61"
+          }
+        ]
+      }
+    },
+    "result": {
+      "files": {
+        "main": "af0e5dea-307e-4720-a0dd-b09aaa64bcd0",
+        "repeaters": {
+          "ZQJhLL": "7342237a-0639-4d65-b142-2dc0fe113a5a"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-11-28T17:31:55.321Z",
+    "expireAt": "2026-08-28T16:31:55.321Z"
+  },
+  {
+    "_id": "6929d28693861a6c438c133b",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-28T16:49:10.659Z",
+      "referenceNumber": "D44-841-706",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 43,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "kinder@egg.com",
+        "dGCWRr": "A",
+        "kETlcf": "12345",
+        "EvxgyY": {
+          "uprn": "200003232010",
+          "addressLine1": "House name",
+          "addressLine2": "Forest Hill, Village",
+          "town": "Town",
+          "postcode": "M15 5TX"
+        },
+        "MXYIAq": ["A", "B"]
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Egg",
+            "YFKeCx": 1
+          },
+          {
+            "YTjNmh": "Ham",
+            "YFKeCx": 2
+          },
+          {
+            "YTjNmh": "Bacon",
+            "YFKeCx": 4
+          }
+        ]
+      },
+      "files": {
+        "mDXTYw": [
+          {
+            "fileId": "4444ac6f-7a5c-4bb8-bbd8-459c3700a42e",
+            "fileName": "Page groups.jpg",
+            "userDownloadLink": "http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e"
+          }
+        ]
+      }
+    },
+    "result": {
+      "files": {
+        "main": "954af8d5-310c-4495-b31a-76382c594945",
+        "repeaters": {
+          "ZQJhLL": "a67760c1-6881-4f7f-922c-e7f6a8323622"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-11-28T16:49:10.720Z",
+    "expireAt": "2026-08-28T15:49:10.720Z"
+  },
+  {
+    "_id": "69297fe5abd149c3eb2951e1",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-28T10:56:18.903Z",
+      "referenceNumber": "F6C-807-B1F",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 41,
+        "createdAt": "2025-11-28T00:17:00.572Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Kinder",
+        "mvQXJz": "kinder@egg.com",
+        "dGCWRr": "D",
+        "kETlcf": "123",
+        "EvxgyY": {
+          "uprn": "100023336956",
+          "addressLine1": "Prime Minister & First Lord Of The Treasury 10",
+          "addressLine2": "Downing Street",
+          "town": "London",
+          "postcode": "SW1A 2AA"
+        },
+        "MXYIAq": ["A", "B", "C"],
+        "czExlx": "d@s.com"
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Ham",
+            "YFKeCx": 2
+          },
+          {
+            "YTjNmh": "Cheese",
+            "YFKeCx": 1
+          },
+          {
+            "YTjNmh": "Hawaian",
+            "YFKeCx": 12
+          }
+        ]
+      },
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "ac9b8f8d-6090-4e8b-8d8d-1ca68dbe9c50",
+        "repeaters": {
+          "ZQJhLL": "ff854181-f787-4512-bf03-74ff6ced4ff0"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-11-28T10:56:33.767Z",
+    "expireAt": "2026-08-28T09:56:33.767Z"
+  },
+  {
+    "_id": "6928ea4cd9725158bad889bc",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-28T00:18:16.739Z",
+      "referenceNumber": "259-0B2-442",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 41,
+        "createdAt": "2025-11-28T00:17:00.572Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "enrique.chase@defra.gov.uk",
+        "dGCWRr": "B",
+        "kETlcf": "123456789",
+        "EvxgyY": {
+          "uprn": "200003232010",
+          "addressLine1": "House name",
+          "addressLine2": "Forest Hill, Village",
+          "town": "Town",
+          "postcode": "M15 5TX"
+        },
+        "MXYIAq": ["A"],
+        "czExlx": "d@s.com"
+      },
+      "repeaters": {
+        "ZQJhLL": [
+          {
+            "YTjNmh": "Cheese",
+            "YFKeCx": 2
+          },
+          {
+            "YTjNmh": "Ham",
+            "YFKeCx": 6
+          }
+        ]
+      },
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "2ef9bd76-1890-4b54-b7e9-21bfe05b387a",
+        "repeaters": {
+          "ZQJhLL": "86f5ab87-457f-4a2a-b2a6-5080e95a4459"
+        }
+      }
+    },
+    "recordCreatedAt": "2025-11-28T00:18:16.778Z",
+    "expireAt": "2026-08-27T23:18:16.778Z"
+  },
+  {
+    "_id": "69280e0cc6c1940d9d8ffd25",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-27T08:34:46.620Z",
+      "referenceNumber": "187-231-E68",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 37,
+        "createdAt": "2025-11-27T08:17:53.649Z"
+      }
+    },
+    "data": {
+      "main": {
+        "qHKjBt": "Chocolate",
+        "mvQXJz": "enrique.chase@defra.gov.uk",
+        "dGCWRr": "A",
+        "kETlcf": "12345",
+        "EvxgyY": {
+          "uprn": "200003232010",
+          "addressLine1": "House name",
+          "addressLine2": "Forest Hill, Village",
+          "town": "Town",
+          "postcode": "M15 5TX"
+        },
+        "MXYIAq": ["A", "C"],
+        "czExlx": "d@s.com"
+      },
+      "repeaters": {},
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "c88b950b-18aa-4f2e-afd0-49ff340d2b3e",
+        "repeaters": {}
+      }
+    },
+    "recordCreatedAt": "2025-11-27T08:38:27.615Z",
+    "expireAt": "2026-08-27T07:38:27.615Z"
+  },
+  {
+    "_id": "691612cc89c4b64716adf097",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-13T17:17:29.426Z",
+      "referenceNumber": "549-FBF-C88",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "live",
+      "isPreview": false,
+      "notificationEmail": "name@example.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 36,
+        "createdAt": "2025-10-16T13:54:59.512Z"
+      }
+    },
+    "data": {
+      "main": {
+        "dGCWRr": "England",
+        "mpDPsu": {
+          "day": 13,
+          "month": 2,
+          "year": 1980
+        },
+        "qHKjBt": "Chocolate"
+      },
+      "repeaters": {},
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "88271987-b9b5-4927-8542-20875c24ef1f",
+        "repeaters": {}
+      }
+    },
+    "recordCreatedAt": "2025-11-13T17:18:03.708Z",
+    "expireAt": "2026-08-13T16:18:03.708Z"
+  }
+]

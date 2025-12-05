@@ -35,6 +35,10 @@
  */
 
 /**
+ * @typedef {{ Params: { formId: string }}} GenerateSubmissionFile
+ */
+
+/**
  * @typedef {object} UploadPayload
  * @property {('initiated'|'pending'|'ready')} uploadStatus - Have all scans completed, can be initiated, pending or ready
  * @property {{retrievalKey: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented

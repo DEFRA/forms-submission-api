@@ -1,8 +1,9 @@
-import { formSubmitPayloadSchema } from '@defra/forms-model'
+import { formSubmitPayloadSchema, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
 import {
   formSubmitResponseSchema,
+  generateSubmissionsFileResponseSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
   validateSavedLinkResponseSchema
@@ -12,6 +13,7 @@ import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
+import { generateSubmissionsFile } from '~/src/services/submission-service.js'
 
 export default [
   /**
@@ -74,7 +76,7 @@ export default [
   }),
 
   /**
-   * @satisfies {ServerRoute< ValidateSaveAndExit >}
+   * @satisfies {ServerRoute<ValidateSaveAndExit>}
    */
   ({
     method: 'POST',
@@ -105,11 +107,44 @@ export default [
         }
       }
     }
+  }),
+
+  /**
+   * @satisfies {ServerRoute<GenerateSubmissionFile>}
+   */
+  ({
+    method: 'POST',
+    path: '/submissions/{formId}',
+    async handler(request) {
+      const { params } = request
+      const { formId } = params
+
+      await generateSubmissionsFile(formId)
+
+      return {
+        message: 'Generate file success'
+      }
+    },
+    options: {
+      tags: ['api'],
+      validate: {
+        params: Joi.object()
+          .keys({
+            formId: idSchema
+          })
+          .label('generateSubmissionFileParams')
+      },
+      response: {
+        status: {
+          200: generateSubmissionsFileResponseSchema
+        }
+      }
+    }
   })
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GenerateSubmissionFile, GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
  */

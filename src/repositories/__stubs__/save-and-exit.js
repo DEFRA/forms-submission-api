@@ -10,7 +10,7 @@ import {
 
 import { addDays } from '~/src/helpers/date-helper.js'
 
-export const STUB_SUBMISSION_RECORD_ID = '68948579d5659369f1e634c6'
+export const STUB_SAVE_AND_EXIT_RECORD_ID = '68948579d5659369f1e634c6'
 
 /**
  * @param {Partial<SaveAndExitMessage>} partialSaveAndExitMessage

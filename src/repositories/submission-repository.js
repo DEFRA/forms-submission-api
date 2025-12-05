@@ -6,21 +6,23 @@ import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
 const logger = createLogger()
 
 /**
- * Gets a record based on id
- * @param {string} id
- * @returns { Promise<WithId<FormSubmissionDocument> | null> }
+ * Gets submission records based on formId
+ * @param {string} formId - the form id
+ * @returns { FindCursor<WithId<FormSubmissionDocument>> }
  */
-export async function getSubmissionRecord(id) {
-  logger.info('Reading submission record')
+export function getSubmissionRecords(formId) {
+  logger.info('Reading submission records')
 
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
 
   try {
-    const result = await coll.findOne({ magicLinkId: id })
+    const result = coll
+      .find({ 'meta.formId': formId })
+      .sort('meta.timestamp', 'desc')
 
-    logger.info('Read submission record')
+    logger.info('Read submission records')
 
     return result
   } catch (err) {
@@ -62,6 +64,6 @@ export async function createSubmissionRecord(document, session) {
 }
 
 /**
- * @import { ClientSession, ObjectId, WithId, Collection } from 'mongodb'
+ * @import { ClientSession, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

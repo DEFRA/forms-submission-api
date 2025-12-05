@@ -30,7 +30,7 @@ export function createCsv(input) {
 /**
  * Create a file in S3.
  * @param {string} key - the key of the file
- * @param {string} body - file body
+ * @param {string | Buffer} body - file body
  * @param {string} contentType - content type
  * @param {S3Client} client - S3 client
  */

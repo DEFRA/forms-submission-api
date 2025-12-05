@@ -1,7 +1,7 @@
 import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
-  STUB_SUBMISSION_RECORD_ID,
+  STUB_SAVE_AND_EXIT_RECORD_ID,
   buildDbDocument
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
@@ -68,7 +68,7 @@ describe('save-and-exit-repository', () => {
     it('should get save and exit record', async () => {
       mockCollection.findOne.mockReturnValueOnce(submissionDocument)
       const submissionRecord = await getSaveAndExitRecord(
-        STUB_SUBMISSION_RECORD_ID
+        STUB_SAVE_AND_EXIT_RECORD_ID
       )
       expect(submissionRecord).toEqual(submissionDocument)
     })
@@ -78,7 +78,7 @@ describe('save-and-exit-repository', () => {
         throw new Error('an error')
       })
       await expect(
-        getSaveAndExitRecord(STUB_SUBMISSION_RECORD_ID)
+        getSaveAndExitRecord(STUB_SAVE_AND_EXIT_RECORD_ID)
       ).rejects.toThrow(new Error('an error'))
     })
   })

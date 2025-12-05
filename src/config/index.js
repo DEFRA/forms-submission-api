@@ -137,6 +137,16 @@ export const config = convict({
       env: 'TRACING_HEADER'
     }
   },
+  designerUrl: {
+    format: String,
+    default: null,
+    env: 'DESIGNER_URL'
+  },
+  managerUrl: {
+    format: String,
+    default: null,
+    env: 'MANAGER_URL'
+  },
   /**
    * @todo We plan to replace `node-convict` with `joi` and remove all defaults.
    * These OIDC/roles are for the DEV application in the DEFRA tenant.
