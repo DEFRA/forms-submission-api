@@ -1,5 +1,9 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
-import { ComponentType, hasRepeater } from '@defra/forms-model'
+import {
+  ComponentType,
+  hasRepeater,
+  replaceCustomControllers
+} from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import xlsx from 'xlsx'
@@ -25,6 +29,19 @@ const SUBMISSION_REF_HEADER = 'SubmissionRef'
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
 
 /**
+ * @param {string} formId
+ * @param {number} versionNumber
+ * @returns {Promise<FormModel>}
+ */
+export async function getFormModelFromDb(formId, versionNumber) {
+  const formDefinition = await getFormDefinitionVersion(formId, versionNumber)
+  return new FormModel(replaceCustomControllers(formDefinition), {
+    basePath: '',
+    versionNumber
+  })
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  */
@@ -44,7 +61,6 @@ export async function generateSubmissionsFile(formId) {
     if (!components.has(component.name)) {
       components.set(component.name, component)
     }
-
     if (!headers.has(key)) {
       headers.set(key, value)
     }
@@ -58,14 +74,7 @@ export async function generateSubmissionsFile(formId) {
     if (models.has(versionNumber)) {
       return models.get(versionNumber)
     } else {
-      const formDefinition = await getFormDefinitionVersion(
-        formId,
-        versionNumber
-      )
-      const formModel = new FormModel(formDefinition, {
-        basePath: '',
-        versionNumber
-      })
+      const formModel = await getFormModelFromDb(formId, versionNumber)
 
       models.set(versionNumber, formModel)
 
