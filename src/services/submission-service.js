@@ -1,7 +1,6 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
 import {
   ComponentType,
-  FormStatus,
   hasRepeater,
   replaceCustomControllers
 } from '@defra/forms-model'
@@ -12,10 +11,7 @@ import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
-import {
-  getFormDefinition,
-  getFormDefinitionVersion
-} from '~/src/services/forms-service.js'
+import { getFormDefinitionVersion } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 
@@ -59,6 +55,19 @@ export async function generateFeedbackSubmissionsFile(formId = undefined) {
 }
 
 /**
+ * @param {string} formId
+ * @param {number} versionNumber
+ * @returns {Promise<FormModel>}
+ */
+export async function getFormModelFromDb(formId, versionNumber) {
+  const formDefinition = await getFormDefinitionVersion(formId, versionNumber)
+  return new FormModel(replaceCustomControllers(formDefinition), {
+    basePath: '',
+    versionNumber
+  })
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  * @param {{ filter?: object, includeFormName?: boolean, removeColumns?: string[]}} [options] - add a filter and/or additionalColumns
@@ -78,7 +87,6 @@ export async function generateSubmissionsFile(formId, options = undefined) {
     if (!components.has(component.name)) {
       components.set(component.name, component)
     }
-
     if (!headers.has(key)) {
       headers.set(key, value)
     }
@@ -92,18 +100,7 @@ export async function generateSubmissionsFile(formId, options = undefined) {
     if (models.has(versionNumber)) {
       return models.get(versionNumber)
     } else {
-      const formDefinition =
-        versionNumber === 0
-          ? await getFormDefinition(formId, FormStatus.Live)
-          : await getFormDefinitionVersion(formId, versionNumber)
-
-      const formModel = new FormModel(
-        replaceCustomControllers(formDefinition),
-        {
-          basePath: '',
-          versionNumber
-        }
-      )
+      const formModel = await getFormModelFromDb(formId, versionNumber)
 
       models.set(versionNumber, formModel)
 
