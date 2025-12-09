@@ -29,6 +29,19 @@ const SUBMISSION_REF_HEADER = 'SubmissionRef'
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
 
 /**
+ * @param {string} formId
+ * @param {number} versionNumber
+ * @returns {Promise<FormModel>}
+ */
+export async function getFormModelFromDb(formId, versionNumber) {
+  const formDefinition = await getFormDefinitionVersion(formId, versionNumber)
+  return new FormModel(replaceCustomControllers(formDefinition), {
+    basePath: '',
+    versionNumber
+  })
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  */
@@ -61,18 +74,10 @@ export async function generateSubmissionsFile(formId) {
     if (models.has(versionNumber)) {
       return models.get(versionNumber)
     } else {
-      const formDefinition = await getFormDefinitionVersion(
-        formId,
-        versionNumber
-      )
-      const formModel = new FormModel(
-        replaceCustomControllers(formDefinition),
-        {
-          basePath: '',
-          versionNumber
-        }
-      )
+      const formModel = await getFormModelFromDb(formId, versionNumber)
+
       models.set(versionNumber, formModel)
+
       return formModel
     }
   }
@@ -123,6 +128,7 @@ export async function generateSubmissionsFile(formId) {
         addHeader(component)
       }
     })
+
     rows.push(row)
   }
 
