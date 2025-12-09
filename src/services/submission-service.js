@@ -48,7 +48,6 @@ export async function generateSubmissionsFile(formId) {
     if (!components.has(component.name)) {
       components.set(component.name, component)
     }
-
     if (!headers.has(key)) {
       headers.set(key, value)
     }
@@ -73,9 +72,7 @@ export async function generateSubmissionsFile(formId) {
           versionNumber
         }
       )
-
       models.set(versionNumber, formModel)
-
       return formModel
     }
   }
@@ -126,7 +123,6 @@ export async function generateSubmissionsFile(formId) {
         addHeader(component)
       }
     })
-
     rows.push(row)
   }
 
