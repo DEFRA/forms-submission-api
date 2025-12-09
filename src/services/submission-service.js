@@ -1,5 +1,9 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
-import { ComponentType, hasRepeater } from '@defra/forms-model'
+import {
+  ComponentType,
+  hasRepeater,
+  replaceCustomControllers
+} from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import xlsx from 'xlsx'
@@ -62,10 +66,13 @@ export async function generateSubmissionsFile(formId) {
         formId,
         versionNumber
       )
-      const formModel = new FormModel(formDefinition, {
-        basePath: '',
-        versionNumber
-      })
+      const formModel = new FormModel(
+        replaceCustomControllers(formDefinition),
+        {
+          basePath: '',
+          versionNumber
+        }
+      )
 
       models.set(versionNumber, formModel)
 
