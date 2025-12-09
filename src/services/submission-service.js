@@ -1,6 +1,10 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
-import { ComponentType, hasRepeater } from '@defra/forms-model'
-import Boom from '@hapi/boom'
+import {
+  ComponentType,
+  FormStatus,
+  hasRepeater,
+  replaceCustomControllers
+} from '@defra/forms-model'
 import argon2 from 'argon2'
 import xlsx from 'xlsx'
 
@@ -9,8 +13,8 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
-  getFormDefinitionVersion,
-  getFormMetadataById
+  getFormDefinition,
+  getFormDefinitionVersion
 } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
@@ -24,15 +28,45 @@ const notifyReplyToId = config.get('notifyReplyToId')
 const SUBMISSION_REF_HEADER = 'SubmissionRef'
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
 
+const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
+
+/**
+ * Generate a form submission file for a form id
+ * @param {string} formId - the form id
+ */
+export async function generateFormSubmissionsFile(formId) {
+  return generateSubmissionsFile(formId)
+}
+
+/**
+ * Generate a feedback submission file for one or all forms
+ * @param {string} [formId] - the form id
+ */
+export async function generateFeedbackSubmissionsFile(formId = undefined) {
+  const removeColumns = ['formId', 'referenceNumber']
+  if (!formId) {
+    return generateSubmissionsFile(CSAT_FORM_ID, {
+      includeFormName: true,
+      removeColumns
+    })
+  }
+
+  return generateSubmissionsFile(CSAT_FORM_ID, {
+    includeFormName: true,
+    filter: { 'data.main.formId': formId },
+    removeColumns
+  })
+}
+
 /**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
+ * @param {{ filter?: object, includeFormName?: boolean, removeColumns?: string[]}} [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId) {
+export async function generateSubmissionsFile(formId, options = undefined) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const { components, headers, models, rows } = createCaches()
-  const { title, notificationEmail } = await readFormMetadata(formId)
 
   /**
    * Adds component and column header to the maps
@@ -58,14 +92,18 @@ export async function generateSubmissionsFile(formId) {
     if (models.has(versionNumber)) {
       return models.get(versionNumber)
     } else {
-      const formDefinition = await getFormDefinitionVersion(
-        formId,
-        versionNumber
+      const formDefinition =
+        versionNumber === 0
+          ? await getFormDefinition(formId, FormStatus.Live)
+          : await getFormDefinitionVersion(formId, versionNumber)
+
+      const formModel = new FormModel(
+        replaceCustomControllers(formDefinition),
+        {
+          basePath: '',
+          versionNumber
+        }
       )
-      const formModel = new FormModel(formDefinition, {
-        basePath: '',
-        versionNumber
-      })
 
       models.set(versionNumber, formModel)
 
@@ -73,7 +111,13 @@ export async function generateSubmissionsFile(formId) {
     }
   }
 
-  for await (const record of getSubmissionRecords(formId)) {
+  /** @type {string} */
+  let title = ''
+  let notificationEmail = ''
+  for await (const record of getSubmissionRecords(formId, options?.filter)) {
+    title = record.meta.formName
+    notificationEmail = record.meta.notificationEmail
+
     /** @type {Map<string, string>} */
     const row = new Map()
     const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
@@ -172,30 +216,6 @@ function createCaches() {
 }
 
 /**
- * Read form metadata
- * @param {string} formId - the form id
- */
-async function readFormMetadata(formId) {
-  logger.info(`Reading metadata for form ${formId}`)
-
-  const { title, notificationEmail } = await getFormMetadataById(formId)
-
-  if (!notificationEmail) {
-    const msg = `No notification email configured for formId: ${formId}`
-
-    logger.error(msg)
-
-    throw Boom.badRequest(
-      `No notification email configured for formId: ${formId}`
-    )
-  }
-
-  logger.info(`Read metadata for form ${formId}`)
-
-  return { title, notificationEmail }
-}
-
-/**
  * Extract the metadata details
  * @param {FormSubmissionDocument} record
  */
@@ -203,11 +223,7 @@ function extractMeta(record) {
   const meta = record.meta
   const submissionRef = meta.referenceNumber
   const submissionDate = new Date(meta.timestamp)
-  const versionNumber = meta.versionMetadata?.versionNumber
-
-  if (!versionNumber) {
-    throw new Error('Unexpected empty version number in metadata')
-  }
+  const versionNumber = meta.versionMetadata?.versionNumber ?? 0
 
   return { versionNumber, submissionRef, submissionDate }
 }

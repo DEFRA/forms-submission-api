@@ -35,7 +35,11 @@
  */
 
 /**
- * @typedef {{ Params: { formId: string }}} GenerateSubmissionFile
+ * @typedef {{ Params: { formId: string }}} GenerateFormSubmissionsFile
+ */
+
+/**
+ * @typedef {{ Params: { formId: string }}} GenerateFeedbackSubmissionsFile
  */
 
 /**
