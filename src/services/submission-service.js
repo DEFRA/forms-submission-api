@@ -446,9 +446,11 @@ export function buildPreHeaders(options) {
   if (addSubmissionRef) {
     wsPreHeaders.push(SUBMISSION_REF_HEADER_TEXT)
   }
-  wsPreHeaders.push(SUBMISSION_DATE_HEADER_TEXT)
-  wsPreHeaders.push(SUBMISSION_STATUS_HEADER_TEXT)
-  wsPreHeaders.push(SUBMISSION_ISPREVIEW_HEADER_TEXT)
+  wsPreHeaders.push(
+    SUBMISSION_DATE_HEADER_TEXT,
+    SUBMISSION_STATUS_HEADER_TEXT,
+    SUBMISSION_ISPREVIEW_HEADER_TEXT
+  )
   if (addFormName) {
     wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
   }
@@ -480,9 +482,11 @@ function buildExcelFile(formId, headers, rows, options = undefined) {
     if (preHeaderSet.has(SUBMISSION_REF_HEADER_TEXT)) {
       wsRow.push(row.get(SUBMISSION_REF_HEADER))
     }
-    wsRow.push(row.get(SUBMISSION_DATE_HEADER))
-    wsRow.push(row.get(SUBMISSION_STATUS_HEADER))
-    wsRow.push(row.get(SUBMISSION_ISPREVIEW_HEADER))
+    wsRow.push(
+      row.get(SUBMISSION_DATE_HEADER),
+      row.get(SUBMISSION_STATUS_HEADER),
+      row.get(SUBMISSION_ISPREVIEW_HEADER)
+    )
     if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
       wsRow.push(row.get(SUBMISSION_FORM_NAME))
     }
