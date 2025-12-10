@@ -284,6 +284,10 @@ export async function generateSubmissionsFile(formId, options = undefined) {
     addRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
+      if (!component.isFormComponent) {
+        return
+      }
+
       if (hasRepeater(component.page.pageDef)) {
         const repeaterName = component.page.pageDef.repeat.options.name
         const hasRepeaterData = repeaterName in record.data.repeaters
