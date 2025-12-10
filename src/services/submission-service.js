@@ -19,10 +19,29 @@ import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 
 /**
- * @typedef { object } SpreadsheetOptions
+ * @typedef {object} SpreadsheetOptions
  * @property {object} [filter] - query filter
  * @property {boolean} [includeFormName] - add FormName column to spreadsheet
  * @property {Set<string>} [removeColumns] - remove these columns from spreadsheet
+ */
+
+/**
+ * @typedef { string | number | Date | undefined } CellValue
+ */
+
+/**
+ * @typedef {object} Caches
+ * @property {Map<number | undefined, FormModel>} models - cache for models
+ * @property {Map<string, string | number | Date | undefined >[]} rows - cache for rows
+ * @property {Map<string, Component>} components - cache for components
+ * @property {Map<string, string>} headers - cache for headers
+ * @property {Map<string, string>} formNames - cache for form names
+ */
+
+/**
+ * @typedef {object} SpreadsheetContext
+ * @property {Caches} caches - caches for the spreadsheet generation
+ * @property {SpreadsheetOptions} [options] - options for the spreadsheet generation
  */
 
 const logger = createLogger()
@@ -96,9 +115,9 @@ export async function getFormModelFromDb(formId, versionNumber) {
 
 /**
  *
- * @param {Map<string, string | number | Date | undefined >} row
+ * @param {Map<string, CellValue >} row
  * @param {string} columnName
- * @param { string | number | Date | undefined } columnValue
+ * @param {CellValue} columnValue
  * @param { SpreadsheetOptions | undefined } options
  */
 export function addRow(row, columnName, columnValue, options) {
@@ -113,7 +132,7 @@ export function addRow(row, columnName, columnValue, options) {
 /**
  * @param { string | undefined } asText
  * @param {Component} component
- * @returns { string | number | Date | undefined }
+ * @returns {CellValue}
  */
 export function coerceDataValue(asText, component) {
   if (asText) {
@@ -147,12 +166,82 @@ export function toDate(asText) {
  * @param {Record<string, any>} data - the answers data
  * @param {string} key
  * @param {Component} component - the form component
+ * @returns {CellValue}
  */
 export function getValue(data, key, component) {
   const asText =
     key in data ? component.getDisplayStringFromFormValue(data[key]) : undefined
 
   return coerceDataValue(asText, component)
+}
+
+/**
+ * Adds component and column header to the maps
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {Component} component - the form component
+ * @param {string} [key] - the header key
+ * @param {string} [value] - the header value
+ */
+function addHeader(
+  context,
+  component,
+  key = component.name,
+  value = component.label
+) {
+  if (!allowColumn(component.name, context.options?.removeColumns)) {
+    return
+  }
+
+  if (!context.caches.components.has(component.name)) {
+    context.caches.components.set(component.name, component)
+  }
+
+  if (!context.caches.headers.has(key)) {
+    context.caches.headers.set(key, value)
+  }
+}
+
+/**
+ * Fetches form name from the cache or reads it into the cache
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {string} formId - the form id
+ * @returns {Promise<string>}
+ */
+async function lookupFormNameById(context, formId) {
+  if (!context.options?.includeFormName) {
+    return ''
+  }
+
+  const { formNames } = context.caches
+
+  if (formNames.has(formId)) {
+    return /** @type {string} */ (formNames.get(formId))
+  } else {
+    const meta = await getFormMetadataById(formId)
+
+    formNames.set(formId, meta.title)
+
+    return meta.title
+  }
+}
+
+/**
+ * Fetches form definition and builds the form model or gets them from cache
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {string} formId - the id of the form}}
+ * @param {number} versionNumber - the form version
+ */
+export async function getFormModel(context, formId, versionNumber) {
+  const { models } = context.caches
+  if (models.has(versionNumber)) {
+    return models.get(versionNumber)
+  } else {
+    const formModel = await getFormModelFromDb(formId, versionNumber)
+
+    models.set(versionNumber, formModel)
+
+    return formModel
+  }
 }
 
 /**
@@ -163,63 +252,11 @@ export function getValue(data, key, component) {
 export async function generateSubmissionsFile(formId, options = undefined) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
-  const { components, headers, models, rows, formNames } = createCaches()
-
-  /**
-   * Adds component and column header to the maps
-   * @param {Component} component - the form component
-   * @param {string} [key] - the header key
-   * @param {string} [value] - the header value
-   */
-  function addHeader(component, key = component.name, value = component.label) {
-    if (!allowColumn(component.name, options?.removeColumns)) {
-      return
-    }
-
-    if (!components.has(component.name)) {
-      components.set(component.name, component)
-    }
-
-    if (!headers.has(key)) {
-      headers.set(key, value)
-    }
-  }
-
-  /**
-   * Fetches form definition and builds the form model or gets them from cache
-   * @param {number} versionNumber - the form version
-   */
-  async function getFormModel(versionNumber) {
-    if (models.has(versionNumber)) {
-      return models.get(versionNumber)
-    } else {
-      const formModel = await getFormModelFromDb(formId, versionNumber)
-
-      models.set(versionNumber, formModel)
-
-      return formModel
-    }
-  }
-
-  /**
-   * Fetches form name from the cache or reads it into the cache
-   * @param {string} formId - the form id
-   * @returns {Promise<string>}
-   */
-  async function lookupFormName(formId) {
-    if (!options?.includeFormName) {
-      return ''
-    }
-
-    if (formNames.has(formId)) {
-      return /** @type {string} */ (formNames.get(formId))
-    } else {
-      const meta = await getFormMetadataById(formId)
-
-      formNames.set(formId, meta.title)
-
-      return meta.title
-    }
+  const caches = createCaches()
+  const { components, headers, rows } = caches
+  const context = {
+    caches,
+    options
   }
 
   /** @type {string} */
@@ -229,12 +266,12 @@ export async function generateSubmissionsFile(formId, options = undefined) {
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     title = record.meta.formName
     notificationEmail = record.meta.notificationEmail
-    formNameFromId = await lookupFormName(record.data.main.formId)
+    formNameFromId = await lookupFormNameById(context, record.data.main.formId)
 
     /** @type {Map<string, string | number | Date | undefined >} */
     const row = new Map()
     const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
-    const formModel = await getFormModel(versionNumber)
+    const formModel = await getFormModel(context, formId, versionNumber)
 
     addRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
     addRow(
@@ -257,7 +294,7 @@ export async function generateSubmissionsFile(formId, options = undefined) {
           const componentValue = `${component.label} ${index + 1}`
 
           addRow(row, componentKey, value, options)
-          addHeader(component, componentKey, componentValue)
+          addHeader(context, component, componentKey, componentValue)
         }
       } else if (component.type === ComponentType.FileUploadField) {
         const files = record.data.files[component.name]
@@ -266,12 +303,12 @@ export async function generateSubmissionsFile(formId, options = undefined) {
           : ''
 
         addRow(row, component.name, fileLinks, options)
-        addHeader(component)
+        addHeader(context, component)
       } else if (component.isFormComponent) {
         const value = getValue(record.data.main, key, component)
 
         addRow(row, component.name, value, options)
-        addHeader(component)
+        addHeader(context, component)
       }
     })
 
@@ -330,6 +367,7 @@ function createCaches() {
    * @type {Map<string, string>}
    */
   const formNames = new Map()
+
   return { components, headers, models, rows, formNames }
 }
 
