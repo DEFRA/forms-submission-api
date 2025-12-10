@@ -102,34 +102,34 @@ export async function generateSubmissionsFile(formId) {
           : undefined
       }
 
-      if (component.isFormComponent) {
-        if (hasRepeater(component.page.pageDef)) {
-          const repeaterName = component.page.pageDef.repeat.options.name
-          const hasRepeaterData = repeaterName in record.data.repeaters
-          const items = hasRepeaterData
-            ? record.data.repeaters[repeaterName]
-            : []
+      if (!component.isFormComponent) {
+        return
+      }
 
-          for (let index = 0; index < items.length; index++) {
-            const value = getValue(items[index])
-            const componentKey = `${component.name} ${index + 1}`
-            const componentValue = `${component.label} ${index + 1}`
+      if (hasRepeater(component.page.pageDef)) {
+        const repeaterName = component.page.pageDef.repeat.options.name
+        const hasRepeaterData = repeaterName in record.data.repeaters
+        const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
-            row.set(componentKey, value)
-            addHeader(component, componentKey, componentValue)
-          }
-        } else if (component.type === ComponentType.FileUploadField) {
-          const files = record.data.files[component.name]
-          const fileCount = Array.isArray(files) ? files.length : 0
+        for (let index = 0; index < items.length; index++) {
+          const value = getValue(items[index])
+          const componentKey = `${component.name} ${index + 1}`
+          const componentValue = `${component.label} ${index + 1}`
 
-          row.set(component.name, fileCount.toString())
-          addHeader(component)
-        } else {
-          const value = getValue(record.data.main)
-
-          row.set(component.name, value)
-          addHeader(component)
+          row.set(componentKey, value)
+          addHeader(component, componentKey, componentValue)
         }
+      } else if (component.type === ComponentType.FileUploadField) {
+        const files = record.data.files[component.name]
+        const fileCount = Array.isArray(files) ? files.length : 0
+
+        row.set(component.name, fileCount.toString())
+        addHeader(component)
+      } else {
+        const value = getValue(record.data.main)
+
+        row.set(component.name, value)
+        addHeader(component)
       }
     })
 
