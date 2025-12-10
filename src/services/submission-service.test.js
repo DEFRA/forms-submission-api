@@ -86,7 +86,7 @@ describe('Submission service', () => {
       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
       expect(sheetAsCsv).toBe(
-        `Submission reference number,Submission date,Egg,Your email,Country,Phone number,Delivery address,Fave color,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
+        `Submission reference number,Submission date,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
 549-FBF-C88,13/11/2025,Chocolate,,,,,,,,,,,,,,,
 187-231-E68,27/11/2025,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,,,,,,,,,d@s.com
 259-0B2-442,28/11/2025,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com
