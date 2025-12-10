@@ -50,6 +50,12 @@ const designerUrl = config.get('designerUrl')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 
+const SUBMISSION_STATUS_HEADER = 'Status'
+const SUBMISSION_STATUS_HEADER_TEXT = 'Live or draft'
+
+const SUBMISSION_ISPREVIEW_HEADER = 'isPreview'
+const SUBMISSION_ISPREVIEW_HEADER_TEXT = 'Is preview'
+
 const SUBMISSION_REF_HEADER = 'SubmissionRef'
 const SUBMISSION_REF_HEADER_TEXT = 'Submission reference number'
 
@@ -271,16 +277,15 @@ export async function generateSubmissionsFile(formId, options = undefined) {
 
     /** @type {Map<string, string | number | Date | undefined >} */
     const row = new Map()
-    const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
+    const { versionNumber, submissionRef, submissionDate, status, isPreview } =
+      extractMeta(record)
     const formModel = await getFormModel(context, formId, versionNumber)
 
     addRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
-    addRow(
-      row,
-      SUBMISSION_DATE_HEADER,
-      toDate(submissionDate.toISOString()),
-      options
-    )
+    // prettier-ignore
+    addRow(row, SUBMISSION_DATE_HEADER, toDate(submissionDate.toISOString()), options)
+    addRow(row, SUBMISSION_STATUS_HEADER, status, options)
+    addRow(row, SUBMISSION_ISPREVIEW_HEADER, isPreview ? 'Yes' : 'No', options)
     addRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
@@ -385,8 +390,10 @@ function extractMeta(record) {
   const submissionRef = meta.referenceNumber
   const submissionDate = new Date(meta.timestamp)
   const versionNumber = meta.versionMetadata?.versionNumber ?? 1
+  const isPreview = meta.isPreview
+  const status = meta.status
 
-  return { versionNumber, submissionRef, submissionDate }
+  return { versionNumber, submissionRef, submissionDate, isPreview, status }
 }
 
 /**
@@ -440,6 +447,8 @@ export function buildPreHeaders(options) {
     wsPreHeaders.push(SUBMISSION_REF_HEADER_TEXT)
   }
   wsPreHeaders.push(SUBMISSION_DATE_HEADER_TEXT)
+  wsPreHeaders.push(SUBMISSION_STATUS_HEADER_TEXT)
+  wsPreHeaders.push(SUBMISSION_ISPREVIEW_HEADER_TEXT)
   if (addFormName) {
     wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
   }
@@ -472,6 +481,8 @@ function buildExcelFile(formId, headers, rows, options = undefined) {
       wsRow.push(row.get(SUBMISSION_REF_HEADER))
     }
     wsRow.push(row.get(SUBMISSION_DATE_HEADER))
+    wsRow.push(row.get(SUBMISSION_STATUS_HEADER))
+    wsRow.push(row.get(SUBMISSION_ISPREVIEW_HEADER))
     if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
       wsRow.push(row.get(SUBMISSION_FORM_NAME))
     }
