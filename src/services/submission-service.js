@@ -102,6 +102,10 @@ export async function generateSubmissionsFile(formId) {
           : undefined
       }
 
+      if (!component.isFormComponent) {
+        return
+      }
+
       if (hasRepeater(component.page.pageDef)) {
         const repeaterName = component.page.pageDef.repeat.options.name
         const hasRepeaterData = repeaterName in record.data.repeaters
@@ -121,7 +125,7 @@ export async function generateSubmissionsFile(formId) {
 
         row.set(component.name, fileCount.toString())
         addHeader(component)
-      } else if (component.isFormComponent) {
+      } else {
         const value = getValue(record.data.main)
 
         row.set(component.name, value)
