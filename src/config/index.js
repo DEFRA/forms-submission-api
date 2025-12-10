@@ -151,24 +151,28 @@ export const config = convict({
    * @todo We plan to replace `node-convict` with `joi` and remove all defaults.
    * These OIDC/roles are for the DEV application in the DEFRA tenant.
    */
+  /** @type {SchemaObj<string>} */
   oidcJwksUri: {
     doc: 'The URI that defines the OIDC json web key set',
     format: String,
-    default:
-      'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/discovery/v2.0/keys',
+    default: null,
+    nullable: false,
     env: 'OIDC_JWKS_URI'
   },
+  /** @type {SchemaObj<string>} */
   oidcVerifyAud: {
     doc: 'The audience used for verifying the OIDC JWT',
     format: String,
-    default: 'ec32e5c5-75fa-460a-a359-e3e5a4a8f10e',
+    default: null,
+    nullable: false,
     env: 'OIDC_VERIFY_AUD'
   },
+  /** @type {SchemaObj<string>} */
   oidcVerifyIss: {
     doc: 'The issuer used for verifying the OIDC JWT',
     format: String,
-    default:
-      'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/v2.0',
+    default: null,
+    nullable: false,
     env: 'OIDC_VERIFY_ISS'
   },
   /** @type {SchemaObj<string>} */
