@@ -64,7 +64,7 @@ export default [
   },
 
   /**
-   * @satisfies {ServerRoute<{ Payload: FileRetrievalPayload }>}
+   * @satisfies {ServerRoute<{ Params: FileRetrievalParams }>}
    */
   ({
     method: 'GET',
@@ -157,5 +157,5 @@ export default [
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
- * @import { FileAccessPayload, FileRetrievalPayload, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
+ * @import { FileAccessPayload, FileRetrievalParams, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */
