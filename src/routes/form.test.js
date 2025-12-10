@@ -227,7 +227,7 @@ describe('Forms route', () => {
     })
   })
 
-  describe('Generate submissions file', () => {
+  describe('Generate form submissions file', () => {
     test('Testing POST /submissions/{formId} route is successful with valid params', async () => {
       jest.mocked(generateSubmissionsFile).mockResolvedValue({
         fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
@@ -264,6 +264,49 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/submissions/688131eeff67f889d52c66cc'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+  })
+
+  describe('Generate feedback submissions file', () => {
+    test('Testing POST /feedback/{formId} route is successful with valid params', async () => {
+      jest.mocked(generateSubmissionsFile).mockResolvedValue({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/688131eeff67f889d52c66cc',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Generate feedback submissions file success'
+      })
+    })
+
+    test('Testing POST /feedback/{formId} route fails if with invalid params', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/invalid-form-id',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message:
+          '"formId" must only contain hexadecimal characters. "formId" length must be 24 characters long'
+      })
+    })
+
+    test('Testing POST /feedback/{formId} route fails if without auth', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/688131eeff67f889d52c66cc'
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)

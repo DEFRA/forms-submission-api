@@ -7,7 +7,13 @@ import {
 } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
-import { generateSubmissionsFile } from '~/src/services/submission-service.js'
+import {
+  generateFeedbackSubmissionsFile,
+  generateFormSubmissionsFile
+} from '~/src/services/submission-service.js'
+// @ts-expect-error - import json
+import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
+import { formFeedbackVersions } from '~/test/fixtures/forms-feedback-versions.js'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
 // @ts-expect-error - import json
@@ -19,6 +25,10 @@ jest.mock('~/src/services/service-helpers.js')
 jest.mock('~/src/services/notify.js')
 
 describe('Submission service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   describe('generateSubmissionsFile', () => {
     test('should generate submission file if all valid', async () => {
       const formId = '688131eeff67f889d52c66cc'
@@ -61,7 +71,7 @@ describe('Submission service', () => {
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-      const result = await generateSubmissionsFile(formId)
+      const result = await generateFormSubmissionsFile(formId)
 
       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
         expect.any(Buffer),
@@ -93,6 +103,84 @@ D44-841-706,28/11/2025,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill
         personalisation: {
           subject: 'File is ready to download - My form',
           body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+        },
+        emailReplyToId: 'dummy'
+      })
+
+      expect(result).toEqual({ fileId })
+    })
+  })
+
+  describe('generateFeedbackSubmissionsFile', () => {
+    test('should generate submission file if all valid', async () => {
+      const formId = '4670365d-5e5a-44aa-99bb-a58c16ba2e9c'
+      const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+        /** @type {FormMetadata}  */ ({
+          title: 'Feedback form',
+          notificationEmail: 'not-used@defra.gov.uk'
+        })
+      )
+
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          for (const submission of feedbackSubmissions) {
+            yield submission
+          }
+        }
+      }
+
+      // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
+      jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockImplementation((id, versionNumber) => {
+          const versions = /** @type {Record<string, FormDefinition>} */ (
+            /** @type {unknown} */ (formFeedbackVersions)
+          )
+
+          if (!versionNumber) {
+            throw new Error('Expected a version number')
+          }
+
+          const version = versions[versionNumber.toString()]
+
+          return Promise.resolve(version)
+        })
+
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
+
+      const result = await generateFeedbackSubmissionsFile(formId)
+
+      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        false
+      )
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
+
+      expect(workbook.Sheets.Sheet1).toBeDefined()
+
+      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+
+      expect(sheetAsCsv).toBe(
+        `Submission date,Form name,How you feel about the service,How we could improve this service
+28/11/2025,Feedback form,Very satisfied,
+28/11/2025,Feedback form,Very satisfied,
+01/12/2025,Feedback form,Satisfied,
+02/12/2025,Feedback form,Very satisfied,`
+      )
+
+      expect(sendNotification).toHaveBeenCalledWith({
+        emailAddress: 'name@example.gov.uk',
+        templateId: 'dummy',
+        personalisation: {
+          subject: 'File is ready to download - My form',
+          body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
         },
         emailReplyToId: 'dummy'
       })

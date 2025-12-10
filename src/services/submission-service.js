@@ -192,12 +192,13 @@ function addHeader(
     return
   }
 
-  if (!context.caches.components.has(component.name)) {
-    context.caches.components.set(component.name, component)
+  const { components, headers } = context.caches
+  if (!components.has(component.name)) {
+    components.set(component.name, component)
   }
 
-  if (!context.caches.headers.has(key)) {
-    context.caches.headers.set(key, value)
+  if (!headers.has(key)) {
+    headers.set(key, value)
   }
 }
 
