@@ -77,44 +77,45 @@ export const auth = {
           nbf: true,
           exp: true
         },
-        /**
-         * @param {Artifacts<AppCredentials>} artifacts
-         */
-        validate(artifacts) {
-          const app = artifacts.decoded.payload
-
-          if (app?.client_id !== cognitoClientId) {
-            logger.error('Authentication error: Invalid audience')
-
-            return {
-              isValid: false
-            }
-          }
-
-          if (app.token_use !== 'access') {
-            logger.error(
-              `Authentication error: Invalid token_use '${app.token_use}'`
-            )
-
-            return {
-              isValid: false
-            }
-          }
-
-          logger.debug(
-            `Access token for subject '${app.sub}' for '${app.client_id}': Passed authentication`
-          )
-
-          return {
-            isValid: true,
-            credentials: { app }
-          }
-        }
+        validate: validateAppAuth
       })
 
       // Set as the default strategy
       server.auth.default('azure-oidc-token')
     }
+  }
+}
+
+/**
+ * Additional validation for cognito access token based authentiation
+ * @param {Artifacts<AppCredentials>} artifacts
+ */
+export function validateAppAuth(artifacts) {
+  const app = artifacts.decoded.payload
+
+  if (app?.client_id !== cognitoClientId) {
+    logger.error('Authentication error: Invalid audience')
+
+    return {
+      isValid: false
+    }
+  }
+
+  if (app.token_use !== 'access') {
+    logger.error(`Authentication error: Invalid token_use '${app.token_use}'`)
+
+    return {
+      isValid: false
+    }
+  }
+
+  logger.debug(
+    `Access token for subject '${app.sub}' for '${app.client_id}': Passed authentication`
+  )
+
+  return {
+    isValid: true,
+    credentials: { app }
   }
 }
 
