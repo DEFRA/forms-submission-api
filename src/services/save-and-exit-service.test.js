@@ -12,6 +12,13 @@ import {
 } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/repositories/save-and-exit-repository.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 describe('save-and-exit service', () => {
   describe('validateSavedLinkCredentials', () => {

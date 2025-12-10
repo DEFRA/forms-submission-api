@@ -12,6 +12,13 @@ import { createCsv, createS3File, getS3Client } from '~/src/services/utils.js'
 
 jest.mock('~/src/services/utils.js')
 jest.mock('~/src/repositories/file-repository.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 describe('Service Helpers', () => {
   beforeEach(() => {

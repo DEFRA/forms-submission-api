@@ -25,6 +25,13 @@ jest.mock('~/src/repositories/submission-repository.js')
 jest.mock('~/src/services/forms-service.js')
 jest.mock('~/src/services/service-helpers.js')
 jest.mock('~/src/services/notify.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 describe('Submission service', () => {
   beforeEach(() => {
