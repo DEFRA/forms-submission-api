@@ -241,7 +241,7 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Generate file success'
+        message: 'Generate form submissions file success'
       })
     })
 

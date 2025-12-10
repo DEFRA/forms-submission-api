@@ -77,18 +77,18 @@ describe('Submission service', () => {
 
       expect(sheetAsCsv).toBe(
         `Submission reference number,Submission date,Egg,Your email,Country,Phone number,Delivery address,Fave color,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
-549-FBF-C88,2025-11-13T17:17:29.426Z,Chocolate,,,,,,,,,,,,,,,
-187-231-E68,2025-11-27T08:34:46.620Z,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,,,,,,,,,d@s.com
-259-0B2-442,2025-11-28T00:18:16.739Z,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com
-F6C-807-B1F,2025-11-28T10:56:18.903Z,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
-D44-841-706,2025-11-28T16:49:10.659Z,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",Egg,1,Ham,2,Bacon,4,,,1,
-8CC-882-665,2025-11-28T17:31:48.731Z,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",Cheese,2,Hawaian,12,Cheese,6,,,1,
-450-904-A2C,2025-12-01T15:02:08.103Z,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",Ham,2,Pineapple,1,Bacon,5,Cheese,3,1,
-8C2-7E8-189,2025-12-02T11:24:38.324Z,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",Egg,9,,,,,,,1,`
+549-FBF-C88,13/11/2025,Chocolate,,,,,,,,,,,,,,,
+187-231-E68,27/11/2025,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,,,,,,,,,d@s.com
+259-0B2-442,28/11/2025,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com
+F6C-807-B1F,28/11/2025,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
+D44-841-706,28/11/2025,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",Egg,1,Ham,2,Bacon,4,,,http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e,
+8CC-882-665,28/11/2025,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",Cheese,2,Hawaian,12,Cheese,6,,,http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61,
+450-904-A2C,01/12/2025,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",Ham,2,Pineapple,1,Bacon,5,Cheese,3,http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f,
+8C2-7E8-189,02/12/2025,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",Egg,9,,,,,,,http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
-        emailAddress: 'enrique.chase@defra.gov.uk',
+        emailAddress: 'name@example.gov.uk',
         templateId: 'dummy',
         personalisation: {
           subject: 'File is ready to download - My form',

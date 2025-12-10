@@ -11,9 +11,19 @@ import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
-import { getFormDefinitionVersion } from '~/src/services/forms-service.js'
+import {
+  getFormDefinitionVersion,
+  getFormMetadataById
+} from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
+
+/**
+ * @typedef { object } SpreadsheetOptions
+ * @property {object} [filter] - query filter
+ * @property {boolean} [includeFormName] - add FormName column to spreadsheet
+ * @property {Set<string>} [removeColumns] - remove these columns from spreadsheet
+ */
 
 const logger = createLogger()
 
@@ -22,7 +32,13 @@ const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 
 const SUBMISSION_REF_HEADER = 'SubmissionRef'
+const SUBMISSION_REF_HEADER_TEXT = 'Submission reference number'
+
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
+const SUBMISSION_DATE_HEADER_TEXT = 'Submission date'
+
+const SUBMISSION_FORM_NAME = 'SubmissionFormName'
+const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
@@ -39,7 +55,7 @@ export async function generateFormSubmissionsFile(formId) {
  * @param {string} [formId] - the form id
  */
 export async function generateFeedbackSubmissionsFile(formId = undefined) {
-  const removeColumns = ['formId', 'referenceNumber']
+  const removeColumns = new Set(['formId', 'SubmissionRef'])
   if (!formId) {
     return generateSubmissionsFile(CSAT_FORM_ID, {
       includeFormName: true,
@@ -48,10 +64,21 @@ export async function generateFeedbackSubmissionsFile(formId = undefined) {
   }
 
   return generateSubmissionsFile(CSAT_FORM_ID, {
-    includeFormName: true,
     filter: { 'data.main.formId': formId },
+    includeFormName: true,
     removeColumns
   })
+}
+
+/**
+ * @param {string} columnName
+ * @param { Set<string> | undefined } columnsToRemove
+ */
+export function allowColumn(columnName, columnsToRemove) {
+  if (!columnsToRemove) {
+    return true
+  }
+  return !columnsToRemove.has(columnName)
 }
 
 /**
@@ -68,14 +95,75 @@ export async function getFormModelFromDb(formId, versionNumber) {
 }
 
 /**
+ *
+ * @param {Map<string, string | number | Date | undefined >} row
+ * @param {string} columnName
+ * @param { string | number | Date | undefined } columnValue
+ * @param { SpreadsheetOptions | undefined } options
+ */
+export function addRow(row, columnName, columnValue, options) {
+  if (
+    allowColumn(columnName, options?.removeColumns) ||
+    (options?.includeFormName && columnName === SUBMISSION_FORM_NAME)
+  ) {
+    row.set(columnName, columnValue)
+  }
+}
+
+/**
+ * @param { string | undefined } asText
+ * @param {Component} component
+ * @returns { string | number | Date | undefined }
+ */
+export function coerceDataValue(asText, component) {
+  if (asText) {
+    if (
+      component.type === ComponentType.DatePartsField ||
+      component.type === ComponentType.MonthYearField
+    ) {
+      return new Date(asText)
+    }
+    if (component.type === ComponentType.NumberField) {
+      return parseFloat(asText)
+    }
+  }
+  return asText
+}
+
+/**
+ * @param {string} asText
+ * @returns { Date | undefined }
+ */
+export function toDate(asText) {
+  return /** @type { Date | undefined } */ (
+    coerceDataValue(asText, {
+      type: ComponentType.DatePartsField
+    })
+  )
+}
+
+/**
+ * Extracts the component value from the provided data and coerces to the appropriate type
+ * @param {Record<string, any>} data - the answers data
+ * @param {string} key
+ * @param {Component} component - the form component
+ */
+export function getValue(data, key, component) {
+  const asText =
+    key in data ? component.getDisplayStringFromFormValue(data[key]) : undefined
+
+  return coerceDataValue(asText, component)
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
- * @param {{ filter?: object, includeFormName?: boolean, removeColumns?: string[]}} [options] - add a filter and/or additionalColumns
+ * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
 export async function generateSubmissionsFile(formId, options = undefined) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
-  const { components, headers, models, rows } = createCaches()
+  const { components, headers, models, rows, formNames } = createCaches()
 
   /**
    * Adds component and column header to the maps
@@ -84,9 +172,14 @@ export async function generateSubmissionsFile(formId, options = undefined) {
    * @param {string} [value] - the header value
    */
   function addHeader(component, key = component.name, value = component.label) {
+    if (!allowColumn(component.name, options?.removeColumns)) {
+      return
+    }
+
     if (!components.has(component.name)) {
       components.set(component.name, component)
     }
+
     if (!headers.has(key)) {
       headers.set(key, value)
     }
@@ -108,55 +201,76 @@ export async function generateSubmissionsFile(formId, options = undefined) {
     }
   }
 
+  /**
+   * Fetches form name from the cache or reads it into the cache
+   * @param {string} formId - the form id
+   * @returns {Promise<string>}
+   */
+  async function lookupFormName(formId) {
+    if (!options?.includeFormName) {
+      return ''
+    }
+
+    if (formNames.has(formId)) {
+      return /** @type {string} */ (formNames.get(formId))
+    } else {
+      const meta = await getFormMetadataById(formId)
+
+      formNames.set(formId, meta.title)
+
+      return meta.title
+    }
+  }
+
   /** @type {string} */
   let title = ''
   let notificationEmail = ''
+  let formNameFromId = ''
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     title = record.meta.formName
     notificationEmail = record.meta.notificationEmail
+    formNameFromId = await lookupFormName(record.data.main.formId)
 
-    /** @type {Map<string, string>} */
+    /** @type {Map<string, string | number | Date | undefined >} */
     const row = new Map()
     const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
     const formModel = await getFormModel(versionNumber)
 
-    row.set(SUBMISSION_REF_HEADER, submissionRef)
-    row.set(SUBMISSION_DATE_HEADER, submissionDate.toISOString())
+    addRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
+    addRow(
+      row,
+      SUBMISSION_DATE_HEADER,
+      toDate(submissionDate.toISOString()),
+      options
+    )
+    addRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
-      /**
-       * Extracts the component value from the provided data
-       * @param {Record<string, any>} data - the answers data
-       */
-      function getValue(data) {
-        return key in data
-          ? component.getDisplayStringFromFormValue(data[key])
-          : undefined
-      }
-
       if (hasRepeater(component.page.pageDef)) {
         const repeaterName = component.page.pageDef.repeat.options.name
         const hasRepeaterData = repeaterName in record.data.repeaters
         const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
         for (let index = 0; index < items.length; index++) {
-          const value = getValue(items[index])
+          const value = getValue(items[index], key, component)
           const componentKey = `${component.name} ${index + 1}`
           const componentValue = `${component.label} ${index + 1}`
 
-          row.set(componentKey, value)
+          addRow(row, componentKey, value, options)
           addHeader(component, componentKey, componentValue)
         }
       } else if (component.type === ComponentType.FileUploadField) {
         const files = record.data.files[component.name]
-        const fileCount = Array.isArray(files) ? files.length : 0
+        const fileLinks = Array.isArray(files)
+          ? files.map((f) => f.userDownloadLink).join(' \r\n')
+          : ''
 
-        row.set(component.name, fileCount.toString())
+        addRow(row, component.name, fileLinks, options)
         addHeader(component)
       } else if (component.isFormComponent) {
-        const value = getValue(record.data.main)
+        const value = getValue(record.data.main, key, component)
 
-        row.set(component.name, value)
+        addRow(row, component.name, value, options)
         addHeader(component)
       }
     })
@@ -168,7 +282,8 @@ export async function generateSubmissionsFile(formId, options = undefined) {
   const workbook = buildExcelFile(
     formId,
     sortHeaders(components, headers),
-    rows.toReversed()
+    rows.toReversed(),
+    options
   )
 
   // Save the Excel workbook to S3
@@ -194,7 +309,7 @@ function createCaches() {
 
   /**
    * Array of worksheet rows
-   * @type {Map<string, string>[]}
+   * @type {Map<string, string | number | Date | undefined >[]}
    */
   const rows = []
 
@@ -209,7 +324,13 @@ function createCaches() {
    * @type {Map<string, string>}
    */
   const headers = new Map()
-  return { components, headers, models, rows }
+
+  /**
+   * Cache for Form ids vs names
+   * @type {Map<string, string>}
+   */
+  const formNames = new Map()
+  return { components, headers, models, rows, formNames }
 }
 
 /**
@@ -261,26 +382,56 @@ function sortHeaders(components, headers) {
 }
 
 /**
+ * @param { SpreadsheetOptions | undefined } options
+ */
+export function buildPreHeaders(options) {
+  const wsPreHeaders = []
+
+  const addSubmissionRef = allowColumn(
+    SUBMISSION_REF_HEADER,
+    options?.removeColumns
+  )
+  const addFormName = options?.includeFormName
+
+  if (addSubmissionRef) {
+    wsPreHeaders.push(SUBMISSION_REF_HEADER_TEXT)
+  }
+  wsPreHeaders.push(SUBMISSION_DATE_HEADER_TEXT)
+  if (addFormName) {
+    wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
+  }
+  return wsPreHeaders
+}
+
+/**
  * Build an xlsx workbook from the headers and rows
  * @param {string} formId - the form id
  * @param {[string, string][]} headers - the file header
- * @param {Map<string, string>[]} rows - the data rows
+ * @param {Map<string, string | number | Date | undefined >[]} rows - the data rows
+ * @param {SpreadsheetOptions} [options]
  */
-function buildExcelFile(formId, headers, rows) {
+function buildExcelFile(formId, headers, rows, options = undefined) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
-  const wsHeaders = ['Submission reference number', 'Submission date'].concat(
-    headers.map(([, label]) => label)
-  )
+  const wsPreHeaders = buildPreHeaders(options)
+  const preHeaderSet = new Set(wsPreHeaders)
 
-  /** @type {(string | undefined)[][]} */
+  const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
+
+  /** @type {(string | number | Date | undefined)[][]} */
   const wsRows = []
 
   rows.forEach((row) => {
-    /** @type {(string | undefined)[]} */
+    /** @type {(string | number | Date | undefined)[]} */
     const wsRow = []
 
-    wsRow.push(row.get(SUBMISSION_REF_HEADER), row.get(SUBMISSION_DATE_HEADER))
+    if (preHeaderSet.has(SUBMISSION_REF_HEADER_TEXT)) {
+      wsRow.push(row.get(SUBMISSION_REF_HEADER))
+    }
+    wsRow.push(row.get(SUBMISSION_DATE_HEADER))
+    if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
+      wsRow.push(row.get(SUBMISSION_FORM_NAME))
+    }
 
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
@@ -290,7 +441,9 @@ function buildExcelFile(formId, headers, rows) {
   })
 
   // Create an excel file from the data and save
-  const worksheet = xlsx.utils.aoa_to_sheet([wsHeaders, ...wsRows])
+  const worksheet = xlsx.utils.aoa_to_sheet([wsHeaders, ...wsRows], {
+    dateNF: 'dd/mm/yyyy'
+  })
   const workbook = xlsx.utils.book_new()
 
   xlsx.utils.book_append_sheet(workbook, worksheet)
