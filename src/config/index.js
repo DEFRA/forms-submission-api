@@ -171,6 +171,30 @@ export const config = convict({
       'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/v2.0',
     env: 'OIDC_VERIFY_ISS'
   },
+  /** @type {SchemaObj<string>} */
+  cognitoJwksUri: {
+    doc: 'The URI that defines the cognito json web key set. This is a URL formatted as https://cognito-idp.<Region>.amazonaws.com/<userPoolId>/.well-known/jwks.json',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_JWKS_URI'
+  },
+  /** @type {SchemaObj<string>} */
+  cognitoClientId: {
+    doc: 'The app client id, used for verifying the cognito JWT.',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_CLIENT_ID'
+  },
+  /** @type {SchemaObj<string>} */
+  cognitoVerifyIss: {
+    doc: 'The issuer used for verifying the cognito JWT. This is a URL formatted as https://cognito-idp.<Region>.amazonaws.com/<userpoolID>',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_VERIFY_ISS'
+  },
   s3Bucket: {
     doc: 'S3 bucket name',
     format: String,

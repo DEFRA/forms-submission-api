@@ -113,6 +113,9 @@ export default [
     },
     options: {
       tags: ['api'],
+      auth: {
+        strategies: ['azure-oidc-token', 'cognito-access-token']
+      },
       validate: {
         payload: fileAccessPayloadSchema
       },

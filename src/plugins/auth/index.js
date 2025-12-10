@@ -7,6 +7,10 @@ const oidcJwksUri = config.get('oidcJwksUri')
 const oidcVerifyAud = config.get('oidcVerifyAud')
 const oidcVerifyIss = config.get('oidcVerifyIss')
 
+const cognitoJwksUri = config.get('cognitoJwksUri')
+const cognitoClientId = config.get('cognitoClientId')
+const cognitoVerifyIss = config.get('cognitoVerifyIss')
+
 const logger = createLogger()
 
 /**
@@ -62,6 +66,52 @@ export const auth = {
         }
       })
 
+      server.auth.strategy('cognito-access-token', 'jwt', {
+        keys: {
+          uri: cognitoJwksUri
+        },
+        verify: {
+          aud: false,
+          iss: cognitoVerifyIss,
+          sub: false,
+          nbf: true,
+          exp: true
+        },
+        /**
+         * @param {Artifacts<AppCredentials>} artifacts
+         */
+        validate(artifacts) {
+          const app = artifacts.decoded.payload
+
+          if (app?.client_id !== cognitoClientId) {
+            logger.error('Authentication error: Invalid audience')
+
+            return {
+              isValid: false
+            }
+          }
+
+          if (app.token_use !== 'access') {
+            logger.error(
+              `Authentication error: Invalid token_use '${app.token_use}'`
+            )
+
+            return {
+              isValid: false
+            }
+          }
+
+          logger.debug(
+            `Access token for subject '${app.sub}' for '${app.client_id}': Passed authentication`
+          )
+
+          return {
+            isValid: true,
+            credentials: { app }
+          }
+        }
+      })
+
       // Set as the default strategy
       server.auth.default('azure-oidc-token')
     }
@@ -69,6 +119,6 @@ export const auth = {
 }
 
 /**
- * @import { ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */
