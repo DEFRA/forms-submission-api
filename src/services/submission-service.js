@@ -143,7 +143,7 @@ export function coerceDataValue(asText, component) {
       return new Date(asText)
     }
     if (component.type === ComponentType.NumberField) {
-      return parseFloat(asText)
+      return Number.parseFloat(asText)
     }
   }
   return asText
@@ -380,7 +380,7 @@ function extractMeta(record) {
   const meta = record.meta
   const submissionRef = meta.referenceNumber
   const submissionDate = new Date(meta.timestamp)
-  const versionNumber = meta.versionMetadata?.versionNumber ?? 0
+  const versionNumber = meta.versionMetadata?.versionNumber ?? 1
 
   return { versionNumber, submissionRef, submissionDate }
 }
