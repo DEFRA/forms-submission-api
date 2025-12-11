@@ -3,9 +3,9 @@
  */
 
 /**
- * @typedef {{ fileId: string }} FileRetrievalPayload
+ * @typedef {{ fileId: string }} FileRetrievalParams
  * @typedef {{ fileId: string, retrievalKey: string }} FileAccessPayload
- * @typedef {{ files: {fileId: string, initiatedRetrievalKey: string}[], persistedRetrievalKey: string }} PersistedRetrievalPayload
+ * @typedef {{ files: { fileId: string, initiatedRetrievalKey: string }[], persistedRetrievalKey: string }} PersistedRetrievalPayload
  */
 
 /**

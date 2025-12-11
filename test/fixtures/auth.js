@@ -14,3 +14,24 @@ export const auth = {
     }
   }
 }
+
+export const appAuth = {
+  strategy: 'cognito-access-token',
+  credentials: {
+    app: {
+      sub: '14f14577-f400-42fd-be31-945a05c7149d',
+      iss: 'https://cognito-idp.eu-west-2.amazonaws.com/eu-west-2_abcdef123',
+      version: 2,
+      client_id: '6v87ae6bg5tltqsdfe3icgjv',
+      origin_jti: '86b9a270-b7c3-44eb-93f3-b59fa4e9fd6d',
+      event_id: '54945e65-e73c-4fcc-b8d1-371e2e121693',
+      token_use: 'access',
+      scope: 'openid email',
+      auth_time: 1765297268,
+      exp: 1765300868,
+      iat: 1765297268,
+      jti: '28999373-d1bb-4595-ad00-c6d9daac54f9',
+      username: '14f14577-f400-42fd-be31-945a05c7149d'
+    }
+  }
+}

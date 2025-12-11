@@ -7,7 +7,7 @@ import {
   ingestFile,
   persistFiles
 } from '~/src/services/file-service.js'
-import { auth } from '~/test/fixtures/auth.js'
+import { appAuth, auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -38,7 +38,7 @@ describe('Files route', () => {
   }
 
   describe('Success responses', () => {
-    test('Testing POST /file route returns an S3 link', async () => {
+    test('Testing POST /file route returns OK200 with a successful message', async () => {
       jest.mocked(ingestFile).mockResolvedValue()
 
       const response = await server.inject({
@@ -102,7 +102,7 @@ describe('Files route', () => {
       })
     })
 
-    test('Testing POST /file/link route returns an S3 link', async () => {
+    test('Testing POST /file/link route with user auth returns an S3 link', async () => {
       jest
         .mocked(getPresignedLink)
         .mockResolvedValue('https://s3.dummy.com/file.txt')
@@ -111,6 +111,28 @@ describe('Files route', () => {
         method: 'POST',
         url: '/file/link',
         auth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'test'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.headers['content-type']).toContain('application/json')
+      expect(response.result).toMatchObject({
+        url: 'https://s3.dummy.com/file.txt'
+      })
+    })
+
+    test('Testing POST /file/link route with app auth returns an S3 link', async () => {
+      jest
+        .mocked(getPresignedLink)
+        .mockResolvedValue('https://s3.dummy.com/file.txt')
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        auth: appAuth,
         payload: {
           fileId: '1234',
           retrievalKey: 'test'

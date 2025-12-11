@@ -79,7 +79,7 @@ export const fileIngestResponseSchema = Joi.object({
 }).label('fileIngestResponse')
 
 export const fileAccessResponseSchema = Joi.object({
-  message: Joi.string().required()
+  url: Joi.string().uri().required()
 }).label('fileAccessResponse')
 
 export const filePersistResponseSchema = Joi.object({
