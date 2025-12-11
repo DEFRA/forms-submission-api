@@ -79,7 +79,7 @@ export async function generateFormSubmissionsFile(formId) {
  * Generate a feedback submission file for one or all forms
  * @param {string} [formId] - the form id
  */
-export async function generateFeedbackSubmissionsFile(formId = undefined) {
+export async function generateFeedbackSubmissionsFile(formId) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
   if (!formId) {
     return generateSubmissionsFile(CSAT_FORM_ID, {
@@ -256,7 +256,7 @@ export async function getFormModel(context, formId, versionNumber) {
  * @param {string} formId - the form id
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId, options = undefined) {
+export async function generateSubmissionsFile(formId, options) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()
@@ -282,8 +282,12 @@ export async function generateSubmissionsFile(formId, options = undefined) {
     const formModel = await getFormModel(context, formId, versionNumber)
 
     addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
-    // prettier-ignore
-    addCellToRow(row, SUBMISSION_DATE_HEADER, toDate(submissionDate.toISOString()), options)
+    addCellToRow(
+      row,
+      SUBMISSION_DATE_HEADER,
+      toDate(submissionDate.toISOString()),
+      options
+    )
     addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
     addCellToRow(
       row,
@@ -319,7 +323,7 @@ export async function generateSubmissionsFile(formId, options = undefined) {
 
         addCellToRow(row, component.name, fileLinks, options)
         addHeader(context, component)
-      } else if (component.isFormComponent) {
+      } else {
         const value = getValue(record.data.main, key, component)
 
         addCellToRow(row, component.name, value, options)
@@ -469,7 +473,7 @@ export function buildPreHeaders(options) {
  * @param {Map<string, string | number | Date | undefined >[]} rows - the data rows
  * @param {SpreadsheetOptions} [options]
  */
-function buildExcelFile(formId, headers, rows, options = undefined) {
+function buildExcelFile(formId, headers, rows, options) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
   const wsPreHeaders = buildPreHeaders(options)

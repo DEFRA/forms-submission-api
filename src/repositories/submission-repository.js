@@ -11,7 +11,7 @@ const logger = createLogger()
  * @param {object} [filter] - restrict records returned (say by submitted form id)
  * @returns { FindCursor<WithId<FormSubmissionDocument>> }
  */
-export function getSubmissionRecords(formId, filter = undefined) {
+export function getSubmissionRecords(formId, filter) {
   logger.info('Reading submission records')
 
   // Protect filter against possible injection
