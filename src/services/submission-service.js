@@ -4,7 +4,6 @@ import {
   hasRepeater,
   replaceCustomControllers
 } from '@defra/forms-model'
-import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 import xlsx from 'xlsx'
 
@@ -19,14 +18,93 @@ import {
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 
+/**
+ * @typedef {object} SpreadsheetOptions
+ * @property {object} [filter] - query filter
+ * @property {boolean} [includeFormName] - add FormName column to spreadsheet
+ * @property {Set<string>} [removeColumns] - remove these columns from spreadsheet
+ */
+
+/**
+ * @typedef { string | number | Date | undefined } CellValue
+ */
+
+/**
+ * @typedef {object} Caches
+ * @property {Map<number | undefined, FormModel>} models - cache for models
+ * @property {Map<string, string | number | Date | undefined >[]} rows - cache for rows
+ * @property {Map<string, Component>} components - cache for components
+ * @property {Map<string, string>} headers - cache for headers
+ * @property {Map<string, string>} formNames - cache for form names
+ */
+
+/**
+ * @typedef {object} SpreadsheetContext
+ * @property {Caches} caches - caches for the spreadsheet generation
+ * @property {SpreadsheetOptions} [options] - options for the spreadsheet generation
+ */
+
 const logger = createLogger()
 
 const designerUrl = config.get('designerUrl')
 const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 
+const SUBMISSION_STATUS_HEADER = 'Status'
+const SUBMISSION_STATUS_HEADER_TEXT = 'Live or draft'
+
+const SUBMISSION_ISPREVIEW_HEADER = 'isPreview'
+const SUBMISSION_ISPREVIEW_HEADER_TEXT = 'Is preview'
+
 const SUBMISSION_REF_HEADER = 'SubmissionRef'
+const SUBMISSION_REF_HEADER_TEXT = 'Submission reference number'
+
 const SUBMISSION_DATE_HEADER = 'SubmissionDate'
+const SUBMISSION_DATE_HEADER_TEXT = 'Submission date'
+
+const SUBMISSION_FORM_NAME = 'SubmissionFormName'
+const SUBMISSION_FORM_NAME_TEXT = 'Form name'
+
+const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
+
+/**
+ * Generate a form submission file for a form id
+ * @param {string} formId - the form id
+ */
+export async function generateFormSubmissionsFile(formId) {
+  return generateSubmissionsFile(formId)
+}
+
+/**
+ * Generate a feedback submission file for one or all forms
+ * @param {string} [formId] - the form id
+ */
+export async function generateFeedbackSubmissionsFile(formId) {
+  const removeColumns = new Set(['formId', 'SubmissionRef'])
+  if (!formId) {
+    return generateSubmissionsFile(CSAT_FORM_ID, {
+      includeFormName: true,
+      removeColumns
+    })
+  }
+
+  return generateSubmissionsFile(CSAT_FORM_ID, {
+    filter: { 'data.main.formId': formId },
+    includeFormName: true,
+    removeColumns
+  })
+}
+
+/**
+ * @param {string} columnName
+ * @param { Set<string> | undefined } columnsToRemove
+ */
+export function allowColumn(columnName, columnsToRemove) {
+  if (!columnsToRemove) {
+    return true
+  }
+  return !columnsToRemove.has(columnName)
+}
 
 /**
  * @param {string} formId
@@ -42,66 +120,184 @@ export async function getFormModelFromDb(formId, versionNumber) {
 }
 
 /**
+ *
+ * @param {Map<string, CellValue >} row
+ * @param {string} columnName
+ * @param {CellValue} columnValue
+ * @param { SpreadsheetOptions | undefined } options
+ */
+export function addCellToRow(row, columnName, columnValue, options) {
+  if (
+    allowColumn(columnName, options?.removeColumns) ||
+    (options?.includeFormName && columnName === SUBMISSION_FORM_NAME)
+  ) {
+    row.set(columnName, columnValue)
+  }
+}
+
+/**
+ * @param { string | undefined } asText
+ * @param {Component} component
+ * @returns {CellValue}
+ */
+export function coerceDataValue(asText, component) {
+  if (asText) {
+    if (
+      component.type === ComponentType.DatePartsField ||
+      component.type === ComponentType.MonthYearField
+    ) {
+      return new Date(asText)
+    }
+    if (component.type === ComponentType.NumberField) {
+      return Number.parseFloat(asText)
+    }
+  }
+  return asText
+}
+
+/**
+ * @param {string} asText
+ * @returns { Date | undefined }
+ */
+export function toDate(asText) {
+  return /** @type { Date | undefined } */ (
+    coerceDataValue(asText, {
+      type: ComponentType.DatePartsField
+    })
+  )
+}
+
+/**
+ * Extracts the component value from the provided data and coerces to the appropriate type
+ * @param {Record<string, any>} data - the answers data
+ * @param {string} key
+ * @param {Component} component - the form component
+ * @returns {CellValue}
+ */
+export function getValue(data, key, component) {
+  const asText =
+    key in data ? component.getDisplayStringFromFormValue(data[key]) : undefined
+
+  return coerceDataValue(asText, component)
+}
+
+/**
+ * Adds component and column header to the maps
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {Component} component - the form component
+ * @param {string} [key] - the header key
+ * @param {string} [value] - the header value
+ */
+function addHeader(
+  context,
+  component,
+  key = component.name,
+  value = component.label
+) {
+  if (!allowColumn(component.name, context.options?.removeColumns)) {
+    return
+  }
+
+  const { components, headers } = context.caches
+  if (!components.has(component.name)) {
+    components.set(component.name, component)
+  }
+
+  if (!headers.has(key)) {
+    headers.set(key, value)
+  }
+}
+
+/**
+ * Fetches form name from the cache or reads it into the cache
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {string} formId - the form id
+ * @returns {Promise<string>}
+ */
+async function lookupFormNameById(context, formId) {
+  if (!context.options?.includeFormName) {
+    return ''
+  }
+
+  const { formNames } = context.caches
+
+  if (formNames.has(formId)) {
+    return /** @type {string} */ (formNames.get(formId))
+  } else {
+    const meta = await getFormMetadataById(formId)
+
+    formNames.set(formId, meta.title)
+
+    return meta.title
+  }
+}
+
+/**
+ * Fetches form definition and builds the form model or gets them from cache
+ * @param {SpreadsheetContext} context - the context for spreadsheet generation
+ * @param {string} formId - the id of the form}}
+ * @param {number} versionNumber - the form version
+ */
+export async function getFormModel(context, formId, versionNumber) {
+  const { models } = context.caches
+  if (models.has(versionNumber)) {
+    return models.get(versionNumber)
+  } else {
+    const formModel = await getFormModelFromDb(formId, versionNumber)
+
+    models.set(versionNumber, formModel)
+
+    return formModel
+  }
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
+ * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId) {
+export async function generateSubmissionsFile(formId, options) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
-  const { components, headers, models, rows } = createCaches()
-  const { title, notificationEmail } = await readFormMetadata(formId)
-
-  /**
-   * Adds component and column header to the maps
-   * @param {Component} component - the form component
-   * @param {string} [key] - the header key
-   * @param {string} [value] - the header value
-   */
-  function addHeader(component, key = component.name, value = component.label) {
-    if (!components.has(component.name)) {
-      components.set(component.name, component)
-    }
-    if (!headers.has(key)) {
-      headers.set(key, value)
-    }
+  const caches = createCaches()
+  const { components, headers, rows } = caches
+  const context = {
+    caches,
+    options
   }
 
-  /**
-   * Fetches form definition and builds the form model or gets them from cache
-   * @param {number} versionNumber - the form version
-   */
-  async function getFormModel(versionNumber) {
-    if (models.has(versionNumber)) {
-      return models.get(versionNumber)
-    } else {
-      const formModel = await getFormModelFromDb(formId, versionNumber)
+  /** @type {string} */
+  let title = ''
+  let notificationEmail = ''
+  let formNameFromId = ''
+  for await (const record of getSubmissionRecords(formId, options?.filter)) {
+    title = record.meta.formName
+    notificationEmail = record.meta.notificationEmail
+    formNameFromId = await lookupFormNameById(context, record.data.main.formId)
 
-      models.set(versionNumber, formModel)
-
-      return formModel
-    }
-  }
-
-  for await (const record of getSubmissionRecords(formId)) {
-    /** @type {Map<string, string>} */
+    /** @type {Map<string, string | number | Date | undefined >} */
     const row = new Map()
-    const { versionNumber, submissionRef, submissionDate } = extractMeta(record)
-    const formModel = await getFormModel(versionNumber)
+    const { versionNumber, submissionRef, submissionDate, status, isPreview } =
+      extractMeta(record)
+    const formModel = await getFormModel(context, formId, versionNumber)
 
-    row.set(SUBMISSION_REF_HEADER, submissionRef)
-    row.set(SUBMISSION_DATE_HEADER, submissionDate.toISOString())
+    addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
+    addCellToRow(
+      row,
+      SUBMISSION_DATE_HEADER,
+      toDate(submissionDate.toISOString()),
+      options
+    )
+    addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
+    addCellToRow(
+      row,
+      SUBMISSION_ISPREVIEW_HEADER,
+      isPreview ? 'Yes' : 'No',
+      options
+    )
+    addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
-      /**
-       * Extracts the component value from the provided data
-       * @param {Record<string, any>} data - the answers data
-       */
-      function getValue(data) {
-        return key in data
-          ? component.getDisplayStringFromFormValue(data[key])
-          : undefined
-      }
-
       if (!component.isFormComponent) {
         return
       }
@@ -112,24 +308,26 @@ export async function generateSubmissionsFile(formId) {
         const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
         for (let index = 0; index < items.length; index++) {
-          const value = getValue(items[index])
+          const value = getValue(items[index], key, component)
           const componentKey = `${component.name} ${index + 1}`
           const componentValue = `${component.label} ${index + 1}`
 
-          row.set(componentKey, value)
-          addHeader(component, componentKey, componentValue)
+          addCellToRow(row, componentKey, value, options)
+          addHeader(context, component, componentKey, componentValue)
         }
       } else if (component.type === ComponentType.FileUploadField) {
         const files = record.data.files[component.name]
-        const fileCount = Array.isArray(files) ? files.length : 0
+        const fileLinks = Array.isArray(files)
+          ? files.map((f) => f.userDownloadLink).join(' \r\n')
+          : ''
 
-        row.set(component.name, fileCount.toString())
-        addHeader(component)
+        addCellToRow(row, component.name, fileLinks, options)
+        addHeader(context, component)
       } else {
-        const value = getValue(record.data.main)
+        const value = getValue(record.data.main, key, component)
 
-        row.set(component.name, value)
-        addHeader(component)
+        addCellToRow(row, component.name, value, options)
+        addHeader(context, component)
       }
     })
 
@@ -140,7 +338,8 @@ export async function generateSubmissionsFile(formId) {
   const workbook = buildExcelFile(
     formId,
     sortHeaders(components, headers),
-    rows.toReversed()
+    rows.toReversed(),
+    options
   )
 
   // Save the Excel workbook to S3
@@ -166,7 +365,7 @@ function createCaches() {
 
   /**
    * Array of worksheet rows
-   * @type {Map<string, string>[]}
+   * @type {Map<string, string | number | Date | undefined >[]}
    */
   const rows = []
 
@@ -181,31 +380,14 @@ function createCaches() {
    * @type {Map<string, string>}
    */
   const headers = new Map()
-  return { components, headers, models, rows }
-}
 
-/**
- * Read form metadata
- * @param {string} formId - the form id
- */
-async function readFormMetadata(formId) {
-  logger.info(`Reading metadata for form ${formId}`)
+  /**
+   * Cache for Form ids vs names
+   * @type {Map<string, string>}
+   */
+  const formNames = new Map()
 
-  const { title, notificationEmail } = await getFormMetadataById(formId)
-
-  if (!notificationEmail) {
-    const msg = `No notification email configured for formId: ${formId}`
-
-    logger.error(msg)
-
-    throw Boom.badRequest(
-      `No notification email configured for formId: ${formId}`
-    )
-  }
-
-  logger.info(`Read metadata for form ${formId}`)
-
-  return { title, notificationEmail }
+  return { components, headers, models, rows, formNames }
 }
 
 /**
@@ -216,13 +398,11 @@ function extractMeta(record) {
   const meta = record.meta
   const submissionRef = meta.referenceNumber
   const submissionDate = new Date(meta.timestamp)
-  const versionNumber = meta.versionMetadata?.versionNumber
+  const versionNumber = meta.versionMetadata?.versionNumber ?? 1
+  const isPreview = meta.isPreview
+  const status = meta.status
 
-  if (!versionNumber) {
-    throw new Error('Unexpected empty version number in metadata')
-  }
-
-  return { versionNumber, submissionRef, submissionDate }
+  return { versionNumber, submissionRef, submissionDate, isPreview, status }
 }
 
 /**
@@ -261,26 +441,64 @@ function sortHeaders(components, headers) {
 }
 
 /**
+ * @param { SpreadsheetOptions | undefined } options
+ */
+export function buildPreHeaders(options) {
+  const wsPreHeaders = []
+
+  const addSubmissionRef = allowColumn(
+    SUBMISSION_REF_HEADER,
+    options?.removeColumns
+  )
+  const addFormName = options?.includeFormName
+
+  if (addSubmissionRef) {
+    wsPreHeaders.push(SUBMISSION_REF_HEADER_TEXT)
+  }
+  wsPreHeaders.push(
+    SUBMISSION_DATE_HEADER_TEXT,
+    SUBMISSION_STATUS_HEADER_TEXT,
+    SUBMISSION_ISPREVIEW_HEADER_TEXT
+  )
+  if (addFormName) {
+    wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
+  }
+  return wsPreHeaders
+}
+
+/**
  * Build an xlsx workbook from the headers and rows
  * @param {string} formId - the form id
  * @param {[string, string][]} headers - the file header
- * @param {Map<string, string>[]} rows - the data rows
+ * @param {Map<string, string | number | Date | undefined >[]} rows - the data rows
+ * @param {SpreadsheetOptions} [options]
  */
-function buildExcelFile(formId, headers, rows) {
+function buildExcelFile(formId, headers, rows, options) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
-  const wsHeaders = ['Submission reference number', 'Submission date'].concat(
-    headers.map(([, label]) => label)
-  )
+  const wsPreHeaders = buildPreHeaders(options)
+  const preHeaderSet = new Set(wsPreHeaders)
 
-  /** @type {(string | undefined)[][]} */
+  const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
+
+  /** @type {(string | number | Date | undefined)[][]} */
   const wsRows = []
 
   rows.forEach((row) => {
-    /** @type {(string | undefined)[]} */
+    /** @type {(string | number | Date | undefined)[]} */
     const wsRow = []
 
-    wsRow.push(row.get(SUBMISSION_REF_HEADER), row.get(SUBMISSION_DATE_HEADER))
+    if (preHeaderSet.has(SUBMISSION_REF_HEADER_TEXT)) {
+      wsRow.push(row.get(SUBMISSION_REF_HEADER))
+    }
+    wsRow.push(
+      row.get(SUBMISSION_DATE_HEADER),
+      row.get(SUBMISSION_STATUS_HEADER),
+      row.get(SUBMISSION_ISPREVIEW_HEADER)
+    )
+    if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
+      wsRow.push(row.get(SUBMISSION_FORM_NAME))
+    }
 
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
@@ -290,7 +508,9 @@ function buildExcelFile(formId, headers, rows) {
   })
 
   // Create an excel file from the data and save
-  const worksheet = xlsx.utils.aoa_to_sheet([wsHeaders, ...wsRows])
+  const worksheet = xlsx.utils.aoa_to_sheet([wsHeaders, ...wsRows], {
+    dateNF: 'dd/mm/yyyy'
+  })
   const workbook = xlsx.utils.book_new()
 
   xlsx.utils.book_append_sheet(workbook, worksheet)

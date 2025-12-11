@@ -24,6 +24,13 @@ import {
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 jest.mock('~/src/services/notify.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 jest.mock('~/src/mongo.js', () => {
   let isPrepared = false
