@@ -126,7 +126,7 @@ export async function getFormModelFromDb(formId, versionNumber) {
  * @param {CellValue} columnValue
  * @param { SpreadsheetOptions | undefined } options
  */
-export function addRow(row, columnName, columnValue, options) {
+export function addCellToRow(row, columnName, columnValue, options) {
   if (
     allowColumn(columnName, options?.removeColumns) ||
     (options?.includeFormName && columnName === SUBMISSION_FORM_NAME)
@@ -281,12 +281,17 @@ export async function generateSubmissionsFile(formId, options = undefined) {
       extractMeta(record)
     const formModel = await getFormModel(context, formId, versionNumber)
 
-    addRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
+    addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
     // prettier-ignore
-    addRow(row, SUBMISSION_DATE_HEADER, toDate(submissionDate.toISOString()), options)
-    addRow(row, SUBMISSION_STATUS_HEADER, status, options)
-    addRow(row, SUBMISSION_ISPREVIEW_HEADER, isPreview ? 'Yes' : 'No', options)
-    addRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
+    addCellToRow(row, SUBMISSION_DATE_HEADER, toDate(submissionDate.toISOString()), options)
+    addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
+    addCellToRow(
+      row,
+      SUBMISSION_ISPREVIEW_HEADER,
+      isPreview ? 'Yes' : 'No',
+      options
+    )
+    addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
       if (!component.isFormComponent) {
@@ -303,7 +308,7 @@ export async function generateSubmissionsFile(formId, options = undefined) {
           const componentKey = `${component.name} ${index + 1}`
           const componentValue = `${component.label} ${index + 1}`
 
-          addRow(row, componentKey, value, options)
+          addCellToRow(row, componentKey, value, options)
           addHeader(context, component, componentKey, componentValue)
         }
       } else if (component.type === ComponentType.FileUploadField) {
@@ -312,12 +317,12 @@ export async function generateSubmissionsFile(formId, options = undefined) {
           ? files.map((f) => f.userDownloadLink).join(' \r\n')
           : ''
 
-        addRow(row, component.name, fileLinks, options)
+        addCellToRow(row, component.name, fileLinks, options)
         addHeader(context, component)
       } else if (component.isFormComponent) {
         const value = getValue(record.data.main, key, component)
 
-        addRow(row, component.name, value, options)
+        addCellToRow(row, component.name, value, options)
         addHeader(context, component)
       }
     })
