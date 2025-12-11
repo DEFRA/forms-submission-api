@@ -73,6 +73,28 @@ describe('submission repository', () => {
       expect(submissionRecord.next()).toEqual(submissionDocument)
     })
 
+    it('should protect against injection - bad key', () => {
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { next: () => submissionDocument }
+        })
+      })
+      expect(() =>
+        getSubmissionRecords(STUB_FORM_ID, { 'meta.formId': 'bad-value' })
+      ).toThrow('Invalid filter {"meta.formId":"bad-value"}')
+    })
+
+    it('should protect against injection - bad value', () => {
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { next: () => submissionDocument }
+        })
+      })
+      expect(() =>
+        getSubmissionRecords(STUB_FORM_ID, { valid: { $ne: null } })
+      ).toThrow('Invalid filter {"valid":{"$ne":null}}')
+    })
+
     it('should handle get submission record failures', () => {
       mockCollection.find.mockImplementation(() => {
         throw new Error('an error')

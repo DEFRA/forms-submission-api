@@ -14,6 +14,19 @@ const logger = createLogger()
 export function getSubmissionRecords(formId, filter = undefined) {
   logger.info('Reading submission records')
 
+  // Protect filter against possible injection
+  if (filter) {
+    for (const [key, value] of Object.entries(filter)) {
+      // Block operators like { $ne: null }
+      if (
+        (typeof value === 'object' && value !== null) ||
+        key === 'meta.formId'
+      ) {
+        throw new Error(`Invalid filter ${JSON.stringify(filter)}`)
+      }
+    }
+  }
+
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
