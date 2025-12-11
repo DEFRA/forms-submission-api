@@ -33,37 +33,7 @@ export const auth = {
           nbf: true,
           exp: true
         },
-        /**
-         * @param {Artifacts<UserCredentials>} artifacts
-         */
-        validate(artifacts) {
-          const user = artifacts.decoded.payload
-
-          if (!user) {
-            logger.error('Authentication error: Missing user')
-            return {
-              isValid: false
-            }
-          }
-
-          const { oid } = user
-
-          if (!oid) {
-            logger.error(
-              'Authentication error: user.oid is not a string or is missing'
-            )
-            return {
-              isValid: false
-            }
-          }
-
-          logger.debug(`User ${oid}: passed authentication`)
-
-          return {
-            isValid: true,
-            credentials: { user }
-          }
-        }
+        validate: validateAuth
       })
 
       server.auth.strategy('cognito-access-token', 'jwt', {
@@ -83,6 +53,37 @@ export const auth = {
       // Set as the default strategy
       server.auth.default('azure-oidc-token')
     }
+  }
+}
+
+/**
+ * Additional validation for azure oidc token based authentiation
+ * @param {Artifacts<UserCredentials>} artifacts
+ */
+export function validateAuth(artifacts) {
+  const user = artifacts.decoded.payload
+
+  if (!user) {
+    logger.error('Authentication error: Missing user')
+    return {
+      isValid: false
+    }
+  }
+
+  const { oid } = user
+
+  if (!oid) {
+    logger.error('Authentication error: user.oid is not a string or is missing')
+    return {
+      isValid: false
+    }
+  }
+
+  logger.debug(`User ${oid}: passed authentication`)
+
+  return {
+    isValid: true,
+    credentials: { user }
   }
 }
 
