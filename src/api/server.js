@@ -9,6 +9,7 @@ import { failAction } from '~/src/helpers/fail-action.js'
 import { requestTracing } from '~/src/helpers/request-tracing.js'
 import { prepareDb } from '~/src/mongo.js'
 import { auth } from '~/src/plugins/auth/index.js'
+import { logErrors } from '~/src/plugins/log-errors.js'
 import { logRequests } from '~/src/plugins/log-requests.js'
 import { router } from '~/src/plugins/router.js'
 import { swagger } from '~/src/plugins/swagger.js'
@@ -64,7 +65,7 @@ export async function createServer() {
     }
   })
 
-  await server.register([logRequests, requestTracing, auth])
+  await server.register([logRequests, requestTracing, auth, logErrors])
 
   if (isProduction) {
     prepareSecureContext(server)
