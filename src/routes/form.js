@@ -1,11 +1,6 @@
-import {
-  formSubmitPayloadSchema,
-  getErrorMessage,
-  idSchema
-} from '@defra/forms-model'
+import { formSubmitPayloadSchema, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
-import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   formSubmitResponseSchema,
   generateFeedbackSubmissionsFileResponseSchema,
@@ -23,8 +18,6 @@ import {
   generateFeedbackSubmissionsFile,
   generateFormSubmissionsFile
 } from '~/src/services/submission-service.js'
-
-const logger = createLogger()
 
 export default [
   /**
@@ -130,18 +123,7 @@ export default [
       const { params } = request
       const { formId } = params
 
-      try {
-        await generateFormSubmissionsFile(formId)
-      } catch (err) {
-        const message = getErrorMessage(err)
-
-        logger.error(
-          err,
-          `An exception occured while generating the submission file for form ${formId} - ${message}`
-        )
-
-        throw err
-      }
+      await generateFormSubmissionsFile(formId)
 
       return {
         message: 'Generate form submissions file success'
@@ -174,18 +156,7 @@ export default [
       const { params } = request
       const { formId } = params
 
-      try {
-        await generateFeedbackSubmissionsFile(formId)
-      } catch (err) {
-        const message = getErrorMessage(err)
-
-        logger.error(
-          err,
-          `An exception occured while generating the feedback submission file for form ${formId} - ${message}`
-        )
-
-        throw err
-      }
+      await generateFeedbackSubmissionsFile(formId)
 
       return {
         message: 'Generate feedback submissions file success'
