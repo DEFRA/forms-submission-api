@@ -133,11 +133,11 @@ export default [
       try {
         await generateFormSubmissionsFile(formId)
       } catch (err) {
-        const msg = getErrorMessage(err)
+        const message = getErrorMessage(err)
 
         logger.error(
           err,
-          `An exception occured while generating the submission file for form ${formId} - ${msg}`
+          `An exception occured while generating the submission file for form ${formId} - ${message}`
         )
 
         throw err
@@ -177,11 +177,11 @@ export default [
       try {
         await generateFeedbackSubmissionsFile(formId)
       } catch (err) {
-        const msg = getErrorMessage(err)
+        const message = getErrorMessage(err)
 
         logger.error(
           err,
-          `An exception occured while generating the feedback submission file for form ${formId} - ${msg}`
+          `An exception occured while generating the feedback submission file for form ${formId} - ${message}`
         )
 
         throw err
