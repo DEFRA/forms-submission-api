@@ -3,6 +3,7 @@ import xlsx from 'xlsx'
 
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
+  getFormDefinition,
   getFormDefinitionVersion,
   getFormMetadataById
 } from '~/src/services/forms-service.js'
@@ -61,13 +62,13 @@ describe('Submission service', () => {
       // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
       jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
 
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersions)
+      )
+
       jest
         .mocked(getFormDefinitionVersion)
         .mockImplementation((id, versionNumber) => {
-          const versions = /** @type {Record<string, FormDefinition>} */ (
-            /** @type {unknown} */ (formVersions)
-          )
-
           if (!versionNumber) {
             throw new Error('Expected a version number')
           }
@@ -76,6 +77,16 @@ describe('Submission service', () => {
 
           return Promise.resolve(version)
         })
+
+      jest.mocked(getFormDefinition).mockImplementation(() => {
+        // getFormDefinition is called when a submitted form data didn't have an associated version definition.
+        // This is likely to be submission from an old form that hasn't been updated since we `from def versioning was implemented.
+        // The mock just returns the oldest mock form version
+        const oldestDefinitionId = '36'
+        const definition = versions[oldestDefinitionId]
+
+        return Promise.resolve(definition)
+      })
 
       const mockCreate = jest
         .mocked(createSubmissionXlsxFile)
@@ -97,6 +108,7 @@ describe('Submission service', () => {
 
       expect(sheetAsCsv).toBe(
         `Submission reference number,Submission date,Live or draft,Is preview,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
+365-DFR-C67,13/11/2025,live,No,Chocolate,,,,,,,,,,,,,,,
 549-FBF-C88,13/11/2025,live,No,Chocolate,,,,,,,,,,,,,,,
 187-231-E68,27/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,,,,,,,,,d@s.com
 259-0B2-442,28/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,Cheese,2,Ham,6,,,,,,d@s.com

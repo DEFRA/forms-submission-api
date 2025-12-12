@@ -12,6 +12,7 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
+  getFormDefinition,
   getFormDefinitionVersion,
   getFormMetadataById
 } from '~/src/services/forms-service.js'
@@ -68,14 +69,16 @@ const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
- * @param {string} formId
- * @returns {Promise<string>}
+ * Fetches the form metadata and returns to notification email
+ * @param {string} formId - the form id
  */
 export async function getNotificationEmailFromForm(formId) {
   const metadata = await getFormMetadataById(formId)
+
   if (!metadata.notificationEmail) {
     throw new Error(`Missing notification email for form id ${formId}`)
   }
+
   return metadata.notificationEmail
 }
 
@@ -112,23 +115,28 @@ export async function generateFeedbackSubmissionsFile(formId) {
 }
 
 /**
- * @param {string} columnName
- * @param { Set<string> | undefined } columnsToRemove
+ * @param {string} columnName - the column name
+ * @param { Set<string> | undefined } columnsToRemove - the columns to omit
  */
 export function allowColumn(columnName, columnsToRemove) {
   if (!columnsToRemove) {
     return true
   }
+
   return !columnsToRemove.has(columnName)
 }
 
 /**
- * @param {string} formId
- * @param {number} versionNumber
- * @returns {Promise<FormModel>}
+ * Get the form model after fetching the form definition
+ * @param {string} formId - the form id
+ * @param {number | undefined} versionNumber - the form version
+ * @param {FormStatus} formStatus - the form status
  */
-export async function getFormModelFromDb(formId, versionNumber) {
-  const formDefinition = await getFormDefinitionVersion(formId, versionNumber)
+export async function getFormModelFromDb(formId, versionNumber, formStatus) {
+  const formDefinition = versionNumber
+    ? await getFormDefinitionVersion(formId, versionNumber)
+    : await getFormDefinition(formId, formStatus)
+
   return new FormModel(replaceCustomControllers(formDefinition), {
     basePath: '',
     versionNumber
@@ -136,11 +144,11 @@ export async function getFormModelFromDb(formId, versionNumber) {
 }
 
 /**
- *
- * @param {Map<string, CellValue >} row
- * @param {string} columnName
- * @param {CellValue} columnValue
- * @param { SpreadsheetOptions | undefined } options
+ * Adds a cell to the spreadsheet row
+ * @param {Map<string, CellValue>} row - the spreadsheet row
+ * @param {string} columnName - the column name
+ * @param {CellValue} columnValue - the column value
+ * @param { SpreadsheetOptions | undefined } options - spreadsheet options
  */
 export function addCellToRow(row, columnName, columnValue, options) {
   if (
@@ -152,9 +160,11 @@ export function addCellToRow(row, columnName, columnValue, options) {
 }
 
 /**
- * @param { string | undefined } asText
- * @param {Component} component
- * @returns {CellValue}
+ * Coerce the value from text if the component is a
+ * DatePartsField, MonthYearField or NumberField
+ * @param {string | undefined} asText - the value as text
+ * @param {Component} component - the form component
+ * @returns {CellValue} the spreadsheet cell value
  */
 export function coerceDataValue(asText, component) {
   if (asText) {
@@ -168,27 +178,16 @@ export function coerceDataValue(asText, component) {
       return Number.parseFloat(asText)
     }
   }
-  return asText
-}
 
-/**
- * @param {string} asText
- * @returns { Date | undefined }
- */
-export function toDate(asText) {
-  return /** @type { Date | undefined } */ (
-    coerceDataValue(asText, {
-      type: ComponentType.DatePartsField
-    })
-  )
+  return asText
 }
 
 /**
  * Extracts the component value from the provided data and coerces to the appropriate type
  * @param {Record<string, any>} data - the answers data
- * @param {string} key
+ * @param {string} key - the component key (name)
  * @param {Component} component - the form component
- * @returns {CellValue}
+ * @returns {CellValue} the spreadsheet cell value
  */
 export function getValue(data, key, component) {
   const asText =
@@ -228,7 +227,6 @@ function addHeader(
  * Fetches form name from the cache or reads it into the cache
  * @param {SpreadsheetContext} context - the context for spreadsheet generation
  * @param {string} formId - the form id
- * @returns {Promise<string>}
  */
 async function lookupFormNameById(context, formId) {
   if (!context.options?.includeFormName) {
@@ -251,15 +249,21 @@ async function lookupFormNameById(context, formId) {
 /**
  * Fetches form definition and builds the form model or gets them from cache
  * @param {SpreadsheetContext} context - the context for spreadsheet generation
- * @param {string} formId - the id of the form}}
- * @param {number} versionNumber - the form version
+ * @param {string} formId - the form id
+ * @param {number | undefined} versionNumber - the form version
+ * @param {FormStatus} formStatus - the form status
  */
-export async function getFormModel(context, formId, versionNumber) {
+export async function getFormModel(context, formId, versionNumber, formStatus) {
   const { models } = context.caches
+
   if (models.has(versionNumber)) {
     return models.get(versionNumber)
   } else {
-    const formModel = await getFormModelFromDb(formId, versionNumber)
+    const formModel = await getFormModelFromDb(
+      formId,
+      versionNumber,
+      formStatus
+    )
 
     models.set(versionNumber, formModel)
 
@@ -284,9 +288,9 @@ export async function generateSubmissionsFile(
   const { components, headers, rows } = caches
   const context = { caches, options }
 
-  /** @type {string} */
   let title = ''
   let formNameFromId = ''
+
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     title = record.meta.formName
     formNameFromId = await lookupFormNameById(context, record.data.main.formId)
@@ -295,15 +299,10 @@ export async function generateSubmissionsFile(
     const row = new Map()
     const { versionNumber, submissionRef, submissionDate, status, isPreview } =
       extractMeta(record)
-    const formModel = await getFormModel(context, formId, versionNumber)
+    const formModel = await getFormModel(context, formId, versionNumber, status)
 
     addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
-    addCellToRow(
-      row,
-      SUBMISSION_DATE_HEADER,
-      toDate(submissionDate.toISOString()),
-      options
-    )
+    addCellToRow(row, SUBMISSION_DATE_HEADER, submissionDate, options)
     addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
     addCellToRow(
       row,
@@ -414,7 +413,7 @@ function extractMeta(record) {
   const meta = record.meta
   const submissionRef = meta.referenceNumber
   const submissionDate = new Date(meta.timestamp)
-  const versionNumber = meta.versionMetadata?.versionNumber ?? 1
+  const versionNumber = meta.versionMetadata?.versionNumber
   const isPreview = meta.isPreview
   const status = meta.status
 
@@ -618,7 +617,7 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { FormMetadataAuthor } from '@defra/forms-model'
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
