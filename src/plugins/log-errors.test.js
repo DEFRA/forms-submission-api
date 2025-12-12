@@ -4,7 +4,7 @@ import { onPreResponse } from '~/src/plugins/log-errors.js'
 
 describe('Log errors', () => {
   test('onPreResponse error logger', () => {
-    const message = 'Exception occured'
+    const message = 'Exception occurred'
     const response = Boom.boomify(new Error(message))
     const mockRequest = /** @type {Request} */ (
       /** @type {unknown} */ ({
@@ -23,7 +23,7 @@ describe('Log errors', () => {
     expect(mockRequest.logger.error).toHaveBeenCalledTimes(1)
     expect(mockRequest.logger.error).toHaveBeenCalledWith(
       response,
-      `An error occured while processing the request: ${message}`
+      `An error occurred while processing the request: ${message}`
     )
   })
 })

@@ -14,7 +14,7 @@ export const onPreResponse = (request, h) => {
 
     request.logger.error(
       response,
-      `An error occured while processing the request: ${message}`
+      `An error occurred while processing the request: ${message}`
     )
   }
 
