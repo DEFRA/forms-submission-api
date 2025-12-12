@@ -23,6 +23,7 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  * @property {object} [filter] - query filter
  * @property {boolean} [includeFormName] - add FormName column to spreadsheet
  * @property {Set<string>} [removeColumns] - remove these columns from spreadsheet
+ * @property {boolean} [isFeedbackForm] - true if this is a feedback form
  */
 
 /**
@@ -68,15 +69,30 @@ const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
- * @param {string} formId
- * @returns {Promise<string>}
+ * @param {string} formNameFromId
+ * @param {FormMetadata} metadata
+ * @param { SpreadsheetOptions | undefined } options
  */
-export async function getNotificationEmailFromForm(formId) {
+export function generateTitle(formNameFromId, metadata, options) {
+  if (options?.isFeedbackForm) {
+    if (!metadata.id) {
+      return 'user feedback (all forms)'
+    }
+    return `user feedback for form ${formNameFromId}`
+  }
+  return metadata.title
+}
+
+/**
+ * @param {string} formId
+ * @returns {Promise<FormMetadata>}
+ */
+export async function getMetadataFromForm(formId) {
   const metadata = await getFormMetadataById(formId)
   if (!metadata.notificationEmail) {
     throw new Error(`Missing notification email for form id ${formId}`)
   }
-  return metadata.notificationEmail
+  return metadata
 }
 
 /**
@@ -84,30 +100,51 @@ export async function getNotificationEmailFromForm(formId) {
  * @param {string} formId - the form id
  */
 export async function generateFormSubmissionsFile(formId) {
-  const targetEmail = await getNotificationEmailFromForm(formId)
-  return generateSubmissionsFile(formId, targetEmail)
+  const metadata = await getMetadataFromForm(formId)
+  return generateSubmissionsFile(formId, metadata)
 }
 
 /**
  * Generate a feedback submission file for one or all forms
- * @param {string} [formId] - the form id
+ * @param {UserCredentials | undefined} user - the actioning user
  */
-export async function generateFeedbackSubmissionsFile(formId) {
+export async function generateFeedbackSubmissionsFileForAll(user) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
-  if (!formId) {
-    throw new Error('Not implemented')
-    // return generateSubmissionsFile(CSAT_FORM_ID, author.email, {
-    //   includeFormName: true,
-    //   removeColumns
-    // })
+  const userEmail =
+    user && 'preferred_username' in user
+      ? /** @type {string} */ (user.preferred_username)
+      : undefined
+
+  if (!userEmail) {
+    throw new Error('User email not found')
   }
 
-  const targetEmail = await getNotificationEmailFromForm(formId)
+  const metadata = /** @type {FormMetadata} */ ({
+    notificationEmail: userEmail,
+    id: ''
+  })
 
-  return generateSubmissionsFile(CSAT_FORM_ID, targetEmail, {
+  return generateSubmissionsFile(CSAT_FORM_ID, metadata, {
+    includeFormName: true,
+    removeColumns,
+    isFeedbackForm: true
+  })
+}
+
+/**
+ * Generate a feedback submission file for one or all forms
+ * @param {string} formId - the form id
+ */
+export async function generateFeedbackSubmissionsFileForForm(formId) {
+  const removeColumns = new Set(['formId', 'SubmissionRef'])
+
+  const metadata = await getMetadataFromForm(formId)
+
+  return generateSubmissionsFile(CSAT_FORM_ID, metadata, {
     filter: { 'data.main.formId': formId },
     includeFormName: true,
-    removeColumns
+    removeColumns,
+    isFeedbackForm: true
   })
 }
 
@@ -231,20 +268,21 @@ function addHeader(
  * @returns {Promise<string>}
  */
 async function lookupFormNameById(context, formId) {
-  if (!context.options?.includeFormName) {
-    return ''
-  }
-
   const { formNames } = context.caches
 
   if (formNames.has(formId)) {
     return /** @type {string} */ (formNames.get(formId))
   } else {
-    const meta = await getFormMetadataById(formId)
+    try {
+      const meta = await getFormMetadataById(formId)
 
-    formNames.set(formId, meta.title)
+      formNames.set(formId, meta.title)
 
-    return meta.title
+      return meta.title
+    } catch {
+      formNames.set(formId, '')
+    }
+    return ''
   }
 }
 
@@ -268,16 +306,50 @@ export async function getFormModel(context, formId, versionNumber) {
 }
 
 /**
- * Generate a submission file for a form id
- * @param {string} formId - the form id
- * @param {string} notificationEmail - the target email address
+ * @param {string} formId - the id of the form
+ * @param {Map<string, string | number | Date | undefined>} row - data row
+ * @param {SpreadsheetContext} context
+ * @param {WithId<FormSubmissionDocument>} record
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(
+export async function addFirstCellsToRow(
   formId,
-  notificationEmail,
+  row,
+  context,
+  record,
   options
 ) {
+  const { versionNumber, submissionRef, submissionDate, status, isPreview } =
+    extractMeta(record)
+  const formModel = await getFormModel(context, formId, versionNumber)
+
+  addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
+  addCellToRow(
+    row,
+    SUBMISSION_DATE_HEADER,
+    toDate(submissionDate.toISOString()),
+    options
+  )
+  addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
+  addCellToRow(
+    row,
+    SUBMISSION_ISPREVIEW_HEADER,
+    isPreview ? 'Yes' : 'No',
+    options
+  )
+
+  return {
+    formModel
+  }
+}
+
+/**
+ * Generate a submission file for a form id
+ * @param {string} formId - the form id
+ * @param {FormMetadata} metadata - metadata of the form
+ * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
+ */
+export async function generateSubmissionsFile(formId, metadata, options) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()
@@ -285,32 +357,27 @@ export async function generateSubmissionsFile(
   const context = { caches, options }
 
   /** @type {string} */
-  let title = ''
   let formNameFromId = ''
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
-    title = record.meta.formName
-    formNameFromId = await lookupFormNameById(context, record.data.main.formId)
+    formNameFromId = await lookupFormNameById(
+      context,
+      record.data.main.formId ?? record.meta.formId
+    )
+    if (!formNameFromId) {
+      // Exclude feedback submissions where the form no longer exists
+      continue
+    }
 
     /** @type {Map<string, string | number | Date | undefined >} */
     const row = new Map()
-    const { versionNumber, submissionRef, submissionDate, status, isPreview } =
-      extractMeta(record)
-    const formModel = await getFormModel(context, formId, versionNumber)
+    const { formModel } = await addFirstCellsToRow(
+      formId,
+      row,
+      context,
+      record,
+      options
+    )
 
-    addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
-    addCellToRow(
-      row,
-      SUBMISSION_DATE_HEADER,
-      toDate(submissionDate.toISOString()),
-      options
-    )
-    addCellToRow(row, SUBMISSION_STATUS_HEADER, status, options)
-    addCellToRow(
-      row,
-      SUBMISSION_ISPREVIEW_HEADER,
-      isPreview ? 'Yes' : 'No',
-      options
-    )
     addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
 
     formModel?.componentMap.forEach((component, key) => {
@@ -358,8 +425,15 @@ export async function generateSubmissionsFile(
     options
   )
 
+  const { notificationEmail } = /** @type {{ notificationEmail: string }} */ (
+    metadata
+  )
+
   // Save the Excel workbook to S3
   const fileId = await saveFileToS3(workbook, formId, notificationEmail)
+
+  const title = generateTitle(formNameFromId, metadata, options)
+
 
   // Finally send the submission file download email
   await sendSubmissionsFileEmail(formId, title, notificationEmail, fileId)
@@ -618,7 +692,9 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { FormMetadataAuthor } from '@defra/forms-model'
+ * @import { UserCredentials } from '@hapi/hapi'
+ * @import { FormMetadata } from '@defra/forms-model'
+ * @import { WithId } from 'mongodb'
  * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

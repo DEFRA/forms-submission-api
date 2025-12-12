@@ -10,9 +10,10 @@ import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 import {
   coerceDataValue,
-  generateFeedbackSubmissionsFile,
+  generateFeedbackSubmissionsFileForAll,
+  generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
-  getNotificationEmailFromForm
+  getMetadataFromForm
 } from '~/src/services/submission-service.js'
 // @ts-expect-error - import json
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
@@ -43,7 +44,7 @@ describe('Submission service', () => {
     test('should generate submission file if all valid', async () => {
       const formId = '688131eeff67f889d52c66cc'
       const fileId = 'fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5'
-      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+      jest.mocked(getFormMetadataById).mockResolvedValue(
         /** @type {FormMetadata}  */ ({
           title: 'My form',
           notificationEmail: 'enrique.chase@defra.gov.uk'
@@ -130,7 +131,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mockResolvedValueOnce(
           /** @type {FormMetadata}  */ ({
             title: 'Source form',
-            notificationEmail: 'shared-inbox@defra.gov.uk'
+            notificationEmail: 'shared-inbox@defra.gov.uk',
+            id: 'some-form-id'
           })
         )
         .mockResolvedValueOnce(
@@ -171,7 +173,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-      const result = await generateFeedbackSubmissionsFile(formId)
+      const result = await generateFeedbackSubmissionsFileForForm(formId)
 
       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
         expect.any(Buffer),
@@ -197,8 +199,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         emailAddress: 'shared-inbox@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
-          subject: 'File is ready to download - My form',
-          body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+          subject: 'File is ready to download - user feedback for form Feedback form',
+          body: "The file you requested for 'user feedback for form Feedback form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
         },
         emailReplyToId: 'dummy'
       })
@@ -207,7 +209,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
     })
 
     test('should generate feedback submissions file for all forms', async () => {
-      // const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
+      const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
       jest.mocked(getFormMetadataById).mockResolvedValueOnce(
         /** @type {FormMetadata}  */ ({
           title: 'Example form',
@@ -242,47 +244,44 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
           return Promise.resolve(version)
         })
 
-      // const mockCreate = jest
-      //   .mocked(createSubmissionXlsxFile)
-      //   .mockResolvedValueOnce({ fileId })
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
 
-      // Should throw 'Not implemented' until a later PR
-      await expect(() => generateFeedbackSubmissionsFile()).rejects.toThrow(
-        'Not implemented'
+        // @ts-expect-error - only part of metadta is mocked here
+      const result = await generateFeedbackSubmissionsFileForAll({ preferred_username: 'my-email@address.com' })
+
+      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        false
       )
-      // const result = await generateFeedbackSubmissionsFile()
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
 
-      //       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
-      //         expect.any(Buffer),
-      //         expect.any(String),
-      //         false
-      //       )
-      //       const buffer = mockCreate.mock.calls[0][0]
-      //       const workbook = xlsx.read(buffer, { type: 'buffer' })
+      expect(workbook.Sheets.Sheet1).toBeDefined()
 
-      //       expect(workbook.Sheets.Sheet1).toBeDefined()
+      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
-      //       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+      expect(sheetAsCsv).toBe(
+        `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
+28/11/2025,draft,Yes,Example form,Very satisfied,
+28/11/2025,draft,Yes,Example form,Very satisfied,
+01/12/2025,draft,Yes,Example form,Satisfied,
+02/12/2025,draft,Yes,Example form,Very satisfied,`
+      )
 
-      //       expect(sheetAsCsv).toBe(
-      //         `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
-      // 28/11/2025,draft,Yes,Example form,Very satisfied,
-      // 28/11/2025,draft,Yes,Example form,Very satisfied,
-      // 01/12/2025,draft,Yes,Example form,Satisfied,
-      // 02/12/2025,draft,Yes,Example form,Very satisfied,`
-      //       )
+      expect(sendNotification).toHaveBeenCalledWith({
+        emailAddress: 'my-email@address.com',
+        templateId: 'dummy',
+        personalisation: {
+          subject: 'File is ready to download - user feedback (all forms)',
+          body: "The file you requested for 'user feedback (all forms)' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+        },
+        emailReplyToId: 'dummy'
+      })
 
-      //       expect(sendNotification).toHaveBeenCalledWith({
-      //         emailAddress: 'name@example.gov.uk',
-      //         templateId: 'dummy',
-      //         personalisation: {
-      //           subject: 'File is ready to download - My form',
-      //           body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
-      //         },
-      //         emailReplyToId: 'dummy'
-      //       })
-
-      //       expect(result).toEqual({ fileId })
+      expect(result).toEqual({ fileId })
     })
   })
 
@@ -318,22 +317,22 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
     })
   })
 
-  describe('getNotificationEmailFromForm', () => {
+  describe('getMetadataFromForm', () => {
     test('should throw if no email', async () => {
       // @ts-expect-error - mocked partial record
       jest.mocked(getFormMetadataById).mockResolvedValueOnce({})
       await expect(() =>
-        getNotificationEmailFromForm('form-id')
+        getMetadataFromForm('form-id')
       ).rejects.toThrow('Missing notification email for form id form-id')
     })
 
-    test('should get email', async () => {
+    test('should get metadata with email populated', async () => {
       jest
         .mocked(getFormMetadataById)
         // @ts-expect-error - mocked partial record
         .mockResolvedValueOnce({ notificationEmail: 'example@test.com' })
-      expect(await getNotificationEmailFromForm('form-id')).toBe(
-        'example@test.com'
+      expect(await getMetadataFromForm('form-id')).toEqual(
+        { notificationEmail: 'example@test.com' }
       )
     })
   })
