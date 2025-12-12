@@ -273,7 +273,11 @@ export async function getFormModel(context, formId, versionNumber) {
  * @param {string} notificationEmail - the target email address
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId, notificationEmail, options) {
+export async function generateSubmissionsFile(
+  formId,
+  notificationEmail,
+  options
+) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()
