@@ -211,7 +211,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         emailAddress: 'shared-inbox@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
-          subject: 'File is ready to download - user feedback for form Feedback form',
+          subject:
+            'File is ready to download - user feedback for form Feedback form',
           body: "The file you requested for 'user feedback for form Feedback form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
         },
         emailReplyToId: 'dummy'
@@ -260,8 +261,10 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-        // @ts-expect-error - only part of metadta is mocked here
-      const result = await generateFeedbackSubmissionsFileForAll({ preferred_username: 'my-email@address.com' })
+      // @ts-expect-error - only part of metadta is mocked here
+      const result = await generateFeedbackSubmissionsFileForAll({
+        preferred_username: 'my-email@address.com'
+      })
 
       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
         expect.any(Buffer),
@@ -333,9 +336,9 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
     test('should throw if no email', async () => {
       // @ts-expect-error - mocked partial record
       jest.mocked(getFormMetadataById).mockResolvedValueOnce({})
-      await expect(() =>
-        getMetadataFromForm('form-id')
-      ).rejects.toThrow('Missing notification email for form id form-id')
+      await expect(() => getMetadataFromForm('form-id')).rejects.toThrow(
+        'Missing notification email for form id form-id'
+      )
     })
 
     test('should get metadata with email populated', async () => {
@@ -343,9 +346,9 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(getFormMetadataById)
         // @ts-expect-error - mocked partial record
         .mockResolvedValueOnce({ notificationEmail: 'example@test.com' })
-      expect(await getMetadataFromForm('form-id')).toEqual(
-        { notificationEmail: 'example@test.com' }
-      )
+      expect(await getMetadataFromForm('form-id')).toEqual({
+        notificationEmail: 'example@test.com'
+      })
     })
   })
 })
