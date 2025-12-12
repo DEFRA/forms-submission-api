@@ -82,7 +82,27 @@ describe('forwardLogs', () => {
     )
   })
 
-  it('logs error with string data', () => {
+  it('logs errors with string data', () => {
+    const error = new Error('Some error')
+
+    logListener(
+      logger,
+      /** @type {RequestEvent} */ ({
+        channel: 'app',
+        timestamp: Date.now().toString(),
+        tags: ['a', 'b', 'c', 'error'],
+        error
+      }),
+      { a: true, b: true, c: true, error: true }
+    )
+
+    expect(logger.error).toHaveBeenCalledExactlyOnceWith(
+      error,
+      'Channel: app, Tags: [a,b,c,error], Error: Some error'
+    )
+  })
+
+  it('does not log internal errors', () => {
     const error = new Error('Some error')
 
     logListener(
