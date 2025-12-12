@@ -68,11 +68,24 @@ const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
+ * @param {string} formId
+ * @returns {Promise<string>}
+ */
+export async function getNotificationEmailFromForm(formId) {
+  const metadata = await getFormMetadataById(formId)
+  if (!metadata.notificationEmail) {
+    throw new Error(`Missing notification email for form id ${formId}`)
+  }
+  return metadata.notificationEmail
+}
+
+/**
  * Generate a form submission file for a form id
  * @param {string} formId - the form id
  */
 export async function generateFormSubmissionsFile(formId) {
-  return generateSubmissionsFile(formId)
+  const targetEmail = await getNotificationEmailFromForm(formId)
+  return generateSubmissionsFile(formId, targetEmail)
 }
 
 /**
@@ -82,13 +95,16 @@ export async function generateFormSubmissionsFile(formId) {
 export async function generateFeedbackSubmissionsFile(formId) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
   if (!formId) {
-    return generateSubmissionsFile(CSAT_FORM_ID, {
-      includeFormName: true,
-      removeColumns
-    })
+    throw new Error('Not implemented')
+    // return generateSubmissionsFile(CSAT_FORM_ID, author.email, {
+    //   includeFormName: true,
+    //   removeColumns
+    // })
   }
 
-  return generateSubmissionsFile(CSAT_FORM_ID, {
+  const targetEmail = await getNotificationEmailFromForm(formId)
+
+  return generateSubmissionsFile(CSAT_FORM_ID, targetEmail, {
     filter: { 'data.main.formId': formId },
     includeFormName: true,
     removeColumns
@@ -254,25 +270,25 @@ export async function getFormModel(context, formId, versionNumber) {
 /**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
+ * @param {string} notificationEmail - the target email address
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId, options) {
+export async function generateSubmissionsFile(
+  formId,
+  notificationEmail,
+  options
+) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()
   const { components, headers, rows } = caches
-  const context = {
-    caches,
-    options
-  }
+  const context = { caches, options }
 
   /** @type {string} */
   let title = ''
-  let notificationEmail = ''
   let formNameFromId = ''
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     title = record.meta.formName
-    notificationEmail = record.meta.notificationEmail
     formNameFromId = await lookupFormNameById(context, record.data.main.formId)
 
     /** @type {Map<string, string | number | Date | undefined >} */
@@ -534,7 +550,7 @@ async function saveFileToS3(workbook, formId, notificationEmail) {
     type: 'buffer'
   })
 
-  const { retrievalKey } = { retrievalKey: notificationEmail }
+  const retrievalKey = notificationEmail
   const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
   const hashedRetrievalKey = await argon2.hash(retrievalKey)
 
@@ -602,6 +618,7 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
+ * @import { FormMetadataAuthor } from '@defra/forms-model'
  * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
