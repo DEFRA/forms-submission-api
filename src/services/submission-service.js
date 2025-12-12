@@ -74,7 +74,7 @@ const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 export async function getNotificationEmailFromForm(formId) {
   const metadata = await getFormMetadataById(formId)
   if (!metadata.notificationEmail) {
-    throw new Error('Missing notification email')
+    throw new Error(`Missing notification email for form id ${formId}`)
   }
   return metadata.notificationEmail
 }

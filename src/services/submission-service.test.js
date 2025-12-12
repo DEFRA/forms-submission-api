@@ -11,7 +11,8 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 import {
   coerceDataValue,
   generateFeedbackSubmissionsFile,
-  generateFormSubmissionsFile
+  generateFormSubmissionsFile,
+  getNotificationEmailFromForm
 } from '~/src/services/submission-service.js'
 // @ts-expect-error - import json
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
@@ -314,6 +315,26 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       })
       expect(typeof res).toBe('string')
       expect(res).toEqual(expectedString)
+    })
+  })
+
+  describe('getNotificationEmailFromForm', () => {
+    test('should throw if no email', async () => {
+      // @ts-expect-error - mocked partial record
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce({})
+      await expect(() =>
+        getNotificationEmailFromForm('form-id')
+      ).rejects.toThrow('Missing notification email for form id form-id')
+    })
+
+    test('should get email', async () => {
+      jest
+        .mocked(getFormMetadataById)
+        // @ts-expect-error - mocked partial record
+        .mockResolvedValueOnce({ notificationEmail: 'example@test.com' })
+      expect(await getNotificationEmailFromForm('form-id')).toBe(
+        'example@test.com'
+      )
     })
   })
 })
