@@ -282,10 +282,7 @@ export async function generateSubmissionsFile(
 
   const caches = createCaches()
   const { components, headers, rows } = caches
-  const context = {
-    caches,
-    options
-  }
+  const context = { caches, options }
 
   /** @type {string} */
   let title = ''
