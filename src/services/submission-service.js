@@ -284,9 +284,9 @@ export async function generateSubmissionsFile(
   const { components, headers, rows } = caches
   const context = { caches, options }
 
-  /** @type {string} */
   let title = ''
   let formNameFromId = ''
+
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     title = record.meta.formName
     formNameFromId = await lookupFormNameById(context, record.data.main.formId)
