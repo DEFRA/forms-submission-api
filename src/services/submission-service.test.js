@@ -107,7 +107,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
-        emailAddress: 'name@example.gov.uk',
+        emailAddress: 'enrique.chase@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
           subject: 'File is ready to download - My form',
@@ -124,12 +124,19 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
     test('should generate feedback submission file for a single formId', async () => {
       const formId = '4670365d-5e5a-44aa-99bb-a58c16ba2e9c'
       const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
-      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
-        /** @type {FormMetadata}  */ ({
-          title: 'Feedback form',
-          notificationEmail: 'not-used@defra.gov.uk'
-        })
-      )
+      jest.mocked(getFormMetadataById)
+        .mockResolvedValueOnce(
+          /** @type {FormMetadata}  */ ({
+            title: 'Source form',
+            notificationEmail: 'shared-inbox@defra.gov.uk'
+          })
+        )
+        .mockResolvedValueOnce(
+          /** @type {FormMetadata}  */ ({
+            title: 'Feedback form',
+            notificationEmail: 'not-used@defra.gov.uk'
+          })
+        )
 
       const mockAsyncIterator = {
         [Symbol.asyncIterator]: function* () {
@@ -185,7 +192,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
-        emailAddress: 'name@example.gov.uk',
+        emailAddress: 'shared-inbox@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
           subject: 'File is ready to download - My form',
@@ -198,7 +205,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
     })
 
     test('should generate feedback submissions file for all forms', async () => {
-      const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
+      // const fileId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
       jest.mocked(getFormMetadataById).mockResolvedValueOnce(
         /** @type {FormMetadata}  */ ({
           title: 'Example form',
@@ -233,43 +240,45 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
           return Promise.resolve(version)
         })
 
-      const mockCreate = jest
-        .mocked(createSubmissionXlsxFile)
-        .mockResolvedValueOnce({ fileId })
+      // const mockCreate = jest
+      //   .mocked(createSubmissionXlsxFile)
+      //   .mockResolvedValueOnce({ fileId })
 
-      const result = await generateFeedbackSubmissionsFile()
+        // Should throw 'Not implemented' until a later PR
+        await expect(() => generateFeedbackSubmissionsFile()).rejects.toThrow('Not implemented')
+        // const result = await generateFeedbackSubmissionsFile()
 
-      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
-        expect.any(Buffer),
-        expect.any(String),
-        false
-      )
-      const buffer = mockCreate.mock.calls[0][0]
-      const workbook = xlsx.read(buffer, { type: 'buffer' })
+//       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+//         expect.any(Buffer),
+//         expect.any(String),
+//         false
+//       )
+//       const buffer = mockCreate.mock.calls[0][0]
+//       const workbook = xlsx.read(buffer, { type: 'buffer' })
 
-      expect(workbook.Sheets.Sheet1).toBeDefined()
+//       expect(workbook.Sheets.Sheet1).toBeDefined()
 
-      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+//       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
-      expect(sheetAsCsv).toBe(
-        `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
-28/11/2025,draft,Yes,Example form,Very satisfied,
-28/11/2025,draft,Yes,Example form,Very satisfied,
-01/12/2025,draft,Yes,Example form,Satisfied,
-02/12/2025,draft,Yes,Example form,Very satisfied,`
-      )
+//       expect(sheetAsCsv).toBe(
+//         `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
+// 28/11/2025,draft,Yes,Example form,Very satisfied,
+// 28/11/2025,draft,Yes,Example form,Very satisfied,
+// 01/12/2025,draft,Yes,Example form,Satisfied,
+// 02/12/2025,draft,Yes,Example form,Very satisfied,`
+//       )
 
-      expect(sendNotification).toHaveBeenCalledWith({
-        emailAddress: 'name@example.gov.uk',
-        templateId: 'dummy',
-        personalisation: {
-          subject: 'File is ready to download - My form',
-          body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
-        },
-        emailReplyToId: 'dummy'
-      })
+//       expect(sendNotification).toHaveBeenCalledWith({
+//         emailAddress: 'name@example.gov.uk',
+//         templateId: 'dummy',
+//         personalisation: {
+//           subject: 'File is ready to download - My form',
+//           body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+//         },
+//         emailReplyToId: 'dummy'
+//       })
 
-      expect(result).toEqual({ fileId })
+//       expect(result).toEqual({ fileId })
     })
   })
 
