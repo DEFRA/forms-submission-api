@@ -14,7 +14,8 @@ import {
   generateFeedbackSubmissionsFileForAll,
   generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
-  getMetadataFromForm
+  getMetadataFromForm,
+  lookupFormNameById
 } from '~/src/services/submission-service.js'
 // @ts-expect-error - import json
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
@@ -211,8 +212,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         emailAddress: 'shared-inbox@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
-          subject:
-            'File is ready to download - user feedback for Source form',
+          subject: 'File is ready to download - user feedback for Source form',
           body: "The file you requested for 'user feedback for Source form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
         },
         emailReplyToId: 'dummy'
@@ -298,6 +298,12 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
 
       expect(result).toEqual({ fileId })
     })
+
+    test('should throw if no user supplied', async () => {
+      await expect(() =>
+        generateFeedbackSubmissionsFileForAll(undefined)
+      ).rejects.toThrow('User email not found')
+    })
   })
 
   describe('coerceDataValue', () => {
@@ -351,8 +357,61 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       })
     })
   })
+
+  describe('lookupFormNameById', () => {
+    /** @type {SpreadsheetContext} */
+    let mockContext
+    /** @type {jest.Mock<any, any, any>} */
+    let mockSet
+    /** @type {jest.Mock<any, any, any>} */
+    let mockGet
+    beforeEach(() => {
+      jest.resetAllMocks()
+      mockSet = jest.fn().mockImplementation(() => true)
+      mockGet = jest.fn().mockReturnValue('form-name')
+      mockContext = {
+        caches: {
+          // @ts-expect-error - not all context mocked
+          formNames: {
+            set: mockSet,
+            get: mockGet,
+            has: () => false
+          }
+        },
+        options: {}
+      }
+    })
+
+    test('should get and add to cache', async () => {
+      jest
+        .mocked(getFormMetadataById)
+        .mockResolvedValueOnce(
+          /** @type {FormMetadata} */ ({ title: 'my title' })
+        )
+      const res = await lookupFormNameById(mockContext, 'form-id')
+      expect(res).toBe('my title')
+      expect(mockSet).toHaveBeenCalledWith('form-id', 'my title')
+    })
+
+    test('should handle not found', async () => {
+      jest.mocked(getFormMetadataById).mockImplementationOnce(() => {
+        throw new Error('Not found')
+      })
+      const res = await lookupFormNameById(mockContext, 'form-id')
+      expect(res).toBe('')
+      expect(mockSet).toHaveBeenCalledWith('form-id', '')
+    })
+
+    test('should get from cache', async () => {
+      mockContext.caches.formNames.has = () => true
+      const res = await lookupFormNameById(mockContext, 'form-id')
+      expect(res).toBe('form-name')
+      expect(mockSet).not.toHaveBeenCalled()
+    })
+  })
 })
 
 /**
  * @import { FormDefinition, FormMetadata } from '@defra/forms-model'
+ * @import { SpreadsheetContext } from '~/src/services/submission-service.js'
  */

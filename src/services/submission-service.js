@@ -110,11 +110,16 @@ export async function generateFeedbackSubmissionsFileForAll(user) {
     id: ''
   })
 
-  return generateSubmissionsFile(CSAT_FORM_ID, metadata, 'user feedback (all forms)', {
-    includeFormName: true,
-    removeColumns,
-    isFeedbackForm: true
-  })
+  return generateSubmissionsFile(
+    CSAT_FORM_ID,
+    metadata,
+    'user feedback (all forms)',
+    {
+      includeFormName: true,
+      removeColumns,
+      isFeedbackForm: true
+    }
+  )
 }
 
 /**
@@ -126,12 +131,17 @@ export async function generateFeedbackSubmissionsFileForForm(formId) {
 
   const metadata = await getMetadataFromForm(formId)
 
-  return generateSubmissionsFile(CSAT_FORM_ID, metadata, `user feedback for ${metadata.title}`, {
-    filter: { 'data.main.formId': formId },
-    includeFormName: true,
-    removeColumns,
-    isFeedbackForm: true
-  })
+  return generateSubmissionsFile(
+    CSAT_FORM_ID,
+    metadata,
+    `user feedback for ${metadata.title}`,
+    {
+      filter: { 'data.main.formId': formId },
+      includeFormName: true,
+      removeColumns,
+      isFeedbackForm: true
+    }
+  )
 }
 
 /**
@@ -249,7 +259,7 @@ function addHeader(
  * @param {string} formId - the form id
  * @returns {Promise<string>}
  */
-async function lookupFormNameById(context, formId) {
+export async function lookupFormNameById(context, formId) {
   const { formNames } = context.caches
 
   if (formNames.has(formId)) {
@@ -332,7 +342,12 @@ export async function addFirstCellsToRow(
  * @param {string} emailTitle - title text used in email content
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId, metadata, emailTitle, options) {
+export async function generateSubmissionsFile(
+  formId,
+  metadata,
+  emailTitle,
+  options
+) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()

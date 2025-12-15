@@ -7,7 +7,12 @@ import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
-import { generateSubmissionsFile } from '~/src/services/submission-service.js'
+import {
+  generateFeedbackSubmissionsFileForAll,
+  generateFeedbackSubmissionsFileForForm,
+  generateFormSubmissionsFile,
+  generateSubmissionsFile
+} from '~/src/services/submission-service.js'
 import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
@@ -250,6 +255,9 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         message: 'Generate form submissions file success'
       })
+      expect(generateFormSubmissionsFile).toHaveBeenCalledWith(
+        '688131eeff67f889d52c66cc'
+      )
     })
 
     test('Testing POST /submissions/{formId} route fails if with invalid params', async () => {
@@ -293,6 +301,27 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         message: 'Generate feedback submissions file success'
       })
+      expect(generateFeedbackSubmissionsFileForForm).toHaveBeenCalledWith(
+        '688131eeff67f889d52c66cc'
+      )
+    })
+
+    test('Testing POST /feedback/{formId} route is successful with optional missing params', async () => {
+      jest.mocked(generateSubmissionsFile).mockResolvedValue({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Generate feedback submissions file success'
+      })
+      expect(generateFeedbackSubmissionsFileForAll).toHaveBeenCalled()
     })
 
     test('Testing POST /feedback/{formId} route fails if with invalid params', async () => {
