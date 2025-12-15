@@ -275,7 +275,7 @@ export async function lookupFormNameById(context, formId) {
 
       return meta.title
     } catch {
-      // Form not found
+      // Form not found (it's possible there are submissions from a now-deleted draft form)
       // Cache the 'not found' result to avoid having to have a failed lookup on that same form again
       formNames.set(formId, '')
       return ''
