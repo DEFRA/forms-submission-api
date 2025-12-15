@@ -220,6 +220,7 @@ export function coerceDataValue(asText, component) {
  * @param {Record<string, any>} data - the answers data
  * @param {string} key - the component key (name)
  * @param {Component} component - the form component
+ * @returns {CellValue}
  */
 export function getValue(data, key, component) {
   const asText =
