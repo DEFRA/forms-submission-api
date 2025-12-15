@@ -71,7 +71,7 @@ const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
  * Fetches the form metadata
- * @param {string} formId
+ * @param {string} formId - the form id
  */
 export async function getMetadataFromForm(formId) {
   const metadata = await getFormMetadataById(formId)
@@ -107,7 +107,7 @@ export async function generateFeedbackSubmissionsFileForAll(user) {
 
   // Construct partial form metadata
   // - pass notificationEmail as requesting user's email address
-  // - pass an empty formId to denote 'all forms', so the filter doesn't restructs result to a specific form
+  // - pass an empty formId to denote 'all forms', so the filter doesn't restrict results to a specific form
   const metadata = /** @type {FormMetadata} */ ({
     notificationEmail: userEmail,
     id: ''
