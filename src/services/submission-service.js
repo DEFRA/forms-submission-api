@@ -220,7 +220,6 @@ export function coerceDataValue(asText, component) {
  * @param {Record<string, any>} data - the answers data
  * @param {string} key - the component key (name)
  * @param {Component} component - the form component
- * @returns {CellValue} the spreadsheet cell value
  */
 export function getValue(data, key, component) {
   const asText =
@@ -260,7 +259,6 @@ function addHeader(
  * Fetches form name from the cache or reads it into the cache
  * @param {SpreadsheetContext} context - the context for spreadsheet generation
  * @param {string} formId - the form id
- * @returns {Promise<string>}
  */
 export async function lookupFormNameById(context, formId) {
   const { formNames } = context.caches
