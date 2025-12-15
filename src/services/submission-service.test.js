@@ -212,8 +212,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         templateId: 'dummy',
         personalisation: {
           subject:
-            'File is ready to download - user feedback for form Feedback form',
-          body: "The file you requested for 'user feedback for form Feedback form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+            'File is ready to download - user feedback for Source form',
+          body: "The file you requested for 'user feedback for Source form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/f4e249f9-6116-4bb6-8b21-8c6e17f074cd)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
         },
         emailReplyToId: 'dummy'
       })
@@ -261,8 +261,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-      // @ts-expect-error - only part of metadta is mocked here
       const result = await generateFeedbackSubmissionsFileForAll({
+        // @ts-expect-error - only part of metadta is mocked here
         preferred_username: 'my-email@address.com'
       })
 

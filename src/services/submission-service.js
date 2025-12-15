@@ -70,21 +70,6 @@ const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
- * @param {string} formNameFromId
- * @param {FormMetadata} metadata
- * @param { SpreadsheetOptions | undefined } options
- */
-export function generateTitle(formNameFromId, metadata, options) {
-  if (options?.isFeedbackForm) {
-    if (!metadata.id) {
-      return 'user feedback (all forms)'
-    }
-    return `user feedback for form ${formNameFromId}`
-  }
-  return metadata.title
-}
-
-/**
  * Fetches the form metadata
  * @param {string} formId
  */
@@ -102,7 +87,7 @@ export async function getMetadataFromForm(formId) {
  */
 export async function generateFormSubmissionsFile(formId) {
   const metadata = await getMetadataFromForm(formId)
-  return generateSubmissionsFile(formId, metadata)
+  return generateSubmissionsFile(formId, metadata, metadata.title)
 }
 
 /**
@@ -125,7 +110,7 @@ export async function generateFeedbackSubmissionsFileForAll(user) {
     id: ''
   })
 
-  return generateSubmissionsFile(CSAT_FORM_ID, metadata, {
+  return generateSubmissionsFile(CSAT_FORM_ID, metadata, 'user feedback (all forms)', {
     includeFormName: true,
     removeColumns,
     isFeedbackForm: true
@@ -141,7 +126,7 @@ export async function generateFeedbackSubmissionsFileForForm(formId) {
 
   const metadata = await getMetadataFromForm(formId)
 
-  return generateSubmissionsFile(CSAT_FORM_ID, metadata, {
+  return generateSubmissionsFile(CSAT_FORM_ID, metadata, `user feedback for ${metadata.title}`, {
     filter: { 'data.main.formId': formId },
     includeFormName: true,
     removeColumns,
@@ -344,9 +329,10 @@ export async function addFirstCellsToRow(
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  * @param {FormMetadata} metadata - metadata of the form
+ * @param {string} emailTitle - title text used in email content
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
-export async function generateSubmissionsFile(formId, metadata, options) {
+export async function generateSubmissionsFile(formId, metadata, emailTitle, options) {
   logger.info(`Generating and sending submissions file for form ${formId}`)
 
   const caches = createCaches()
@@ -354,9 +340,8 @@ export async function generateSubmissionsFile(formId, metadata, options) {
   const context = { caches, options }
 
   /** @type {string} */
-  let formNameFromId = ''
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
-    formNameFromId = await lookupFormNameById(
+    const formNameFromId = await lookupFormNameById(
       context,
       record.data.main.formId ?? record.meta.formId
     )
@@ -429,10 +414,8 @@ export async function generateSubmissionsFile(formId, metadata, options) {
   // Save the Excel workbook to S3
   const fileId = await saveFileToS3(workbook, formId, notificationEmail)
 
-  const title = generateTitle(formNameFromId, metadata, options)
-
   // Finally send the submission file download email
-  await sendSubmissionsFileEmail(formId, title, notificationEmail, fileId)
+  await sendSubmissionsFileEmail(formId, emailTitle, notificationEmail, fileId)
 
   logger.info(`Generated and sent submissions file for form ${formId}`)
 
