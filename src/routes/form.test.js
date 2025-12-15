@@ -347,6 +347,19 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
+
+    test('Testing POST /feedback/{formId} route fails if user missing and optional missing param', async () => {
+      const badAuth = structuredClone(auth)
+      // @ts-expect-error - forceably construct bad user object
+      badAuth.credentials.user = undefined
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback',
+        auth: badAuth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.INTERNAL_SERVER_ERROR)
+    })
   })
 })
 

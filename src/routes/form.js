@@ -160,6 +160,9 @@ export default [
       if (formId) {
         await generateFeedbackSubmissionsFileForForm(formId)
       } else {
+        if (!auth.credentials.user) {
+          throw new Error('Missing user credential')
+        }
         await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
       }
 
@@ -172,7 +175,7 @@ export default [
       validate: {
         params: Joi.object()
           .keys({
-            formId: idSchema.optional().allow(null)
+            formId: idSchema.optional()
           })
           .label('generateFeedbackSubmissionsFileParams')
       },

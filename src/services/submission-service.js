@@ -34,7 +34,7 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 /**
  * @typedef {object} Caches
  * @property {Map<number | undefined, FormModel>} models - cache for models
- * @property {Map<string, string | number | Date | undefined >[]} rows - cache for rows
+ * @property {Map<string, CellValue >[]} rows - cache for rows
  * @property {Map<string, Component>} components - cache for components
  * @property {Map<string, string>} headers - cache for headers
  * @property {Map<string, string>} formNames - cache for form names
@@ -92,12 +92,12 @@ export async function generateFormSubmissionsFile(formId) {
 
 /**
  * Generate a feedback submission file for one or all forms
- * @param {UserCredentials | undefined} user - the actioning user
+ * @param {UserCredentials} user - the actioning user
  */
 export async function generateFeedbackSubmissionsFileForAll(user) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
   const userEmail =
-    user && 'preferred_username' in user
+    'preferred_username' in user
       ? /** @type {string} */ (user.preferred_username)
       : undefined
 
@@ -105,6 +105,9 @@ export async function generateFeedbackSubmissionsFileForAll(user) {
     throw new Error('User email not found')
   }
 
+  // Construct partial form metadata
+  // - pass notificationEmail as requesting user's email address
+  // - pass an empty formId to denote 'all forms', so the filter doesn't restructs result to a specific form
   const metadata = /** @type {FormMetadata} */ ({
     notificationEmail: userEmail,
     id: ''
@@ -272,9 +275,11 @@ export async function lookupFormNameById(context, formId) {
 
       return meta.title
     } catch {
+      // Form not found
+      // Cache the 'not found' result to avoid having to have a failed lookup on that same form again
       formNames.set(formId, '')
+      return ''
     }
-    return ''
   }
 }
 
@@ -304,9 +309,9 @@ export async function getFormModel(context, formId, versionNumber, formStatus) {
 
 /**
  * @param {string} formId - the id of the form
- * @param {Map<string, string | number | Date | undefined>} row - data row
- * @param {SpreadsheetContext} context
- * @param {WithId<FormSubmissionDocument>} record
+ * @param {Map<string, CellValue>} row - data row
+ * @param {SpreadsheetContext} context - context of the spreadsheet
+ * @param {WithId<FormSubmissionDocument>} record - a submission record
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
 export async function addFirstCellsToRow(
@@ -365,7 +370,7 @@ export async function generateSubmissionsFile(
       continue
     }
 
-    /** @type {Map<string, string | number | Date | undefined >} */
+    /** @type {Map<string, CellValue >} */
     const row = new Map()
     const { formModel } = await addFirstCellsToRow(
       formId,
@@ -449,7 +454,7 @@ function createCaches() {
 
   /**
    * Array of worksheet rows
-   * @type {Map<string, string | number | Date | undefined >[]}
+   * @type {Map<string, CellValue >[]}
    */
   const rows = []
 
@@ -554,7 +559,7 @@ export function buildPreHeaders(options) {
  * Build an xlsx workbook from the headers and rows
  * @param {string} formId - the form id
  * @param {[string, string][]} headers - the file header
- * @param {Map<string, string | number | Date | undefined >[]} rows - the data rows
+ * @param {Map<string, CellValue >[]} rows - the data rows
  * @param {SpreadsheetOptions} [options]
  */
 function buildExcelFile(formId, headers, rows, options) {
@@ -565,11 +570,11 @@ function buildExcelFile(formId, headers, rows, options) {
 
   const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
 
-  /** @type {(string | number | Date | undefined)[][]} */
+  /** @type {(CellValue)[][]} */
   const wsRows = []
 
   rows.forEach((row) => {
-    /** @type {(string | number | Date | undefined)[]} */
+    /** @type {(CellValue)[]} */
     const wsRow = []
 
     if (preHeaderSet.has(SUBMISSION_REF_HEADER_TEXT)) {

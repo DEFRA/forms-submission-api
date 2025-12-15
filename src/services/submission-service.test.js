@@ -301,7 +301,8 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
 
     test('should throw if no user supplied', async () => {
       await expect(() =>
-        generateFeedbackSubmissionsFileForAll(undefined)
+        // @ts-expect-error - partial mock of user object
+        generateFeedbackSubmissionsFileForAll({ preferred_username: undefined })
       ).rejects.toThrow('User email not found')
     })
   })
