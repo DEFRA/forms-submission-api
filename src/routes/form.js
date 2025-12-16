@@ -15,7 +15,8 @@ import {
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 import {
-  generateFeedbackSubmissionsFile,
+  generateFeedbackSubmissionsFileForAll,
+  generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile
 } from '~/src/services/submission-service.js'
 
@@ -151,12 +152,19 @@ export default [
    */
   ({
     method: 'POST',
-    path: '/feedback/{formId}',
+    path: '/feedback/{formId?}',
     async handler(request) {
-      const { params } = request
+      const { auth, params } = request
       const { formId } = params
 
-      await generateFeedbackSubmissionsFile(formId)
+      if (formId) {
+        await generateFeedbackSubmissionsFileForForm(formId)
+      } else {
+        if (!auth.credentials.user) {
+          throw new Error('Missing user credential')
+        }
+        await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
+      }
 
       return {
         message: 'Generate feedback submissions file success'
@@ -167,7 +175,7 @@ export default [
       validate: {
         params: Joi.object()
           .keys({
-            formId: idSchema
+            formId: idSchema.optional()
           })
           .label('generateFeedbackSubmissionsFileParams')
       },
