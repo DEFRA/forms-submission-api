@@ -430,11 +430,13 @@ export async function generateSubmissionsFile(
     metadata
   )
 
+  const emailLower = notificationEmail.toLowerCase()
+
   // Save the Excel workbook to S3
-  const fileId = await saveFileToS3(workbook, formId, notificationEmail)
+  const fileId = await saveFileToS3(workbook, formId, emailLower)
 
   // Finally send the submission file download email
-  await sendSubmissionsFileEmail(formId, emailTitle, notificationEmail, fileId)
+  await sendSubmissionsFileEmail(formId, emailTitle, emailLower, fileId)
 
   logger.info(`Generated and sent submissions file for form ${formId}`)
 
