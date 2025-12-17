@@ -9,7 +9,6 @@ import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
-import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
   getFormDefinition,
@@ -622,8 +621,9 @@ async function saveFileToS3(workbook, formId, notificationEmail) {
     type: 'buffer'
   })
 
-  const retrievalKey = notificationEmail
-  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
+  // Force case insensitivity for the password
+  const retrievalKey = notificationEmail.toLowerCase()
+  const retrievalKeyIsCaseSensitive = false
   const hashedRetrievalKey = await argon2.hash(retrievalKey)
 
   const { fileId } = await createSubmissionXlsxFile(
