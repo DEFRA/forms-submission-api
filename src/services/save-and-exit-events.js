@@ -70,7 +70,7 @@ export function mapSaveAndExitDataToDocument(message) {
     email,
     security: {
       question: security.question,
-      answer: security.answer.toLowerCase()
+      answer: security.answer
     },
     state,
     invalidPasswordAttempts: 0,
