@@ -42,9 +42,9 @@ export async function ingestFile(uploadPayload) {
     false
   )
 
-  const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
-
-  const hashed = await argon2.hash(retrievalKey)
+  // Force new files to use a case insensitive password match
+  const retrievalKeyIsCaseSensitive = false
+  const hashed = await argon2.hash(retrievalKey.toLowerCase())
 
   /** @type {FormFileUploadStatus} */
   const dataToSave = {
@@ -169,12 +169,11 @@ export async function persistFiles(files, persistedRetrievalKey) {
 
       // Once we know the files have copied successfully, we can update the database
       const persistedRetrievalKeyHashed = await argon2.hash(
-        persistedRetrievalKey
+        persistedRetrievalKey.toLowerCase()
       )
 
-      const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(
-        persistedRetrievalKey
-      )
+      // Force new persists to be password case-insensitive
+      const retrievalKeyIsCaseSensitive = false
       await repository.updateRetrievalKeys(
         files.map(({ fileId }) => fileId),
         persistedRetrievalKeyHashed,

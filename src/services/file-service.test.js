@@ -444,7 +444,7 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
-    it('should correctly handle case sensitivity for the retrieval key', async () => {
+    it('should correctly handle case insensitivity for the retrieval key', async () => {
       /** @type {FormFileUploadStatus} */
       const mockData = {
         ...successfulFile,
@@ -467,11 +467,11 @@ describe('Files service', () => {
         caseSensitiveKey
       )
 
-      expect(hash).toHaveBeenCalledWith(caseSensitiveKey)
+      expect(hash).toHaveBeenCalledWith(caseSensitiveKey.toLowerCase())
       expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
         [mockData.fileId],
         'caseSensitiveHash',
-        true,
+        false,
         expect.any(Object)
       )
     })
@@ -500,11 +500,11 @@ describe('Files service', () => {
         newRetrievalKey
       )
 
-      expect(hash).toHaveBeenCalledWith(newRetrievalKey)
+      expect(hash).toHaveBeenCalledWith(newRetrievalKey.toLowerCase())
       expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
         [dummyData.fileId],
         'newKeyHash',
-        true,
+        false,
         expect.any(Object) // the session which we aren't testing
       )
 
@@ -809,7 +809,7 @@ describe('Files service', () => {
       expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
         [mockData.fileId],
         'hashedKey',
-        true,
+        false,
         expect.any(Object)
       )
     })

@@ -42,7 +42,9 @@ export async function mapSaveAndExitMessageToData(message) {
   })
 
   if (value.data.security.answer) {
-    value.data.security.answer = await argon2.hash(value.data.security.answer)
+    value.data.security.answer = await argon2.hash(
+      value.data.security.answer.toLowerCase()
+    )
   }
 
   return {
@@ -66,7 +68,10 @@ export function mapSaveAndExitDataToDocument(message) {
       baseUrl: form.baseUrl
     },
     email,
-    security,
+    security: {
+      question: security.question,
+      answer: security.answer.toLowerCase()
+    },
     state,
     invalidPasswordAttempts: 0,
     createdAt: new Date()
