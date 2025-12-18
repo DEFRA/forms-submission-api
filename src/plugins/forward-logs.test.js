@@ -117,6 +117,7 @@ describe('forwardLogs', () => {
     )
 
     expect(logger.error).not.toHaveBeenCalled()
+    expect(logger.info).not.toHaveBeenCalled()
   })
 })
 
