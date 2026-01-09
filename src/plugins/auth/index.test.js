@@ -1,7 +1,7 @@
 import { validateAppAuth, validateAuth } from '~/src/plugins/auth/index.js'
 
 describe('Auth plugin', () => {
-  describe('Validate azure  JWT', () => {
+  describe('Validate azure JWT', () => {
     const buildArtifactStub = function (partialpayload = {}) {
       return {
         token: 'eyJrjwt...',
