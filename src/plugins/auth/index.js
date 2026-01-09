@@ -95,7 +95,7 @@ export function validateAppAuth(artifacts) {
   const app = artifacts.decoded.payload
 
   if (app?.client_id !== cognitoClientId) {
-    logger.error('Authentication error: Invalid audience')
+    logger.error('Authentication error: Invalid client ID')
 
     return {
       isValid: false
