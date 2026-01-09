@@ -474,5 +474,40 @@
     },
     "recordCreatedAt": "2025-11-13T17:18:03.708Z",
     "expireAt": "2026-08-13T16:18:03.708Z"
+  },
+  {
+    "_id": "68d47513dd08e01177b2a9c4",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2025-11-13T17:17:29.426Z",
+      "referenceNumber": "365-DFR-C67",
+      "formName": "My form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "my-form",
+      "status": "live",
+      "isPreview": false,
+      "notificationEmail": "name@example.gov.uk"
+    },
+    "data": {
+      "main": {
+        "dGCWRr": "England",
+        "mpDPsu": {
+          "day": 13,
+          "month": 2,
+          "year": 1980
+        },
+        "qHKjBt": "Chocolate"
+      },
+      "repeaters": {},
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "88271987-b9b5-4927-8542-20875c24ef1f",
+        "repeaters": {}
+      }
+    },
+    "recordCreatedAt": "2025-11-13T17:18:03.708Z",
+    "expireAt": "2026-08-13T16:18:03.708Z"
   }
 ]

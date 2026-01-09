@@ -7,7 +7,12 @@ import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
-import { generateSubmissionsFile } from '~/src/services/submission-service.js'
+import {
+  generateFeedbackSubmissionsFileForAll,
+  generateFeedbackSubmissionsFileForForm,
+  generateFormSubmissionsFile,
+  generateSubmissionsFile
+} from '~/src/services/submission-service.js'
 import { auth } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
@@ -16,6 +21,13 @@ jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
 jest.mock('~/src/services/submission-service.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 describe('Forms route', () => {
   /** @type {Server} */
@@ -227,7 +239,7 @@ describe('Forms route', () => {
     })
   })
 
-  describe('Generate submissions file', () => {
+  describe('Generate form submissions file', () => {
     test('Testing POST /submissions/{formId} route is successful with valid params', async () => {
       jest.mocked(generateSubmissionsFile).mockResolvedValue({
         fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
@@ -241,8 +253,11 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Generate file success'
+        message: 'Generate form submissions file success'
       })
+      expect(generateFormSubmissionsFile).toHaveBeenCalledWith(
+        '688131eeff67f889d52c66cc'
+      )
     })
 
     test('Testing POST /submissions/{formId} route fails if with invalid params', async () => {
@@ -267,6 +282,83 @@ describe('Forms route', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+  })
+
+  describe('Generate feedback submissions file', () => {
+    test('Testing POST /feedback/{formId} route is successful with valid params', async () => {
+      jest.mocked(generateSubmissionsFile).mockResolvedValue({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/688131eeff67f889d52c66cc',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Generate feedback submissions file success'
+      })
+      expect(generateFeedbackSubmissionsFileForForm).toHaveBeenCalledWith(
+        '688131eeff67f889d52c66cc'
+      )
+    })
+
+    test('Testing POST /feedback/{formId} route is successful with optional missing params', async () => {
+      jest.mocked(generateSubmissionsFile).mockResolvedValue({
+        fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
+      })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Generate feedback submissions file success'
+      })
+      expect(generateFeedbackSubmissionsFileForAll).toHaveBeenCalled()
+    })
+
+    test('Testing POST /feedback/{formId} route fails if with invalid params', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/invalid-form-id',
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message:
+          '"formId" must only contain hexadecimal characters. "formId" length must be 24 characters long'
+      })
+    })
+
+    test('Testing POST /feedback/{formId} route fails if without auth', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback/688131eeff67f889d52c66cc'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+
+    test('Testing POST /feedback/{formId} route fails if user missing and optional missing param', async () => {
+      const badAuth = structuredClone(auth)
+      // @ts-expect-error - forceably construct bad user object
+      badAuth.credentials.user = undefined
+      const response = await server.inject({
+        method: 'POST',
+        url: '/feedback',
+        auth: badAuth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.INTERNAL_SERVER_ERROR)
     })
   })
 })

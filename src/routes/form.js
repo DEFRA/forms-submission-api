@@ -3,7 +3,8 @@ import Joi from 'joi'
 
 import {
   formSubmitResponseSchema,
-  generateSubmissionsFileResponseSchema,
+  generateFeedbackSubmissionsFileResponseSchema,
+  generateFormSubmissionsFileResponseSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
   validateSavedLinkResponseSchema
@@ -13,7 +14,11 @@ import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
-import { generateSubmissionsFile } from '~/src/services/submission-service.js'
+import {
+  generateFeedbackSubmissionsFileForAll,
+  generateFeedbackSubmissionsFileForForm,
+  generateFormSubmissionsFile
+} from '~/src/services/submission-service.js'
 
 export default [
   /**
@@ -110,7 +115,7 @@ export default [
   }),
 
   /**
-   * @satisfies {ServerRoute<GenerateSubmissionFile>}
+   * @satisfies {ServerRoute<GenerateFormSubmissionsFile>}
    */
   ({
     method: 'POST',
@@ -119,10 +124,10 @@ export default [
       const { params } = request
       const { formId } = params
 
-      await generateSubmissionsFile(formId)
+      await generateFormSubmissionsFile(formId)
 
       return {
-        message: 'Generate file success'
+        message: 'Generate form submissions file success'
       }
     },
     options: {
@@ -132,11 +137,51 @@ export default [
           .keys({
             formId: idSchema
           })
-          .label('generateSubmissionFileParams')
+          .label('generateFormSubmissionsFileParams')
       },
       response: {
         status: {
-          200: generateSubmissionsFileResponseSchema
+          200: generateFormSubmissionsFileResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
+   * @satisfies {ServerRoute<GenerateFeedbackSubmissionsFile>}
+   */
+  ({
+    method: 'POST',
+    path: '/feedback/{formId?}',
+    async handler(request) {
+      const { auth, params } = request
+      const { formId } = params
+
+      if (formId) {
+        await generateFeedbackSubmissionsFileForForm(formId)
+      } else {
+        if (!auth.credentials.user) {
+          throw new Error('Missing user credential')
+        }
+        await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
+      }
+
+      return {
+        message: 'Generate feedback submissions file success'
+      }
+    },
+    options: {
+      tags: ['api'],
+      validate: {
+        params: Joi.object()
+          .keys({
+            formId: idSchema.optional()
+          })
+          .label('generateFeedbackSubmissionsFileParams')
+      },
+      response: {
+        status: {
+          200: generateFeedbackSubmissionsFileResponseSchema
         }
       }
     }
@@ -146,5 +191,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GenerateSubmissionFile, GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
  */

@@ -8,19 +8,21 @@ const logger = createLogger()
 /**
  * Gets submission records based on formId
  * @param {string} formId - the form id
+ * @param {object} [filter] - restrict records returned (say by submitted form id)
  * @returns { FindCursor<WithId<FormSubmissionDocument>> }
  */
-export function getSubmissionRecords(formId) {
+export function getSubmissionRecords(formId, filter) {
   logger.info('Reading submission records')
 
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
 
+  const findQuery = filter
+    ? { 'meta.formId': formId, ...filter }
+    : { 'meta.formId': formId }
   try {
-    const result = coll
-      .find({ 'meta.formId': formId })
-      .sort('meta.timestamp', 'desc')
+    const result = coll.find(findQuery).sort('meta.timestamp', 'desc')
 
     logger.info('Read submission records')
 

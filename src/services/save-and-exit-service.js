@@ -48,7 +48,10 @@ export async function validateSavedLinkCredentials(
 
   let validPassword = false
   try {
-    validPassword = await argon2.verify(record.security.answer, securityAnswer)
+    validPassword = await argon2.verify(
+      record.security.answer,
+      securityAnswer.toLowerCase()
+    )
   } catch (err) {
     logger.error(
       err,

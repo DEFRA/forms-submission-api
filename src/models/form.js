@@ -34,6 +34,9 @@ export const validateSavedLinkResponseSchema = Joi.object({
   validPassword: Joi.boolean().required()
 }).label('validateSavedLinkResponse')
 
-export const generateSubmissionsFileResponseSchema = Joi.object({
+export const generateFormSubmissionsFileResponseSchema = Joi.object({
   message: Joi.string().required()
-}).label('generateSubmissionsFileResponse')
+}).label('generateFormSubmissionsFileResponse')
+export const generateFeedbackSubmissionsFileResponseSchema = Joi.object({
+  message: Joi.string().required()
+}).label('generateFeedbackSubmissionsFileResponse')

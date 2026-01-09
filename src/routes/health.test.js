@@ -3,6 +3,13 @@ import { createServer } from '~/src/api/server.js'
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  createLogger: () => ({
+    error: jest.fn(),
+    info: jest.fn(),
+    debug: jest.fn()
+  })
+}))
 
 describe('Health route', () => {
   /** @type {Server} */
