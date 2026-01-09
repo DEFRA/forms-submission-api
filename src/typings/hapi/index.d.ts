@@ -12,4 +12,22 @@ declare module '@hapi/hapi' {
      */
     groups?: string[]
   }
+
+  interface AppCredentials {
+    /**
+     * The user pool client id
+     */
+    client_id?: string
+
+    /**
+     * Access token sub
+     */
+    sub?: string
+
+    /**
+     * Access token token_use
+     */
+    token_use?: string
+  }
 }
+

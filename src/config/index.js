@@ -151,25 +151,53 @@ export const config = convict({
    * @todo We plan to replace `node-convict` with `joi` and remove all defaults.
    * These OIDC/roles are for the DEV application in the DEFRA tenant.
    */
+  /** @type {SchemaObj<string>} */
   oidcJwksUri: {
     doc: 'The URI that defines the OIDC json web key set',
     format: String,
-    default:
-      'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/discovery/v2.0/keys',
+    default: null,
+    nullable: false,
     env: 'OIDC_JWKS_URI'
   },
+  /** @type {SchemaObj<string>} */
   oidcVerifyAud: {
     doc: 'The audience used for verifying the OIDC JWT',
     format: String,
-    default: 'ec32e5c5-75fa-460a-a359-e3e5a4a8f10e',
+    default: null,
+    nullable: false,
     env: 'OIDC_VERIFY_AUD'
   },
+  /** @type {SchemaObj<string>} */
   oidcVerifyIss: {
     doc: 'The issuer used for verifying the OIDC JWT',
     format: String,
-    default:
-      'https://login.microsoftonline.com/770a2450-0227-4c62-90c7-4e38537f1102/v2.0',
+    default: null,
+    nullable: false,
     env: 'OIDC_VERIFY_ISS'
+  },
+  /** @type {SchemaObj<string>} */
+  cognitoJwksUri: {
+    doc: 'The URI that defines the cognito json web key set. This is a URL formatted as https://cognito-idp.<Region>.amazonaws.com/<userPoolId>/.well-known/jwks.json',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_JWKS_URI'
+  },
+  /** @type {SchemaObj<string>} */
+  cognitoClientId: {
+    doc: 'The app client id, used for verifying the cognito JWT.',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_CLIENT_ID'
+  },
+  /** @type {SchemaObj<string>} */
+  cognitoVerifyIss: {
+    doc: 'The issuer used for verifying the cognito JWT. This is a URL formatted as https://cognito-idp.<Region>.amazonaws.com/<userpoolID>',
+    format: String,
+    default: null,
+    nullable: false,
+    env: 'COGNITO_VERIFY_ISS'
   },
   s3Bucket: {
     doc: 'S3 bucket name',

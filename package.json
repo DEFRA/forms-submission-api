@@ -95,6 +95,7 @@
     "eslint-plugin-promise": "^6.6.0",
     "husky": "^9.1.7",
     "jest": "^30.0.5",
+    "nock": "^14.0.10",
     "jest-extended": "^7.0.0",
     "lint-staged": "^16.2.7",
     "oidc-client-ts": "^3.1.0",

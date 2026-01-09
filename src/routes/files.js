@@ -64,7 +64,7 @@ export default [
   },
 
   /**
-   * @satisfies {ServerRoute<{ Payload: FileRetrievalPayload }>}
+   * @satisfies {ServerRoute<{ Params: FileRetrievalParams }>}
    */
   ({
     method: 'GET',
@@ -113,6 +113,9 @@ export default [
     },
     options: {
       tags: ['api'],
+      auth: {
+        strategies: ['azure-oidc-token', 'cognito-access-token']
+      },
       validate: {
         payload: fileAccessPayloadSchema
       },
@@ -157,5 +160,5 @@ export default [
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
- * @import { FileAccessPayload, FileRetrievalPayload, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
+ * @import { FileAccessPayload, FileRetrievalParams, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */
