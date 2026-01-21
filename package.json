@@ -47,7 +47,7 @@
     "@hapi/boom": "^10.0.1",
     "@hapi/hapi": "^21.4.2",
     "@hapi/inert": "^7.1.0",
-    "@hapi/jwt": "^3.2.0",
+    "@hapi/jwt": "^3.2.3",
     "@hapi/vision": "^7.0.3",
     "@types/content-disposition": "^0.5.8",
     "argon2": "^0.41.1",
