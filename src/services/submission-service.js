@@ -9,6 +9,10 @@ import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import {
+  formatPaymentAmount,
+  formatPaymentDate
+} from '~/src/helpers/payment-helper.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
   getFormDefinition,
@@ -37,6 +41,7 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  * @property {Map<string, Component>} components - cache for components
  * @property {Map<string, string>} headers - cache for headers
  * @property {Map<string, string>} formNames - cache for form names
+ * @property {boolean} hasPaymentData - whether any submission has payment data
  */
 
 /**
@@ -65,6 +70,18 @@ const SUBMISSION_DATE_HEADER_TEXT = 'Submission date'
 
 const SUBMISSION_FORM_NAME = 'SubmissionFormName'
 const SUBMISSION_FORM_NAME_TEXT = 'Form name'
+
+const PAYMENT_FOR_HEADER = 'PaymentFor'
+const PAYMENT_FOR_HEADER_TEXT = 'Payment for'
+
+const PAYMENT_AMOUNT_HEADER = 'PaymentAmount'
+const PAYMENT_AMOUNT_HEADER_TEXT = 'Total amount'
+
+const PAYMENT_REFERENCE_HEADER = 'PaymentReference'
+const PAYMENT_REFERENCE_HEADER_TEXT = 'Reference'
+
+const PAYMENT_DATE_HEADER = 'PaymentDate'
+const PAYMENT_DATE_HEADER_TEXT = 'Date of payment'
 
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
@@ -414,6 +431,32 @@ export async function generateSubmissionsFile(
       }
     })
 
+    const payments = record.data.payments
+    if (payments && Object.keys(payments).length > 0) {
+      caches.hasPaymentData = true
+
+      const paymentKey = Object.keys(payments)[0]
+      const payment = payments[paymentKey]
+
+      addCellToRow(row, PAYMENT_FOR_HEADER, payment.description, options)
+      addCellToRow(
+        row,
+        PAYMENT_AMOUNT_HEADER,
+        formatPaymentAmount(payment.amount),
+        options
+      )
+      addCellToRow(row, PAYMENT_REFERENCE_HEADER, payment.reference, options)
+
+      if (payment.createdAt) {
+        addCellToRow(
+          row,
+          PAYMENT_DATE_HEADER,
+          formatPaymentDate(payment.createdAt),
+          options
+        )
+      }
+    }
+
     rows.push(row)
   }
 
@@ -422,7 +465,8 @@ export async function generateSubmissionsFile(
     formId,
     sortHeaders(components, headers),
     rows.toReversed(),
-    options
+    options,
+    caches.hasPaymentData
   )
 
   const { notificationEmail } = /** @type {{ notificationEmail: string }} */ (
@@ -474,7 +518,9 @@ function createCaches() {
    */
   const formNames = new Map()
 
-  return { components, headers, models, rows, formNames }
+  const hasPaymentData = false
+
+  return { components, headers, models, rows, formNames, hasPaymentData }
 }
 
 /**
@@ -559,14 +605,24 @@ export function buildPreHeaders(options) {
  * @param {[string, string][]} headers - the file header
  * @param {Map<string, CellValue >[]} rows - the data rows
  * @param {SpreadsheetOptions} [options]
+ * @param {boolean} [hasPaymentData] - whether any submission has payment data
  */
-function buildExcelFile(formId, headers, rows, options) {
+function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
   const wsPreHeaders = buildPreHeaders(options)
   const preHeaderSet = new Set(wsPreHeaders)
 
-  const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
+  let wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
+
+  if (hasPaymentData) {
+    wsHeaders = wsHeaders.concat([
+      PAYMENT_FOR_HEADER_TEXT,
+      PAYMENT_AMOUNT_HEADER_TEXT,
+      PAYMENT_REFERENCE_HEADER_TEXT,
+      PAYMENT_DATE_HEADER_TEXT
+    ])
+  }
 
   /** @type {(CellValue)[][]} */
   const wsRows = []
@@ -590,6 +646,15 @@ function buildExcelFile(formId, headers, rows, options) {
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
     })
+
+    if (hasPaymentData) {
+      wsRow.push(
+        row.get(PAYMENT_FOR_HEADER),
+        row.get(PAYMENT_AMOUNT_HEADER),
+        row.get(PAYMENT_REFERENCE_HEADER),
+        row.get(PAYMENT_DATE_HEADER)
+      )
+    }
 
     wsRows.push(wsRow)
   })

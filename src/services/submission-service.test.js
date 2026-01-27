@@ -20,6 +20,9 @@ import {
 // @ts-expect-error - import json
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
 import { formFeedbackVersions } from '~/test/fixtures/forms-feedback-versions.js'
+import { formPaymentVersions } from '~/test/fixtures/forms-payment-versions.js'
+// @ts-expect-error - import json
+import formSubmissionsWithPayments from '~/test/fixtures/forms-submissions-with-payments.json'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
 // @ts-expect-error - import json
@@ -130,6 +133,85 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         },
         emailReplyToId: 'dummy'
       })
+
+      expect(result).toEqual({ fileId })
+    })
+  })
+
+  describe('generateSubmissionsFile with payment data', () => {
+    test('should include payment columns when submissions have payment data', async () => {
+      const formId = '688131eeff67f889d52c66cc'
+      const fileId = 'fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5'
+      jest.mocked(getFormMetadataById).mockResolvedValue(
+        /** @type {FormMetadata}  */ ({
+          title: 'Payment form',
+          notificationEmail: 'payments@defra.gov.uk'
+        })
+      )
+
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          for (const submission of formSubmissionsWithPayments) {
+            yield submission
+          }
+        }
+      }
+
+      // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
+      jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
+
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formPaymentVersions)
+      )
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockImplementation((id, versionNumber) => {
+          if (!versionNumber) {
+            throw new Error('Expected a version number')
+          }
+
+          const version = versions[versionNumber.toString()]
+
+          return Promise.resolve(version)
+        })
+
+      jest.mocked(getFormDefinition).mockImplementation(() => {
+        const version = versions['1']
+        return Promise.resolve(version)
+      })
+
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
+
+      const result = await generateFormSubmissionsFile(formId)
+
+      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        false
+      )
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
+
+      expect(workbook.Sheets.Sheet1).toBeDefined()
+
+      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+
+      // Verify headers include payment columns
+      expect(sheetAsCsv).toContain('Payment for')
+      expect(sheetAsCsv).toContain('Total amount')
+      expect(sheetAsCsv).toContain('Reference')
+      expect(sheetAsCsv).toContain('Date of payment')
+
+      // Verify payment data is present
+      expect(sheetAsCsv).toContain('Application fee')
+      expect(sheetAsCsv).toContain('£10.50')
+      expect(sheetAsCsv).toContain('PAY-123-456')
+      expect(sheetAsCsv).toContain('Licence renewal fee')
+      expect(sheetAsCsv).toContain('£25.00')
+      expect(sheetAsCsv).toContain('PAY-789-012')
 
       expect(result).toEqual({ fileId })
     })
