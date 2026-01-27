@@ -1,21 +1,12 @@
+import { format } from 'date-fns'
+
 /**
  * Formats a payment date for display
  * @param {string} isoString - ISO date string
  * @returns {string} Formatted date string (e.g., "26 January 2026 – 17:01:29")
  */
 export function formatPaymentDate(isoString) {
-  const date = new Date(isoString)
-  const dateStr = date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  })
-  const timeStr = date.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  })
-  return `${dateStr} – ${timeStr}`
+  return format(new Date(isoString), 'd MMMM yyyy – HH:mm:ss')
 }
 
 /**
