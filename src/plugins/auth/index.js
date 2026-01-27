@@ -8,8 +8,11 @@ const oidcVerifyAud = config.get('oidcVerifyAud')
 const oidcVerifyIss = config.get('oidcVerifyIss')
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
-const cognitoClientId = config.get('cognitoClientId')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
+/**
+ * @type {string[]}
+ */
+const cognitoClientIds = JSON.parse(config.get('cognitoClientIds'))
 
 const logger = createLogger()
 
@@ -94,8 +97,8 @@ export function validateAuth(artifacts) {
 export function validateAppAuth(artifacts) {
   const app = artifacts.decoded.payload
 
-  if (app?.client_id !== cognitoClientId) {
-    logger.error('Authentication error: Invalid client ID')
+  if (!app?.client_id || !cognitoClientIds.includes(app.client_id)) {
+    logger.error(`Authentication error: Invalid client ID ${app?.client_id}`)
 
     return {
       isValid: false

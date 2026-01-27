@@ -183,13 +183,18 @@ export const config = convict({
     nullable: false,
     env: 'COGNITO_JWKS_URI'
   },
-  /** @type {SchemaObj<string>} */
-  cognitoClientId: {
-    doc: 'The app client id, used for verifying the cognito JWT.',
+  /**
+   * JSON representation of cognito client ids.
+   * Should be in the following valid JSON format as a single string:
+   * '["client-id-1", "client-id-2"]'
+   * @type {SchemaObj<string>}
+   */
+  cognitoClientIds: {
+    doc: 'The app client ids, used for verifying the cognito JWT.',
     format: String,
-    default: null,
+    default: '[]',
     nullable: false,
-    env: 'COGNITO_CLIENT_ID'
+    env: 'COGNITO_CLIENT_IDS'
   },
   /** @type {SchemaObj<string>} */
   cognitoVerifyIss: {
