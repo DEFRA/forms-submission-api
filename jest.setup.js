@@ -10,7 +10,7 @@ process.env.OIDC_JWKS_URI = 'https://oidc.com/.well_known/jwks.json'
 process.env.OIDC_VERIFY_AUD = 'dummy'
 process.env.OIDC_VERIFY_ISS = 'dummy'
 process.env.COGNITO_JWKS_URI = 'https://cognito.com/.well_known/jwks.json'
-process.env.COGNITO_CLIENT_ID = 'dummy'
+process.env.COGNITO_CLIENT_IDS = '["dummy"]'
 process.env.COGNITO_VERIFY_ISS = 'dummy'
 
 // Sample JWKS response for @hapi/jwt
