@@ -200,10 +200,10 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
       // Verify headers include payment columns
-      expect(sheetAsCsv).toContain('Payment for')
-      expect(sheetAsCsv).toContain('Total amount')
-      expect(sheetAsCsv).toContain('Reference')
-      expect(sheetAsCsv).toContain('Date of payment')
+      expect(sheetAsCsv).toContain('Payment description')
+      expect(sheetAsCsv).toContain('Payment amount')
+      expect(sheetAsCsv).toContain('Payment reference')
+      expect(sheetAsCsv).toContain('Payment date')
 
       // Verify payment data is present
       expect(sheetAsCsv).toContain('Application fee')

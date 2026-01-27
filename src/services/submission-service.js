@@ -71,17 +71,17 @@ const SUBMISSION_DATE_HEADER_TEXT = 'Submission date'
 const SUBMISSION_FORM_NAME = 'SubmissionFormName'
 const SUBMISSION_FORM_NAME_TEXT = 'Form name'
 
-const PAYMENT_FOR_HEADER = 'PaymentFor'
-const PAYMENT_FOR_HEADER_TEXT = 'Payment for'
+const PAYMENT_DESCRIPTION_HEADER = 'PaymentDescription'
+const PAYMENT_DESCRIPTION_HEADER_TEXT = 'Payment description'
 
 const PAYMENT_AMOUNT_HEADER = 'PaymentAmount'
-const PAYMENT_AMOUNT_HEADER_TEXT = 'Total amount'
+const PAYMENT_AMOUNT_HEADER_TEXT = 'Payment amount'
 
 const PAYMENT_REFERENCE_HEADER = 'PaymentReference'
-const PAYMENT_REFERENCE_HEADER_TEXT = 'Reference'
+const PAYMENT_REFERENCE_HEADER_TEXT = 'Payment reference'
 
 const PAYMENT_DATE_HEADER = 'PaymentDate'
-const PAYMENT_DATE_HEADER_TEXT = 'Date of payment'
+const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
@@ -417,7 +417,7 @@ function addPaymentCellsToRow(row, caches, record, options) {
   const paymentKey = Object.keys(payments)[0]
   const payment = payments[paymentKey]
 
-  addCellToRow(row, PAYMENT_FOR_HEADER, payment.description, options)
+  addCellToRow(row, PAYMENT_DESCRIPTION_HEADER, payment.description, options)
   addCellToRow(
     row,
     PAYMENT_AMOUNT_HEADER,
@@ -640,7 +640,7 @@ function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
 
   if (hasPaymentData) {
     wsHeaders.push(
-      PAYMENT_FOR_HEADER_TEXT,
+      PAYMENT_DESCRIPTION_HEADER_TEXT,
       PAYMENT_AMOUNT_HEADER_TEXT,
       PAYMENT_REFERENCE_HEADER_TEXT,
       PAYMENT_DATE_HEADER_TEXT
@@ -672,7 +672,7 @@ function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
 
     if (hasPaymentData) {
       wsRow.push(
-        row.get(PAYMENT_FOR_HEADER),
+        row.get(PAYMENT_DESCRIPTION_HEADER),
         row.get(PAYMENT_AMOUNT_HEADER),
         row.get(PAYMENT_REFERENCE_HEADER),
         row.get(PAYMENT_DATE_HEADER)
