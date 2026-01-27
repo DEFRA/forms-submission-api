@@ -186,7 +186,7 @@ export const config = convict({
   /**
    * JSON representation of cognito client ids.
    * Should be in the following valid JSON format as a single string:
-   * '["client-id-1", "client-id-1"]'
+   * '["client-id-1", "client-id-2"]'
    * @type {SchemaObj<string>}
    */
   cognitoClientIds: {
