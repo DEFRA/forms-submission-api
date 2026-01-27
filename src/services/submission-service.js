@@ -636,15 +636,15 @@ function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
   const wsPreHeaders = buildPreHeaders(options)
   const preHeaderSet = new Set(wsPreHeaders)
 
-  let wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
+  const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
 
   if (hasPaymentData) {
-    wsHeaders = wsHeaders.concat([
+    wsHeaders.push(
       PAYMENT_FOR_HEADER_TEXT,
       PAYMENT_AMOUNT_HEADER_TEXT,
       PAYMENT_REFERENCE_HEADER_TEXT,
       PAYMENT_DATE_HEADER_TEXT
-    ])
+    )
   }
 
   /** @type {(CellValue)[][]} */
