@@ -356,6 +356,87 @@ export async function addFirstCellsToRow(
 }
 
 /**
+ * Add form component cells to a row
+ * @param {FormModel | undefined} formModel - the form model
+ * @param {Map<string, CellValue>} row - the row to add cells to
+ * @param {SpreadsheetContext} context - the spreadsheet context
+ * @param {WithId<FormSubmissionDocument>} record - the submission record
+ * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
+ */
+function addFormComponentCellsToRow(formModel, row, context, record, options) {
+  formModel?.componentMap.forEach((component, key) => {
+    if (!component.isFormComponent) {
+      return
+    }
+
+    if (hasRepeater(component.page.pageDef)) {
+      const repeaterName = component.page.pageDef.repeat.options.name
+      const hasRepeaterData = repeaterName in record.data.repeaters
+      const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
+
+      for (let index = 0; index < items.length; index++) {
+        const value = getValue(items[index], key, component)
+        const componentKey = `${component.name} ${index + 1}`
+        const componentValue = `${component.label} ${index + 1}`
+
+        addCellToRow(row, componentKey, value, options)
+        addHeader(context, component, componentKey, componentValue)
+      }
+    } else if (component.type === ComponentType.FileUploadField) {
+      const files = record.data.files[component.name]
+      const fileLinks = Array.isArray(files)
+        ? files.map((f) => f.userDownloadLink).join(' \r\n')
+        : ''
+
+      addCellToRow(row, component.name, fileLinks, options)
+      addHeader(context, component)
+    } else {
+      const value = getValue(record.data.main, key, component)
+
+      addCellToRow(row, component.name, value, options)
+      addHeader(context, component)
+    }
+  })
+}
+
+/**
+ * Add payment cells to a row if payment data exists
+ * @param {Map<string, CellValue>} row - the row to add cells to
+ * @param {Caches} caches - the spreadsheet caches
+ * @param {WithId<FormSubmissionDocument>} record - the submission record
+ * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
+ */
+function addPaymentCellsToRow(row, caches, record, options) {
+  const payments = record.data.payments
+  if (!payments || Object.keys(payments).length === 0) {
+    return
+  }
+
+  caches.hasPaymentData = true
+
+  const paymentKey = Object.keys(payments)[0]
+  const payment = payments[paymentKey]
+
+  addCellToRow(row, PAYMENT_FOR_HEADER, payment.description, options)
+  addCellToRow(
+    row,
+    PAYMENT_AMOUNT_HEADER,
+    formatPaymentAmount(payment.amount),
+    options
+  )
+  addCellToRow(row, PAYMENT_REFERENCE_HEADER, payment.reference, options)
+
+  if (payment.createdAt) {
+    addCellToRow(
+      row,
+      PAYMENT_DATE_HEADER,
+      formatPaymentDate(payment.createdAt),
+      options
+    )
+  }
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  * @param {FormMetadata} metadata - metadata of the form
@@ -396,66 +477,8 @@ export async function generateSubmissionsFile(
     )
 
     addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
-
-    formModel?.componentMap.forEach((component, key) => {
-      if (!component.isFormComponent) {
-        return
-      }
-
-      if (hasRepeater(component.page.pageDef)) {
-        const repeaterName = component.page.pageDef.repeat.options.name
-        const hasRepeaterData = repeaterName in record.data.repeaters
-        const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
-
-        for (let index = 0; index < items.length; index++) {
-          const value = getValue(items[index], key, component)
-          const componentKey = `${component.name} ${index + 1}`
-          const componentValue = `${component.label} ${index + 1}`
-
-          addCellToRow(row, componentKey, value, options)
-          addHeader(context, component, componentKey, componentValue)
-        }
-      } else if (component.type === ComponentType.FileUploadField) {
-        const files = record.data.files[component.name]
-        const fileLinks = Array.isArray(files)
-          ? files.map((f) => f.userDownloadLink).join(' \r\n')
-          : ''
-
-        addCellToRow(row, component.name, fileLinks, options)
-        addHeader(context, component)
-      } else {
-        const value = getValue(record.data.main, key, component)
-
-        addCellToRow(row, component.name, value, options)
-        addHeader(context, component)
-      }
-    })
-
-    const payments = record.data.payments
-    if (payments && Object.keys(payments).length > 0) {
-      caches.hasPaymentData = true
-
-      const paymentKey = Object.keys(payments)[0]
-      const payment = payments[paymentKey]
-
-      addCellToRow(row, PAYMENT_FOR_HEADER, payment.description, options)
-      addCellToRow(
-        row,
-        PAYMENT_AMOUNT_HEADER,
-        formatPaymentAmount(payment.amount),
-        options
-      )
-      addCellToRow(row, PAYMENT_REFERENCE_HEADER, payment.reference, options)
-
-      if (payment.createdAt) {
-        addCellToRow(
-          row,
-          PAYMENT_DATE_HEADER,
-          formatPaymentDate(payment.createdAt),
-          options
-        )
-      }
-    }
+    addFormComponentCellsToRow(formModel, row, context, record, options)
+    addPaymentCellsToRow(row, caches, record, options)
 
     rows.push(row)
   }
