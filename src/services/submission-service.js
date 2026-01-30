@@ -617,10 +617,20 @@ function sortHeaders(components, headers) {
     const idxA = componentNames.indexOf(nameA)
     const idxB = componentNames.indexOf(nameB)
 
-    // Headers without matching components (e.g. payment) go to the end
-    if (idxA === -1 && idxB === -1) return 0 // Both not found -> keep original order
-    if (idxA === -1) return 1 // A not found, B found -> A goes after B
-    if (idxB === -1) return -1 // A found, B not found -> A goes before B
+    // Both not found -> keep original order
+    if (idxA === -1 && idxB === -1) {
+      return 0
+    }
+
+    // A not found, B found -> A goes after B
+    if (idxA === -1) {
+      return 1
+    }
+
+    // A found, B not found -> A goes before B
+    if (idxB === -1) {
+      return -1
+    }
 
     return idxA - idxB
   })
