@@ -23,14 +23,12 @@
       },
       "repeaters": {},
       "files": {},
-      "payments": {
-        "applicationFee": {
-          "paymentId": "pay_abc123def456",
-          "reference": "PAY-123-456",
-          "amount": 10.5,
-          "description": "Application fee",
-          "createdAt": "2025-11-10T17:01:29.000Z"
-        }
+      "payment": {
+        "paymentId": "pay_abc123def456",
+        "reference": "PAY-123-456",
+        "amount": 10.5,
+        "description": "Application fee",
+        "createdAt": "2025-11-10T17:01:29.000Z"
       }
     },
     "result": {
@@ -66,14 +64,12 @@
       },
       "repeaters": {},
       "files": {},
-      "payments": {
-        "applicationFee": {
-          "paymentId": "pay_xyz789ghi012",
-          "reference": "PAY-789-012",
-          "amount": 25,
-          "description": "Licence renewal fee",
-          "createdAt": "2025-12-01T14:30:00.000Z"
-        }
+      "payment": {
+        "paymentId": "pay_xyz789ghi012",
+        "reference": "PAY-789-012",
+        "amount": 25,
+        "description": "Licence renewal fee",
+        "createdAt": "2025-12-01T14:30:00.000Z"
       }
     },
     "result": {

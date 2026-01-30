@@ -41,7 +41,6 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  * @property {Map<string, Component>} components - cache for components
  * @property {Map<string, string>} headers - cache for headers
  * @property {Map<string, string>} formNames - cache for form names
- * @property {boolean} hasPaymentData - whether any submission has payment data
  */
 
 /**
@@ -400,6 +399,18 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
 }
 
 /**
+ * Adds a header if not already present
+ * @param {Map<string, string>} headers - the headers map
+ * @param {string} key - the header key
+ * @param {string} value - the header display text
+ */
+function addHeaderIfMissing(headers, key, value) {
+  if (!headers.has(key)) {
+    headers.set(key, value)
+  }
+}
+
+/**
  * Add payment cells to a row if payment data exists
  * @param {Map<string, CellValue>} row - the row to add cells to
  * @param {Caches} caches - the spreadsheet caches
@@ -407,24 +418,36 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
  * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
  */
 function addPaymentCellsToRow(row, caches, record, options) {
-  const payments = record.data.payments
-  if (!payments || Object.keys(payments).length === 0) {
+  const payment = record.data.payment
+  if (!payment) {
     return
   }
 
-  caches.hasPaymentData = true
-
-  const paymentKey = Object.keys(payments)[0]
-  const payment = payments[paymentKey]
-
   addCellToRow(row, PAYMENT_DESCRIPTION_HEADER, payment.description, options)
+  addHeaderIfMissing(
+    caches.headers,
+    PAYMENT_DESCRIPTION_HEADER,
+    PAYMENT_DESCRIPTION_HEADER_TEXT
+  )
+
   addCellToRow(
     row,
     PAYMENT_AMOUNT_HEADER,
     formatPaymentAmount(payment.amount),
     options
   )
+  addHeaderIfMissing(
+    caches.headers,
+    PAYMENT_AMOUNT_HEADER,
+    PAYMENT_AMOUNT_HEADER_TEXT
+  )
+
   addCellToRow(row, PAYMENT_REFERENCE_HEADER, payment.reference, options)
+  addHeaderIfMissing(
+    caches.headers,
+    PAYMENT_REFERENCE_HEADER,
+    PAYMENT_REFERENCE_HEADER_TEXT
+  )
 
   if (payment.createdAt) {
     addCellToRow(
@@ -432,6 +455,11 @@ function addPaymentCellsToRow(row, caches, record, options) {
       PAYMENT_DATE_HEADER,
       formatPaymentDate(payment.createdAt),
       options
+    )
+    addHeaderIfMissing(
+      caches.headers,
+      PAYMENT_DATE_HEADER,
+      PAYMENT_DATE_HEADER_TEXT
     )
   }
 }
@@ -488,8 +516,7 @@ export async function generateSubmissionsFile(
     formId,
     sortHeaders(components, headers),
     rows.toReversed(),
-    options,
-    caches.hasPaymentData
+    options
   )
 
   const { notificationEmail } = /** @type {{ notificationEmail: string }} */ (
@@ -541,9 +568,7 @@ function createCaches() {
    */
   const formNames = new Map()
 
-  const hasPaymentData = false
-
-  return { components, headers, models, rows, formNames, hasPaymentData }
+  return { components, headers, models, rows, formNames }
 }
 
 /**
@@ -592,6 +617,11 @@ function sortHeaders(components, headers) {
     const idxA = componentNames.indexOf(nameA)
     const idxB = componentNames.indexOf(nameB)
 
+    // Headers without matching components (e.g. payment) go to the end
+    if (idxA === -1 && idxB === -1) return 0 // Both not found -> keep original order
+    if (idxA === -1) return 1 // A not found, B found -> A goes after B
+    if (idxB === -1) return -1 // A found, B not found -> A goes before B
+
     return idxA - idxB
   })
 }
@@ -625,27 +655,17 @@ export function buildPreHeaders(options) {
 /**
  * Build an xlsx workbook from the headers and rows
  * @param {string} formId - the form id
- * @param {[string, string][]} headers - the file header
+ * @param {[string, string][]} headers - the file headers (including payment headers)
  * @param {Map<string, CellValue >[]} rows - the data rows
  * @param {SpreadsheetOptions} [options]
- * @param {boolean} [hasPaymentData] - whether any submission has payment data
  */
-function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
+function buildExcelFile(formId, headers, rows, options) {
   logger.info(`Building the XLSX file for form ${formId}`)
 
   const wsPreHeaders = buildPreHeaders(options)
   const preHeaderSet = new Set(wsPreHeaders)
 
   const wsHeaders = wsPreHeaders.concat(headers.map(([, label]) => label))
-
-  if (hasPaymentData) {
-    wsHeaders.push(
-      PAYMENT_DESCRIPTION_HEADER_TEXT,
-      PAYMENT_AMOUNT_HEADER_TEXT,
-      PAYMENT_REFERENCE_HEADER_TEXT,
-      PAYMENT_DATE_HEADER_TEXT
-    )
-  }
 
   /** @type {(CellValue)[][]} */
   const wsRows = []
@@ -669,15 +689,6 @@ function buildExcelFile(formId, headers, rows, options, hasPaymentData) {
     headers.forEach(([key]) => {
       wsRow.push(row.get(key))
     })
-
-    if (hasPaymentData) {
-      wsRow.push(
-        row.get(PAYMENT_DESCRIPTION_HEADER),
-        row.get(PAYMENT_AMOUNT_HEADER),
-        row.get(PAYMENT_REFERENCE_HEADER),
-        row.get(PAYMENT_DATE_HEADER)
-      )
-    }
 
     wsRows.push(wsRow)
   })
