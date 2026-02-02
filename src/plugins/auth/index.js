@@ -47,7 +47,7 @@ export const auth = {
           aud: false,
           iss: cognitoVerifyIss,
           sub: false,
-          nbf: true,
+          nbf: false,
           exp: true
         },
         validate: validateAppAuth
