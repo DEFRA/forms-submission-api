@@ -1,0 +1,84 @@
+[
+  {
+    "_id": "693ecd66e0a12b4afa8d5946",
+    "meta": {
+      "schemaVersion": 2,
+      "timestamp": "2025-12-02T11:24:38.324Z",
+      "referenceNumber": "PAY-123-456",
+      "formName": "Payment form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "payment-form",
+      "status": "live",
+      "isPreview": false,
+      "notificationEmail": "payments@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 1,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "fullName": "John Smith",
+        "email": "john.smith@example.com"
+      },
+      "repeaters": {},
+      "files": {},
+      "payment": {
+        "paymentId": "pay_abc123def456",
+        "reference": "PAY-123-456",
+        "amount": 10.5,
+        "description": "Application fee",
+        "createdAt": "2025-11-10T17:01:29.000Z"
+      }
+    },
+    "result": {
+      "files": {
+        "main": "af80464c-47d1-4c90-8b6b-114f852ff48a",
+        "repeaters": {}
+      }
+    },
+    "recordCreatedAt": "2025-12-02T11:28:38.659Z",
+    "expireAt": "2026-09-02T10:28:38.659Z"
+  },
+  {
+    "_id": "693dadf84978ae7d00ab63a7",
+    "meta": {
+      "schemaVersion": 2,
+      "timestamp": "2025-12-01T15:02:08.103Z",
+      "referenceNumber": "PAY-789-012",
+      "formName": "Payment form",
+      "formId": "688131eeff67f889d52c66cc",
+      "formSlug": "payment-form",
+      "status": "live",
+      "isPreview": false,
+      "notificationEmail": "payments@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 1,
+        "createdAt": "2025-11-28T16:42:39.656Z"
+      }
+    },
+    "data": {
+      "main": {
+        "fullName": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "repeaters": {},
+      "files": {},
+      "payment": {
+        "paymentId": "pay_xyz789ghi012",
+        "reference": "PAY-789-012",
+        "amount": 25,
+        "description": "Licence renewal fee",
+        "createdAt": "2025-12-01T14:30:00.000Z"
+      }
+    },
+    "result": {
+      "files": {
+        "main": "3a581080-9d7e-4a88-b2ce-a66e8cf75cd2",
+        "repeaters": {}
+      }
+    },
+    "recordCreatedAt": "2025-12-01T15:02:16.687Z",
+    "expireAt": "2026-09-01T14:02:16.687Z"
+  }
+]
