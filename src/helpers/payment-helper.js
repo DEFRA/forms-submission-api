@@ -6,7 +6,7 @@ import { format } from 'date-fns'
  * @returns {string} Formatted date string (e.g., "26 January 2026 – 17:01:29")
  */
 export function formatPaymentDate(isoString) {
-  return format(new Date(isoString), 'd MMMM yyyy – HH:mm:ss')
+  return format(new Date(isoString), 'd MMMM yyyy h:mmaaa')
 }
 
 /**
