@@ -3,9 +3,9 @@ import argon2 from 'argon2'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
-  deleteSaveAndExitRecord,
   getSaveAndExitRecord,
-  incrementInvalidPasswordAttempts
+  incrementInvalidPasswordAttempts,
+  markSaveAndExitRecordAsConsumed
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const logger = createLogger()
@@ -13,8 +13,8 @@ const logger = createLogger()
 const INVALID_MAGIC_LINK = 'Invalid magic link'
 
 /**
- * Validate the save and exit link (just verify link id at this stage)
- * @param {string} magicLinkId
+ * Get the save and exit link by magic link id
+ * @param {string} magicLinkId - magic link id
  */
 export async function getSavedLinkDetails(magicLinkId) {
   const record = await getSaveAndExitRecord(magicLinkId)
@@ -32,7 +32,7 @@ export async function getSavedLinkDetails(magicLinkId) {
 
 /**
  * Validate the full details of the save and exit credentials
- * @param {string} magicLinkId - key contained in magic link
+ * @param {string} magicLinkId - magic link id
  * @param {string} securityAnswer - security answer provided by user
  */
 export async function validateSavedLinkCredentials(
@@ -60,8 +60,8 @@ export async function validateSavedLinkCredentials(
   }
 
   if (validPassword) {
-    // Once a valid password has been provided, delete the save and exit record
-    await deleteSaveAndExitRecord(magicLinkId)
+    // Once a valid password has been provided, mark the save and exit record as consumed
+    await markSaveAndExitRecordAsConsumed(magicLinkId)
   } else {
     // Otherwise, increment the password attempts and return updated record
     record = await incrementInvalidPasswordAttempts(magicLinkId)
