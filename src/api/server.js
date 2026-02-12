@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import path from 'path'
 
 import hapi from '@hapi/hapi'
@@ -6,6 +7,7 @@ import { ProxyAgent } from 'proxy-agent'
 
 import { config } from '~/src/config/index.js'
 import { failAction } from '~/src/helpers/fail-action.js'
+import { createLogger } from '~/src/helpers/logging/logger.js'
 import { requestTracing } from '~/src/helpers/request-tracing.js'
 import { prepareDb } from '~/src/mongo.js'
 import { auth } from '~/src/plugins/auth/index.js'
@@ -13,10 +15,13 @@ import { forwardLogs } from '~/src/plugins/forward-logs.js'
 import { logErrors } from '~/src/plugins/log-errors.js'
 import { logRequests } from '~/src/plugins/log-requests.js'
 import { router } from '~/src/plugins/router.js'
+import { scheduler } from '~/src/plugins/scheduler.js'
 import { swagger } from '~/src/plugins/swagger.js'
 import { prepareSecureContext } from '~/src/secure-context.js'
 import { runTask as runSaveAndExitTask } from '~/src/tasks/receive-save-and-exit-messages.js'
 import { runTask as runSubmissionTask } from '~/src/tasks/receive-submission-messages.js'
+
+const logger = createLogger()
 
 const isProduction = config.get('isProduction')
 
@@ -32,6 +37,10 @@ Wreck.agents = {
  * Creates the Hapi server
  */
 export async function createServer() {
+  // An ID to distinguish from other instances of this service that may be running at the same time.
+  const runtimeId = randomUUID() // Unless there is a bug in the crypto module, this is highly likely to be a unique ID each time the server starts.
+  logger.info(`Service runtime ID: ${runtimeId}`)
+
   const server = hapi.server({
     port: config.get('port'),
     routes: {
@@ -66,6 +75,8 @@ export async function createServer() {
     }
   })
 
+  server.app.runtimeId = runtimeId
+
   await server.register([
     logRequests,
     requestTracing,
@@ -79,6 +90,7 @@ export async function createServer() {
   }
 
   await prepareDb(server.logger)
+  await server.register(scheduler)
   await server.register(swagger)
   await server.register(router)
 

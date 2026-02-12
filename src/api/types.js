@@ -27,7 +27,22 @@
 
 /**
  * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
- * @typedef {SaveAndExitRecord & { expireAt: Date }} SaveAndExitDocument
+ */
+
+/**
+ * @typedef {object} SaveAndExitNotify
+ * @property {string | null} expireLockId - the lock id for the expiry email job
+ * @property {string | null} expireLockTimestamp - the timestamp of the expiry email lock (useful for determining if a lock has been obtained, but the process died or faulted before sending the email)
+ * @property {string | null} expireEmailSentTimestamp - the timestamp when the expiry email was sent
+ */
+
+/**
+ * @typedef {Omit<SaveAndExitRecord, 'form'> & {
+ *   form: SaveAndExitRecord['form'] & { title?: string },
+ *   expireAt: Date,
+ *   version?: number | null,
+ *   notify?: SaveAndExitNotify | null
+ * }} SaveAndExitDocument
  */
 
 /**

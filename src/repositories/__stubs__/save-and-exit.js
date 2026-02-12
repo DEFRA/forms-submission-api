@@ -112,7 +112,8 @@ export function buildDbDocument() {
       id: 'form-id',
       status: 'draft',
       isPreview: false,
-      baseUrl: 'http://localhost:3009'
+      baseUrl: 'http://localhost:3009',
+      title: 'My FirstForm'
     },
     email: 'my-email@test.com',
     security: {
@@ -125,7 +126,13 @@ export function buildDbDocument() {
     },
     invalidPasswordAttempts: 0,
     createdAt: new Date(),
-    expireAt: addDays(new Date(), 28)
+    expireAt: addDays(new Date(), 28),
+    version: 1,
+    notify: {
+      expireLockId: null,
+      expireLockTimestamp: null,
+      expireEmailSentTimestamp: null
+    }
   })
 }
 

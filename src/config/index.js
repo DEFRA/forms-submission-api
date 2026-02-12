@@ -291,6 +291,42 @@ export const config = convict({
     format: String,
     default: null,
     env: 'NOTIFY_REPLY_TO_ID'
+  },
+  /** @type {SchemaObj<string>} */
+  notifyExpiryReminderTemplateId: {
+    format: String,
+    default: null,
+    env: 'NOTIFY_EXPIRY_REMINDER_TEMPLATE_ID'
+  },
+
+  /**
+   * Scheduler
+   */
+  emailUsersExpiringSoonSavedForLaterLink: {
+    enabled: {
+      doc: 'Enable periodic emailing of users with expiring saved for later links',
+      format: Boolean,
+      default: true,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_ENABLED'
+    },
+    cronSchedule: {
+      doc: 'Cron schedule for emailing users with expiring saved for later links (default: every hour from 9am to 8pm UTC)',
+      format: String,
+      default: '0 9-20 * * *',
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_CRON'
+    },
+    expiryWindowInHours: {
+      doc: 'Number of hours before expiry to send reminder email',
+      format: Number,
+      default: 36,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_EXPIRY_WINDOW_HOURS'
+    },
+    minimumHoursRemaining: {
+      doc: 'Minimum hours that must remain before expiry to send reminder email',
+      format: Number,
+      default: 2,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_MINIMUM_HOURS_REMAINING'
+    }
   }
 })
 
