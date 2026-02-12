@@ -61,7 +61,7 @@ These credentials are used to programmatically obtain a short-lived access token
 
 Exchange your client ID and secret for an access token by making a request to the Cognito token endpoint.
 
-For the Cognito token URL for each environment, refer to the CDP documentation:  
+For the Cognito token URL for each environment, refer to the CDP documentation:
 https://portal.cdp-int.defra.cloud/documentation/how-to/apis.md#what-are-the-login-urls-for-my-api-
 
 ```javascript
@@ -75,9 +75,7 @@ async function getCognitoToken(clientId, clientSecret, tokenUrl) {
   }
 
   const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    client_id: clientId,
-    client_secret: clientSecret
+    grant_type: 'client_credentials'
   })
 
   const response = await fetch(`${tokenUrl}/oauth2/token`, {
@@ -105,7 +103,8 @@ async function getFileLink(apiBaseUrl, accessToken, fileId, retrievalKey) {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Accept-Encoding': 'identity'
     },
     body: JSON.stringify({
       fileId,
@@ -130,16 +129,11 @@ import { createWriteStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 
 async function downloadFile(presignedUrl, outputPath) {
-  const response = await fetch(presignedUrl)
-
-  if (!response.ok) {
-    throw new Error(`Failed to download file: ${response.statusText}`)
-  }
-
-  const fileStream = createWriteStream(outputPath)
-  await pipeline(response.body, fileStream)
-
-  console.log(`File saved to ${outputPath}`)
+  const res = await fetch(presignedUrl, {
+    headers: { 'Accept-Encoding': 'identity' }
+  })
+  if (!res.ok) throw new Error(`Download failed: ${res.statusText}`)
+  await pipeline(res.body, createWriteStream(outputPath))
 }
 
 async function main() {
