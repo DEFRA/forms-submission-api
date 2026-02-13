@@ -33,9 +33,9 @@ The strategy validates:
 
 ## Cognito Access Token
 
-Used by external services for programmatic API access. This strategy includes retrievalKey-based authorisation.
+Used by external services for programmatic API access.
 
-> **Important:** This authentication strategy is designed for routes that require `retrievalKey` in the request payload. It validates that the `retrievalKey` is permitted for the authenticated client ID. Use with caution on routes that do not include `retrievalKey` in the payload, as authentication will fail without it.
+> **Security Notice:** Routes using Cognito authentication that accept a `retrievalKey` in the request payload **MUST** call the `validateRetrievalKey` function to ensure proper authorization. The authentication strategy alone only validates the JWT token; the validation function ensures that the client is authorized to use the provided `retrievalKey`.
 
 ### Configuration
 
@@ -70,23 +70,53 @@ This configuration means:
 
 ### Validation
 
-The Cognito authentication strategy performs the following validation:
+The Cognito authentication strategy validates:
 
 1. **JWT Signature** - Verified via JWKS from Cognito
 2. **Issuer** - Must match `COGNITO_VERIFY_ISS`
 3. **Token Type** - `token_use` must be `access`
-4. **Client ID** - Must exist in the `COGNITO_CLIENT_IDS` configuration
-5. **RetrievalKey Authorisation** - The `retrievalKey` in the request payload must be one of the permitted keys for the client ID
+4. **Client ID** - Must exist in `COGNITO_CLIENT_IDS` configuration
 
-### Authorisation Flow
+### Retrieval Key Authorization
 
-When a request is made to an endpoint using the `cognito-access-token` strategy:
+Routes that accept a `retrievalKey` in the payload **MUST** call `validateRetrievalKey()` with the client ID and retrievalKey. Authentication alone only validates the JWT; this function validates the client's authorization to use the specific `retrievalKey`.
 
-1. The JWT is validated (signature, issuer, token type)
-2. The `client_id` from the token is checked against the configured client IDs
-3. The request payload is inspected for a `retrievalKey` field
-4. The `retrievalKey` is validated against the list of permitted keys for that client ID
-5. If the `retrievalKey` is missing or not permitted for the client, authentication fails with a 401 Unauthorised response
+**Implementation:**
+
+```javascript
+import { validateRetrievalKey } from '~/src/plugins/auth/index.js'
+
+{
+  method: 'POST',
+  path: '/file/link',
+  async handler(request) {
+    const { auth, payload } = request
+    const { fileId, retrievalKey } = payload
+
+    // Validate retrievalKey authorization for Cognito clients
+    if (auth.credentials.app?.client_id) {
+      validateRetrievalKey(auth.credentials.app.client_id, retrievalKey)
+    }
+
+    // Client is authenticated and authorized
+  },
+  options: {
+    auth: {
+      strategies: ['azure-oidc-token', 'cognito-access-token']
+    },
+    validate: {
+      payload: yourPayloadSchema
+    }
+  }
+}
+```
+
+**Request Flow:**
+
+1. JWT validated → client authenticated
+2. Payload validated via schema
+3. Handler validates `retrievalKey` is permitted for client (Cognito only) → authorized
+4. Route handler continues execution
 
 ## Protected Endpoints
 
@@ -96,11 +126,11 @@ Most form submission and management endpoints use Azure OIDC authentication for 
 
 ### Endpoints Using Cognito Access Token
 
-The following endpoints use Cognito authentication for external service access:
+The following endpoints use Cognito authentication with the `validateRetrievalKey` function for external service access:
 
 - `POST /file/link` - Requires valid client ID and retrievalKey in payload
 
-Both strategies are registered, and routes can specify which strategy (or strategies) they accept via the `auth.strategies` configuration.
+Both strategies are registered, and routes can specify which strategy (or strategies) they accept via the `auth.strategies` configuration. Routes that require retrievalKey authorization must call `validateRetrievalKey()` in their handlers.
 
 ## Adding a New Client
 
@@ -124,21 +154,3 @@ To revoke access to specific retrievalKeys while keeping the client active:
 
 1. Update the array of permitted retrievalKeys for that client ID in `COGNITO_CLIENT_IDS`
 2. Redeploy the application
-
-## Testing
-
-### Unit Tests
-
-Authentication validation functions are tested in `src/plugins/auth/index.test.js`.
-
-### Integration Tests
-
-The `src/routes/files.test.js` file includes tests for the `/file/link` endpoint with Cognito authentication.
-
-### Test Configuration
-
-In test environments, configure mock credentials in `jest.setup.js`:
-
-```javascript
-process.env.COGNITO_CLIENT_IDS = '{"dummy": ["test-key-1", "test-key-2"]}'
-```

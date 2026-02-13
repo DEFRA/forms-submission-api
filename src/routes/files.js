@@ -8,6 +8,7 @@ import {
   fileRetrievalParamsSchema,
   fileRetrievalResponseSchema
 } from '~/src/models/files.js'
+import { validateRetrievalKey } from '~/src/plugins/auth/index.js'
 import {
   checkFileStatus,
   getPresignedLink,
@@ -102,8 +103,13 @@ export default [
     method: 'POST',
     path: '/file/link',
     async handler(request) {
-      const { payload } = request
+      const { payload, auth } = request
       const { fileId, retrievalKey } = payload
+
+      // Validate retrievalKey authorization for Cognito clients
+      if (auth.credentials.app?.client_id) {
+        validateRetrievalKey(auth.credentials.app.client_id, retrievalKey)
+      }
 
       const presignedLink = await getPresignedLink(fileId, retrievalKey)
 
