@@ -7,6 +7,18 @@ const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const DEFAULT_MESSAGE_TIMEOUT = 30
 
+convict.addFormat({
+  name: 'positive-number',
+  validate(value) {
+    if (typeof value !== 'number' || value <= 0) {
+      throw new TypeError('must be a positive number')
+    }
+  },
+  coerce(value) {
+    return Number(value)
+  }
+})
+
 export const config = convict({
   env: {
     doc: 'The application environment.',
@@ -317,13 +329,13 @@ export const config = convict({
     },
     expiryWindowInHours: {
       doc: 'Number of hours before expiry to send reminder email',
-      format: Number,
+      format: 'positive-number',
       default: 36,
       env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_EXPIRY_WINDOW_HOURS'
     },
     minimumHoursRemaining: {
       doc: 'Minimum hours that must remain before expiry to send reminder email',
-      format: Number,
+      format: 'positive-number',
       default: 2,
       env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_MINIMUM_HOURS_REMAINING'
     }
@@ -331,6 +343,18 @@ export const config = convict({
 })
 
 config.validate({ allowed: 'strict' })
+
+const expiryWindow = config.get(
+  'emailUsersExpiringSoonSavedForLaterLink.expiryWindowInHours'
+)
+const minimumHours = config.get(
+  'emailUsersExpiringSoonSavedForLaterLink.minimumHoursRemaining'
+)
+if (expiryWindow <= minimumHours) {
+  throw new Error(
+    `expiryWindowInHours (${expiryWindow}) must be greater than minimumHoursRemaining (${minimumHours})`
+  )
+}
 
 /**
  * @import { SchemaObj } from 'convict'
