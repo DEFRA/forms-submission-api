@@ -156,7 +156,7 @@ export function validateRetrievalKey(clientId, retrievalKey) {
     logger.error(
       `Authorization error: retrievalKey '${retrievalKey}' not permitted for client ID ${clientId}`
     )
-    
+
     throw Boom.forbidden('retrievalKey not permitted for client')
   }
 

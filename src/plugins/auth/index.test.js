@@ -149,19 +149,27 @@ describe('Auth plugin', () => {
 
   describe('Validate retrievalKey authorization', () => {
     test('Testing validateRetrievalKey with valid retrievalKey does not throw', () => {
-      expect(() => validateRetrievalKey('dummy', 'test-key-1')).not.toThrow()
+      expect(() => {
+        validateRetrievalKey('dummy', 'test-key-1')
+      }).not.toThrow()
     })
 
     test('Testing validateRetrievalKey with another valid retrievalKey does not throw', () => {
-      expect(() => validateRetrievalKey('dummy', 'test-key-2')).not.toThrow()
+      expect(() => {
+        validateRetrievalKey('dummy', 'test-key-2')
+      }).not.toThrow()
     })
 
     test('Testing validateRetrievalKey throws 403 when retrievalKey is not permitted for client', () => {
-      expect(() => validateRetrievalKey('dummy', 'invalid-key')).toThrow('retrievalKey not permitted for client')
+      expect(() => {
+        validateRetrievalKey('dummy', 'invalid-key')
+      }).toThrow('retrievalKey not permitted for client')
     })
 
     test('Testing validateRetrievalKey throws 403 when client ID does not exist', () => {
-      expect(() => validateRetrievalKey('unknown-client', 'test-key-1')).toThrow('retrievalKey not permitted for client')
+      expect(() => {
+        validateRetrievalKey('unknown-client', 'test-key-1')
+      }).toThrow('retrievalKey not permitted for client')
     })
   })
 })
