@@ -136,9 +136,13 @@ export function validateAppAuth(artifacts, request) {
       }
     }
   } else {
-    logger.info(
-      `Skipping retrievalKey validation for client ID ${app.client_id}`
+    logger.error(
+      `Authorization error: Missing or invalid retrievalKey for client ID ${app.client_id}`
     )
+
+    return {
+      isValid: false
+    }
   }
 
   logger.debug(

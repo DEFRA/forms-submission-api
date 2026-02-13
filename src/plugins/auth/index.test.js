@@ -122,7 +122,7 @@ describe('Auth plugin', () => {
 
     test('Testing validateAppAuth with a valid artifact returns isValid: true', () => {
       const artifacts = buildArtifactStub()
-      const request = buildRequestStub()
+      const request = buildRequestStub({ retrievalKey: 'test-key-1' })
       const res = validateAppAuth(artifacts, request)
 
       expect(res).toEqual({
@@ -172,14 +172,33 @@ describe('Auth plugin', () => {
       })
     })
 
-    test('Testing validateAppAuth without retrievalKey in payload returns isValid: true', () => {
+    test('Testing validateAppAuth without retrievalKey in payload returns isValid: false', () => {
       const artifacts = buildArtifactStub()
       const request = buildRequestStub({ someOtherField: 'value' })
       const res = validateAppAuth(artifacts, request)
 
       expect(res).toEqual({
-        isValid: true,
-        credentials: { app: artifacts.decoded.payload }
+        isValid: false
+      })
+    })
+
+    test('Testing validateAppAuth with missing payload returns isValid: false', () => {
+      const artifacts = buildArtifactStub()
+      const request = buildRequestStub()
+      const res = validateAppAuth(artifacts, request)
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
+    test('Testing validateAppAuth with non-string retrievalKey returns isValid: false', () => {
+      const artifacts = buildArtifactStub()
+      const request = buildRequestStub({ retrievalKey: 12345 })
+      const res = validateAppAuth(artifacts, request)
+
+      expect(res).toEqual({
+        isValid: false
       })
     })
   })
