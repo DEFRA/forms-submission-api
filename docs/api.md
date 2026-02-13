@@ -25,6 +25,9 @@ Retrieves a pre-signed URL for accessing an uploaded file.
 }
 ```
 
+- `fileId`: The unique identifier for the file
+- `retrievalKey`: A key used to authorise access to the file (must be one of the retrievalKeys permitted for your client ID)
+
 **Response:**
 
 ```json
@@ -51,9 +54,12 @@ To request credentials:
 
 1. Contact the Defra Forms team.
 2. Provide details of your service and the intended use case.
-3. The team will issue you a client ID and client secret.
+3. Specify which **retrievalKeys** your service will need to access.
+4. The team will issue you a client ID and client secret configured for those retrievalKeys.
 
 These credentials are used to programmatically obtain a short-lived access token from AWS Cognito.
+
+> **Note:** Each client ID is configured with a specific list of permitted retrievalKeys. Requests with retrievalKeys not associated with your client ID will be rejected.
 
 ## Authentication
 
