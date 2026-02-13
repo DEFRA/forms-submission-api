@@ -115,9 +115,9 @@ describe('Auth plugin', () => {
     }
 
     const buildRequestStub = function (payload = {}) {
-      return {
+      return /** @type {import('@hapi/hapi').Request} */ ({
         payload
-      }
+      })
     }
 
     test('Testing validateAppAuth with a valid artifact returns isValid: true', () => {
