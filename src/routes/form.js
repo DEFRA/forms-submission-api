@@ -7,11 +7,13 @@ import {
   generateFormSubmissionsFileResponseSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
+  resetSaveAndExitLinkResponseSchema,
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
 import {
   getSavedLinkDetails,
+  resetSaveAndExitLink,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 import {
@@ -115,6 +117,36 @@ export default [
   }),
 
   /**
+   * @satisfies {ServerRoute<ResetSaveAndExit>}
+   */
+  ({
+    method: 'POST',
+    path: '/save-and-exit/reset/{link}',
+    handler(request) {
+      const { params } = request
+      const { link } = params
+
+      return resetSaveAndExitLink(link)
+    },
+    options: {
+      tags: ['api'],
+      validate: {
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('resetSaveAndExitLinkParams')
+          .required()
+      },
+      response: {
+        status: {
+          200: resetSaveAndExitLinkResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
    * @satisfies {ServerRoute<GenerateFormSubmissionsFile>}
    */
   ({
@@ -191,5 +223,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSavedLinkParams, ResetSaveAndExit, ValidateSaveAndExit } from '~/src/api/types.js'
  */

@@ -5,6 +5,7 @@ import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import {
   getSavedLinkDetails,
+  resetSaveAndExitLink,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 import {
@@ -235,6 +236,54 @@ describe('Forms route', () => {
           id: '12345'
         },
         invalidPasswordAttempts: 0
+      })
+    })
+  })
+
+  describe('Reset save and exit', () => {
+    test('Testing POST /save-and-exit/reset route returns reset details', async () => {
+      jest.mocked(resetSaveAndExitLink).mockResolvedValueOnce({
+        recordFound: true,
+        recordUpdated: true
+      })
+      const response = await server.inject({
+        method: 'POST',
+        url: `/save-and-exit/reset/${GUID_EMPTY}`,
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        recordFound: true,
+        recordUpdated: true
+      })
+    })
+
+    test('Testing POST /save-and-exit/reset route fails if with invalid params', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: `/save-and-exit/reset/00-11-22`,
+        auth
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        error: 'Bad Request',
+        message: '"link" must be a valid GUID'
+      })
+    })
+
+    test('Testing POST /save-and-exit/reset route fails without authentication', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: `/save-and-exit/reset/${GUID_EMPTY}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+      expect(response.result).toMatchObject({
+        error: 'Unauthorized',
+        message: 'Missing authentication',
+        statusCode: 401
       })
     })
   })
