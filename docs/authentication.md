@@ -35,6 +35,8 @@ The strategy validates:
 
 Used by external services for programmatic API access. This strategy includes retrievalKey-based authorisation.
 
+> **Important:** This authentication strategy is designed for routes that require `retrievalKey` in the request payload. It validates that the `retrievalKey` is permitted for the authenticated client ID. Use with caution on routes that do not include `retrievalKey` in the payload, as authentication will fail without it.
+
 ### Configuration
 
 Configure via environment variables:
