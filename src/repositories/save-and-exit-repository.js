@@ -119,7 +119,42 @@ export async function incrementInvalidPasswordAttempts(id) {
 }
 
 /**
- * Marks a save and exit record as consumed
+ * Reset the save and exit link by setting the consumed
+ * flag to false and invalidPasswordAttempts to zero
+ * @param {string} id - magic link id
+ */
+export async function resetSaveAndExitRecord(id) {
+  logger.info(`Resetting save and exit record ${id}`)
+
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.updateOne(
+      { magicLinkId: id },
+      { $set: { consumed: false, invalidPasswordAttempts: 0 } }
+    )
+
+    logger.info(
+      `Reset save and exit record ${id} - modified ${result.modifiedCount} record`
+    )
+
+    return {
+      recordFound: result.matchedCount === 1,
+      recordUpdated: result.modifiedCount === 1
+    }
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to reset save and exit record ${id} - ${getErrorMessage(err)} `
+    )
+    throw err
+  }
+}
+
+/**
+ * Marks a save and exit record as not consumed and sets the
  * @param {string} id - magic link id
  */
 export async function markSaveAndExitRecordAsConsumed(id) {

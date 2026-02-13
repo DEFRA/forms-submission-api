@@ -4,10 +4,12 @@ import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
-  markSaveAndExitRecordAsConsumed
+  markSaveAndExitRecordAsConsumed,
+  resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   getSavedLinkDetails,
+  resetSaveAndExitLink,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
@@ -106,6 +108,20 @@ describe('save-and-exit service', () => {
       })
       const res = await getSavedLinkDetails('123456')
       expect(res).toEqual({ form: { id: '1234' }, question: 'memorable-place' })
+    })
+  })
+
+  describe('resetSaveAndExitLink', () => {
+    test('should return valid result', async () => {
+      jest.mocked(resetSaveAndExitRecord).mockResolvedValue({
+        recordFound: true,
+        recordUpdated: true
+      })
+      const res = await resetSaveAndExitLink('123456')
+      expect(res).toEqual({
+        recordFound: true,
+        recordUpdated: true
+      })
     })
   })
 })
