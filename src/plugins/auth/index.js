@@ -9,10 +9,24 @@ const oidcVerifyIss = config.get('oidcVerifyIss')
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
+
 /**
+ * Raw configuration mapping Cognito client IDs to arrays of permitted retrievalKeys.
  * @type {Record<string, string[]>}
  */
-const cognitoClientIds = JSON.parse(config.get('cognitoClientIds'))
+const cognitoClientIdsConfig = JSON.parse(config.get('cognitoClientIds'))
+
+/**
+ * Map of Cognito client IDs to their permitted retrievalKeys.
+ * Converted to Sets for better performance.
+ * @type {Record<string, Set<string>>}
+ */
+const cognitoClientIds = Object.fromEntries(
+  Object.entries(cognitoClientIdsConfig).map(([clientId, keys]) => [
+    clientId,
+    new Set(keys)
+  ])
+)
 
 const logger = createLogger()
 
@@ -126,7 +140,7 @@ export function validateAppAuth(artifacts, request) {
     const retrievalKey = /** @type {string} */ (payload.retrievalKey)
     const permittedKeys = cognitoClientIds[app.client_id]
 
-    if (!permittedKeys.includes(retrievalKey)) {
+    if (!permittedKeys.has(retrievalKey)) {
       logger.error(
         `Authorization error: retrievalKey not permitted for client ID ${app.client_id}`
       )
