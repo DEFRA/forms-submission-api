@@ -114,9 +114,16 @@ describe('Auth plugin', () => {
       }
     }
 
+    const buildRequestStub = function (payload = {}) {
+      return {
+        payload
+      }
+    }
+
     test('Testing validateAppAuth with a valid artifact returns isValid: true', () => {
       const artifacts = buildArtifactStub()
-      const res = validateAppAuth(artifacts)
+      const request = buildRequestStub()
+      const res = validateAppAuth(artifacts, request)
 
       expect(res).toEqual({
         isValid: true,
@@ -126,7 +133,8 @@ describe('Auth plugin', () => {
 
     test('Testing validateAppAuth with an invalid client_id in the artifact returns isValid: false', () => {
       const artifacts = buildArtifactStub({ client_id: 'invalid' })
-      const res = validateAppAuth(artifacts)
+      const request = buildRequestStub()
+      const res = validateAppAuth(artifacts, request)
 
       expect(res).toEqual({
         isValid: false
@@ -135,10 +143,43 @@ describe('Auth plugin', () => {
 
     test('Testing validateAppAuth with an invalid token_use in the artifact returns isValid: false', () => {
       const artifacts = buildArtifactStub({ token_use: 'not_access' })
-      const res = validateAppAuth(artifacts)
+      const request = buildRequestStub()
+      const res = validateAppAuth(artifacts, request)
 
       expect(res).toEqual({
         isValid: false
+      })
+    })
+
+    test('Testing validateAppAuth with a valid retrievalKey returns isValid: true', () => {
+      const artifacts = buildArtifactStub()
+      const request = buildRequestStub({ retrievalKey: 'test-key-1' })
+      const res = validateAppAuth(artifacts, request)
+
+      expect(res).toEqual({
+        isValid: true,
+        credentials: { app: artifacts.decoded.payload }
+      })
+    })
+
+    test('Testing validateAppAuth with an invalid retrievalKey returns isValid: false', () => {
+      const artifacts = buildArtifactStub()
+      const request = buildRequestStub({ retrievalKey: 'invalid-key' })
+      const res = validateAppAuth(artifacts, request)
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
+    test('Testing validateAppAuth without retrievalKey in payload returns isValid: true', () => {
+      const artifacts = buildArtifactStub()
+      const request = buildRequestStub({ someOtherField: 'value' })
+      const res = validateAppAuth(artifacts, request)
+
+      expect(res).toEqual({
+        isValid: true,
+        credentials: { app: artifacts.decoded.payload }
       })
     })
   })

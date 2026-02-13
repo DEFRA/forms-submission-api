@@ -10,7 +10,7 @@ const oidcVerifyIss = config.get('oidcVerifyIss')
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
 /**
- * @type {string[]}
+ * @type {Record<string, string[]>}
  */
 const cognitoClientIds = JSON.parse(config.get('cognitoClientIds'))
 
@@ -93,11 +93,12 @@ export function validateAuth(artifacts) {
 /**
  * Additional validation for cognito access token based authentiation
  * @param {Artifacts<AppCredentials>} artifacts
+ * @param {Request} request
  */
-export function validateAppAuth(artifacts) {
+export function validateAppAuth(artifacts, request) {
   const app = artifacts.decoded.payload
 
-  if (!app?.client_id || !cognitoClientIds.includes(app.client_id)) {
+  if (!app?.client_id || !(app.client_id in cognitoClientIds)) {
     logger.error(`Authentication error: Invalid client ID ${app?.client_id}`)
 
     return {
@@ -113,6 +114,33 @@ export function validateAppAuth(artifacts) {
     }
   }
 
+  // Check retrievalKey if present in payload
+  const payload = request.payload
+  const hasValidRetrievalKey =
+    payload &&
+    typeof payload === 'object' &&
+    'retrievalKey' in payload &&
+    typeof payload.retrievalKey === 'string'
+
+  if (hasValidRetrievalKey) {
+    const retrievalKey = /** @type {string} */ (payload.retrievalKey)
+    const permittedKeys = cognitoClientIds[app.client_id]
+
+    if (!permittedKeys.includes(retrievalKey)) {
+      logger.error(
+        `Authorization error: retrievalKey not permitted for client ID ${app.client_id}`
+      )
+
+      return {
+        isValid: false
+      }
+    }
+  } else {
+    logger.info(
+      `Skipping retrievalKey validation for client ID ${app.client_id}`
+    )
+  }
+
   logger.debug(
     `Access token for subject '${app.sub}' for '${app.client_id}': Passed authentication`
   )
@@ -124,6 +152,6 @@ export function validateAppAuth(artifacts) {
 }
 
 /**
- * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * @import { AppCredentials, Request, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */
