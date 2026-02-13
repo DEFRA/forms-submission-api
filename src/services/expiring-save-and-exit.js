@@ -102,73 +102,14 @@ export async function processExpiringSaveAndExitRecords(
 ) {
   logger.info('Starting to process expiring save-and-exit records')
 
-  let processedCount = 0
-  let failedCount = 0
-
-  // Local cache for form titles (scoped to this run)
-  const formTitleCache = new Map()
+  /** @type {Awaited<ReturnType<typeof findExpiringRecords>>} */
+  let expiringRecords
 
   try {
-    const expiringRecords = await findExpiringRecords(
+    expiringRecords = await findExpiringRecords(
       expiryWindowInHours,
       minimumHoursRemaining
     )
-
-    if (expiringRecords.length === 0) {
-      logger.info('No expiring save-and-exit records found')
-      return { processed: 0, failed: 0 }
-    }
-
-    logger.info(`Processing ${expiringRecords.length} expiring records`)
-
-    for (const record of expiringRecords) {
-      try {
-        const lockedRecord = await lockRecordForExpiryEmail(
-          record.magicLinkId,
-          runtimeId,
-          record.version ?? 1
-        )
-
-        if (!lockedRecord) {
-          logger.info(`Skipping ${record.magicLinkId} - failed to obtain lock`)
-          continue
-        }
-
-        if (lockedRecord.notify?.expireLockId !== runtimeId) {
-          logger.warn(
-            `Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
-          )
-          continue
-        }
-
-        const formTitle = await getFormTitle(lockedRecord, formTitleCache)
-        const emailContent = constructExpiryReminderEmailContent(
-          lockedRecord,
-          formTitle
-        )
-        await sendNotification(emailContent)
-
-        logger.info(
-          `Sent expiry reminder email for ${record.magicLinkId} to ${record.email}`
-        )
-
-        await markExpiryEmailSent(record.magicLinkId, runtimeId)
-
-        processedCount++
-      } catch (err) {
-        logger.error(
-          err,
-          `Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
-        )
-        failedCount++
-      }
-    }
-
-    logger.info(
-      `Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
-    )
-
-    return { processed: processedCount, failed: failedCount }
   } catch (err) {
     logger.error(
       err,
@@ -176,6 +117,68 @@ export async function processExpiringSaveAndExitRecords(
     )
     throw err
   }
+
+  if (expiringRecords.length === 0) {
+    logger.info('No expiring save-and-exit records found')
+    return { processed: 0, failed: 0 }
+  }
+
+  logger.info(`Processing ${expiringRecords.length} expiring records`)
+
+  let processedCount = 0
+  let failedCount = 0
+
+  // Local cache for form titles (scoped to this run)
+  const formTitleCache = new Map()
+
+  for (const record of expiringRecords) {
+    try {
+      const lockedRecord = await lockRecordForExpiryEmail(
+        record.magicLinkId,
+        runtimeId,
+        record.version ?? 1
+      )
+
+      if (!lockedRecord) {
+        logger.info(`Skipping ${record.magicLinkId} - failed to obtain lock`)
+        continue
+      }
+
+      if (lockedRecord.notify?.expireLockId !== runtimeId) {
+        logger.warn(
+          `Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
+        )
+        continue
+      }
+
+      const formTitle = await getFormTitle(lockedRecord, formTitleCache)
+      const emailContent = constructExpiryReminderEmailContent(
+        lockedRecord,
+        formTitle
+      )
+      await sendNotification(emailContent)
+
+      logger.info(
+        `Sent expiry reminder email for ${record.magicLinkId} to ${record.email}`
+      )
+
+      await markExpiryEmailSent(record.magicLinkId, runtimeId)
+
+      processedCount++
+    } catch (err) {
+      logger.error(
+        err,
+        `Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+      )
+      failedCount++
+    }
+  }
+
+  logger.info(
+    `Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
+  )
+
+  return { processed: processedCount, failed: failedCount }
 }
 
 /**
