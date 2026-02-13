@@ -6,9 +6,9 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
-  deleteSaveAndExitRecord,
   getSaveAndExitRecord,
-  incrementInvalidPasswordAttempts
+  incrementInvalidPasswordAttempts,
+  markSaveAndExitRecordAsConsumed
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -94,7 +94,8 @@ describe('save-and-exit-repository', () => {
       expect(insertedSubmissionRecordInput).toEqual({
         ...submissionRecordInput,
         expireAt: expect.any(Date),
-        invalidPasswordAttempts: 0
+        invalidPasswordAttempts: 0,
+        consumed: false
       })
       expect(session).toEqual({ session: mockSession })
     })
@@ -126,10 +127,10 @@ describe('save-and-exit-repository', () => {
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 1
       })
-      expect(mockCollection.deleteOne).not.toHaveBeenCalled()
+      expect(mockCollection.updateOne).not.toHaveBeenCalled()
     })
 
-    it('should delete record if increment max threshold reached', async () => {
+    it('should mark record as consumed if increment max threshold reached', async () => {
       jest.mocked(
         mockCollection.findOneAndUpdate.mockResolvedValueOnce({
           ...submissionRecordInput,
@@ -143,7 +144,7 @@ describe('save-and-exit-repository', () => {
         magicLinkId: '123'
       })
       expect(res.form).toBeDefined()
-      expect(mockCollection.deleteOne).toHaveBeenCalled()
+      expect(mockCollection.updateOne).toHaveBeenCalled()
     })
 
     it('should handle failures', async () => {
@@ -161,17 +162,17 @@ describe('save-and-exit-repository', () => {
     })
   })
 
-  describe('deleteSaveAndExitRecord', () => {
-    it('should delete a save and exit record', async () => {
-      jest.mocked(mockCollection.deleteOne.mockResolvedValueOnce({}))
-      await deleteSaveAndExitRecord('123')
-      const [deletedCall] = mockCollection.deleteOne.mock.calls[0]
-      expect(deletedCall).toEqual({ magicLinkId: '123' })
+  describe('markSaveAndExitRecordAsConsumed', () => {
+    it('should mark a save and exit record as consumed', async () => {
+      jest.mocked(mockCollection.updateOne.mockResolvedValueOnce({}))
+      await markSaveAndExitRecordAsConsumed('123')
+      const [updatededCall] = mockCollection.updateOne.mock.calls[0]
+      expect(updatededCall).toEqual({ magicLinkId: '123' })
     })
 
     it('should handle failures', async () => {
-      mockCollection.deleteOne.mockRejectedValueOnce(new Error('Failed'))
-      await expect(deleteSaveAndExitRecord('123')).rejects.toThrow(
+      mockCollection.updateOne.mockRejectedValueOnce(new Error('Failed'))
+      await expect(markSaveAndExitRecordAsConsumed('123')).rejects.toThrow(
         new Error('Failed')
       )
     })

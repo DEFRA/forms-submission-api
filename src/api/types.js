@@ -27,7 +27,7 @@
 
 /**
  * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
- * @typedef {SaveAndExitRecord & { expireAt: Date }} SaveAndExitDocument
+ * @typedef {SaveAndExitRecord & { expireAt: Date, consumed?: boolean }} SaveAndExitDocument
  */
 
 /**

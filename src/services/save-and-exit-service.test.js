@@ -2,9 +2,9 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 
 import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
-  deleteSaveAndExitRecord,
   getSaveAndExitRecord,
-  incrementInvalidPasswordAttempts
+  incrementInvalidPasswordAttempts,
+  markSaveAndExitRecordAsConsumed
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   getSavedLinkDetails,
@@ -44,7 +44,7 @@ describe('save-and-exit service', () => {
         'some-magic-link'
       )
       expect(res.validPassword).toBe(false)
-      expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
+      expect(markSaveAndExitRecordAsConsumed).not.toHaveBeenCalled()
     })
 
     test('should return error result if incorrect security answer (valid encryption but wrong answer)', async () => {
@@ -58,10 +58,10 @@ describe('save-and-exit service', () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(submissionDocument)
       const res = await validateSavedLinkCredentials('a2', 'some-magic-link')
       expect(res.validPassword).toBe(false)
-      expect(deleteSaveAndExitRecord).not.toHaveBeenCalled()
+      expect(markSaveAndExitRecordAsConsumed).not.toHaveBeenCalled()
     })
 
-    test('should return state (and delete record) if all valid', async () => {
+    test('should return state (and mark record as consumed) if all valid', async () => {
       const submissionDocument2 = structuredClone(submissionDocument)
       submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
@@ -73,7 +73,7 @@ describe('save-and-exit service', () => {
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
       expect(res.form.id).toBe('form-id')
-      expect(deleteSaveAndExitRecord).toHaveBeenCalled()
+      expect(markSaveAndExitRecordAsConsumed).toHaveBeenCalled()
     })
   })
 
@@ -109,8 +109,3 @@ describe('save-and-exit service', () => {
     })
   })
 })
-
-/**
- * @import { WithId } from 'mongodb'
- * @import { RunnerRecordFull } from '~/src/repositories/save-and-exit-repository.js'
- */
