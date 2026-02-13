@@ -1,3 +1,4 @@
+import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
@@ -19,7 +20,7 @@ const cognitoClientIdsConfig = JSON.parse(config.get('cognitoClientIds'))
 /**
  * Map of Cognito client IDs to their permitted retrievalKeys.
  * Converted to Sets for better performance.
- * @type {Record<string, Set<string>>}
+ * @type {Record<string, Set<string> | undefined>}
  */
 const cognitoClientIds = Object.fromEntries(
   Object.entries(cognitoClientIdsConfig).map(([clientId, keys]) => [
@@ -107,9 +108,8 @@ export function validateAuth(artifacts) {
 /**
  * Additional validation for cognito access token based authentiation
  * @param {Artifacts<AppCredentials>} artifacts
- * @param {Request} request
  */
-export function validateAppAuth(artifacts, request) {
+export function validateAppAuth(artifacts) {
   const app = artifacts.decoded.payload
 
   if (!app?.client_id || !(app.client_id in cognitoClientIds)) {
@@ -128,37 +128,6 @@ export function validateAppAuth(artifacts, request) {
     }
   }
 
-  // Check retrievalKey if present in payload
-  const payload = request.payload
-  const hasValidRetrievalKey =
-    payload &&
-    typeof payload === 'object' &&
-    'retrievalKey' in payload &&
-    typeof payload.retrievalKey === 'string'
-
-  if (hasValidRetrievalKey) {
-    const retrievalKey = /** @type {string} */ (payload.retrievalKey)
-    const permittedKeys = cognitoClientIds[app.client_id]
-
-    if (!permittedKeys.has(retrievalKey)) {
-      logger.error(
-        `Authorization error: retrievalKey not permitted for client ID ${app.client_id}`
-      )
-
-      return {
-        isValid: false
-      }
-    }
-  } else {
-    logger.error(
-      `Authorization error: Missing or invalid retrievalKey for client ID ${app.client_id}`
-    )
-
-    return {
-      isValid: false
-    }
-  }
-
   logger.debug(
     `Access token for subject '${app.sub}' for '${app.client_id}': Passed authentication`
   )
@@ -170,6 +139,33 @@ export function validateAppAuth(artifacts, request) {
 }
 
 /**
- * @import { AppCredentials, Request, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * Validates that a retrievalKey is permitted for a given Cognito client.
+ * Routes should extract the retrievalKey and clientId from their request and call this function.
+ * @example
+ * const clientId = request.auth.credentials.app.client_id
+ * const { retrievalKey } = request.payload
+ * validateRetrievalKey(clientId, retrievalKey)
+ * @param {string} clientId - The Cognito client ID
+ * @param {string} retrievalKey - The retrievalKey to validate
+ * @throws {Boom.Boom} Throws forbidden error if retrievalKey is not permitted for the client
+ */
+export function validateRetrievalKey(clientId, retrievalKey) {
+  const permittedKeys = cognitoClientIds[clientId]
+
+  if (!permittedKeys?.has(retrievalKey)) {
+    logger.error(
+      `Authorization error: retrievalKey '${retrievalKey}' not permitted for client ID ${clientId}`
+    )
+    
+    throw Boom.forbidden('retrievalKey not permitted for client')
+  }
+
+  logger.debug(
+    `retrievalKey '${retrievalKey}' validated for client ID ${clientId}`
+  )
+}
+
+/**
+ * @import { AppCredentials, Request, ResponseToolkit, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */

@@ -1,4 +1,8 @@
-import { validateAppAuth, validateAuth } from '~/src/plugins/auth/index.js'
+import {
+  validateAppAuth,
+  validateAuth,
+  validateRetrievalKey
+} from '~/src/plugins/auth/index.js'
 
 describe('Auth plugin', () => {
   describe('Validate azure JWT', () => {
@@ -114,16 +118,9 @@ describe('Auth plugin', () => {
       }
     }
 
-    const buildRequestStub = function (payload = {}) {
-      return /** @type {import('@hapi/hapi').Request} */ ({
-        payload
-      })
-    }
-
     test('Testing validateAppAuth with a valid artifact returns isValid: true', () => {
       const artifacts = buildArtifactStub()
-      const request = buildRequestStub({ retrievalKey: 'test-key-1' })
-      const res = validateAppAuth(artifacts, request)
+      const res = validateAppAuth(artifacts)
 
       expect(res).toEqual({
         isValid: true,
@@ -133,8 +130,7 @@ describe('Auth plugin', () => {
 
     test('Testing validateAppAuth with an invalid client_id in the artifact returns isValid: false', () => {
       const artifacts = buildArtifactStub({ client_id: 'invalid' })
-      const request = buildRequestStub()
-      const res = validateAppAuth(artifacts, request)
+      const res = validateAppAuth(artifacts)
 
       expect(res).toEqual({
         isValid: false
@@ -143,63 +139,29 @@ describe('Auth plugin', () => {
 
     test('Testing validateAppAuth with an invalid token_use in the artifact returns isValid: false', () => {
       const artifacts = buildArtifactStub({ token_use: 'not_access' })
-      const request = buildRequestStub()
-      const res = validateAppAuth(artifacts, request)
+      const res = validateAppAuth(artifacts)
 
       expect(res).toEqual({
         isValid: false
       })
     })
+  })
 
-    test('Testing validateAppAuth with a valid retrievalKey returns isValid: true', () => {
-      const artifacts = buildArtifactStub()
-      const request = buildRequestStub({ retrievalKey: 'test-key-1' })
-      const res = validateAppAuth(artifacts, request)
-
-      expect(res).toEqual({
-        isValid: true,
-        credentials: { app: artifacts.decoded.payload }
-      })
+  describe('Validate retrievalKey authorization', () => {
+    test('Testing validateRetrievalKey with valid retrievalKey does not throw', () => {
+      expect(() => validateRetrievalKey('dummy', 'test-key-1')).not.toThrow()
     })
 
-    test('Testing validateAppAuth with an invalid retrievalKey returns isValid: false', () => {
-      const artifacts = buildArtifactStub()
-      const request = buildRequestStub({ retrievalKey: 'invalid-key' })
-      const res = validateAppAuth(artifacts, request)
-
-      expect(res).toEqual({
-        isValid: false
-      })
+    test('Testing validateRetrievalKey with another valid retrievalKey does not throw', () => {
+      expect(() => validateRetrievalKey('dummy', 'test-key-2')).not.toThrow()
     })
 
-    test('Testing validateAppAuth without retrievalKey in payload returns isValid: false', () => {
-      const artifacts = buildArtifactStub()
-      const request = buildRequestStub({ someOtherField: 'value' })
-      const res = validateAppAuth(artifacts, request)
-
-      expect(res).toEqual({
-        isValid: false
-      })
+    test('Testing validateRetrievalKey throws 403 when retrievalKey is not permitted for client', () => {
+      expect(() => validateRetrievalKey('dummy', 'invalid-key')).toThrow('retrievalKey not permitted for client')
     })
 
-    test('Testing validateAppAuth with missing payload returns isValid: false', () => {
-      const artifacts = buildArtifactStub()
-      const request = buildRequestStub()
-      const res = validateAppAuth(artifacts, request)
-
-      expect(res).toEqual({
-        isValid: false
-      })
-    })
-
-    test('Testing validateAppAuth with non-string retrievalKey returns isValid: false', () => {
-      const artifacts = buildArtifactStub()
-      const request = buildRequestStub({ retrievalKey: 12345 })
-      const res = validateAppAuth(artifacts, request)
-
-      expect(res).toEqual({
-        isValid: false
-      })
+    test('Testing validateRetrievalKey throws 403 when client ID does not exist', () => {
+      expect(() => validateRetrievalKey('unknown-client', 'test-key-1')).toThrow('retrievalKey not permitted for client')
     })
   })
 })
