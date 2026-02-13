@@ -1,6 +1,28 @@
-import { UserCredentials } from '@hapi/hapi'
+import { UserCredentials, ServerApplicationState } from '@hapi/hapi'
 
 declare module '@hapi/hapi' {
+  interface ServerApplicationState {
+    /**
+     * Global runtime ID for this service instance
+     */
+    runtimeId?: string
+
+    /**
+     * Scheduler service instance for managing cron jobs
+     */
+    scheduler?: {
+      start(): void
+      stop(): void
+      scheduleTask(
+        name: string,
+        cronExpression: string,
+        taskFunction: Function,
+        runImmediately?: boolean
+      ): boolean
+      triggerTask(name: string): Promise<boolean>
+    } | null
+  }
+
   interface UserCredentials {
     /**
      * Object ID of the user

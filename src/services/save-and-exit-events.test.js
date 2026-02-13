@@ -214,7 +214,8 @@ describe('events', () => {
           id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
           isPreview: false,
           status: 'draft',
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          title: 'My FirstForm'
         },
         email: 'my-email@test.com',
         security: {
@@ -227,7 +228,13 @@ describe('events', () => {
         },
         invalidPasswordAttempts: 0,
         magicLinkId: expect.any(String),
-        createdAt: expect.any(Date)
+        createdAt: expect.any(Date),
+        version: 1,
+        notify: {
+          expireLockId: null,
+          expireLockTimestamp: null,
+          expireEmailSentTimestamp: null
+        }
       }
 
       const expectedMapped2 = {
@@ -235,7 +242,8 @@ describe('events', () => {
           id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
           isPreview: false,
           status: 'draft',
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          title: 'My FirstForm'
         },
         email: 'my-email@test.com',
         security: {
@@ -248,12 +256,19 @@ describe('events', () => {
         },
         invalidPasswordAttempts: 0,
         magicLinkId: expect.any(String),
-        createdAt: expect.any(Date)
+        createdAt: expect.any(Date),
+        version: 1,
+        notify: {
+          expireLockId: null,
+          expireLockTimestamp: null,
+          expireEmailSentTimestamp: null
+        }
       }
 
       const expectedMapped3 = {
         form: {
           id: '542ba433-f07a-4e02-8d2f-8a0ba719fb24',
+          title: 'My FirstForm',
           isPreview: false,
           status: 'draft',
           baseUrl: 'http://localhost:3009'
@@ -269,7 +284,13 @@ describe('events', () => {
         },
         invalidPasswordAttempts: 0,
         magicLinkId: expect.any(String),
-        createdAt: expect.any(Date)
+        createdAt: expect.any(Date),
+        version: 1,
+        notify: {
+          expireLockId: null,
+          expireLockTimestamp: null,
+          expireEmailSentTimestamp: null
+        }
       }
 
       const result = await processSaveAndExitEvents(messages)
