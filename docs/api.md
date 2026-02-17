@@ -4,8 +4,6 @@ This document describes how external services can authenticate with and call the
 
 ## Available Endpoints
 
-> **Note:** All endpoints are accessible only from whitelisted IP addresses. Contact the Defra Forms team to request access for your service.
-
 The following endpoints are available to external services using Cognito authentication:
 
 | Method | Path         | Description                                     |
@@ -26,7 +24,7 @@ Retrieves a pre-signed URL for accessing an uploaded file.
 ```
 
 - `fileId`: The unique identifier for the file
-- `retrievalKey`: A key used to authorise access to the file (must be one of the retrievalKeys permitted for your client ID)
+- `retrievalKey`: The email address associated with the form. Each form has a primary output email address where files are sent. This email address is used as the key to access those files. Your client ID must be granted access to this specific email address.
 
 **Response:**
 
@@ -40,8 +38,22 @@ The returned URL is a time-limited pre-signed URL that allows direct access to t
 
 ## API Base URL
 
+### External Teams
+
+For external teams accessing from outside the CDP platform:
+
 ```
 https://forms-submission-api.api.<environment>.cdp.defra.gov.uk
+```
+
+Replace `<environment>` with the target environment: `dev`, `test`, `ext-test`, or `prod`.
+
+### Internal Teams (on CDP)
+
+For internal teams within the CDP platform:
+
+```
+https://forms-submission-api.<environment>.cdp-int.defra.cloud
 ```
 
 Replace `<environment>` with the target environment: `dev`, `test`, `ext-test`, or `prod`.
@@ -54,12 +66,20 @@ To request credentials:
 
 1. Contact the Defra Forms team.
 2. Provide details of your service and the intended use case.
-3. Specify which **retrievalKeys** your service will need to access.
-4. The team will issue you a client ID and client secret configured for those retrievalKeys.
+3. Specify which **form email addresses** (retrievalKeys) your service will need to access.
+4. The team will issue you a client ID and client secret configured with access to those specific email addresses.
 
 These credentials are used to programmatically obtain a short-lived access token from AWS Cognito.
 
-> **Note:** Each client ID is configured with a specific list of permitted retrievalKeys. Requests with retrievalKeys not associated with your client ID will be rejected.
+### Understanding Retrieval Keys
+
+Each form in the Forms platform has a **primary output email address** where submitted files are sent. This email address serves as the `retrievalKey` for accessing those files via the API.
+
+Your client ID is configured with access to specific email addresses. When the Defra Forms team issues your credentials, they grant you access to the email addresses you specify.
+
+> **Important:** Email addresses are a property of each form and can be changed by form owners. If a form's email address is updated, you **must** notify the Defra Forms team to update your permissions. **These updates will not happen automatically**. Keep the team informed of any email address changes to maintain access to your required files.
+
+> **Note:** Requests using email addresses (retrievalKeys) not associated with your client ID will be rejected with a 403 Forbidden error.
 
 ## Authentication
 
