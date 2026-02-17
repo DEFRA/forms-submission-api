@@ -232,6 +232,7 @@ describe('save-and-exit-repository', () => {
         mockCollection.findOneAndUpdate.mock.calls[0]
       expect(query).toEqual({
         magicLinkId: 'magic-id',
+        consumed: { $ne: true },
         version: 1,
         $or: [
           { 'notify.expireEmailSentTimestamp': null },

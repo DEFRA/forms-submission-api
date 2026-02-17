@@ -175,6 +175,7 @@ export async function findExpiringRecords(
     // - Aren't currently being processed by another instance (locked within the last hour).
     const results = await saveAndExitCollection
       .find({
+        consumed: { $ne: true },
         expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
         $or: [
           { 'notify.expireEmailSentTimestamp': null },
@@ -237,6 +238,7 @@ export async function lockRecordForExpiryEmail(
     const result = await coll.findOneAndUpdate(
       {
         magicLinkId,
+        consumed: { $ne: true },
         version: currentVersion,
         $or: [
           { 'notify.expireEmailSentTimestamp': null },
