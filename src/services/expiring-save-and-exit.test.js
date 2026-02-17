@@ -88,6 +88,14 @@ describe('expiring-save-and-exit', () => {
   })
 
   describe('constructExpiryReminderEmailContent', () => {
+    beforeEach(() => {
+      jest.useFakeTimers()
+    })
+
+    afterEach(() => {
+      jest.useRealTimers()
+    })
+
     test('should construct email content correctly', () => {
       // Set expireAt to 48 hours from now
       const now = new Date()
