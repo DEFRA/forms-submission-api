@@ -341,6 +341,24 @@ describe('Files route', () => {
       })
     })
 
+    test('Testing POST /file/link route with Cognito auth returns Forbidden if retrievalKey not permitted for client', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file/link',
+        auth: appAuth,
+        payload: {
+          fileId: '1234',
+          retrievalKey: 'not-permitted-key'
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.FORBIDDEN)
+      expect(response.result).toMatchObject({
+        error: 'Forbidden',
+        message: 'retrievalKey not permitted for client'
+      })
+    })
+
     test('Testing POST /files/persist route returns bad request if file ID is missing', async () => {
       const response = await server.inject({
         method: 'POST',

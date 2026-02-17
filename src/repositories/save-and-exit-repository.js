@@ -11,7 +11,7 @@ const expiryInDays = config.get('saveAndExitExpiryInDays')
 const maxInvalidPasswordAttempts = 5
 
 /**
- * Gets a record based on id
+ * Gets a save and exit record based on magic link id
  * @param {string} id
  * @returns { Promise<WithId<SaveAndExitDocument> | null> }
  */
@@ -23,7 +23,10 @@ export async function getSaveAndExitRecord(id) {
   )
 
   try {
-    const result = await coll.findOne({ magicLinkId: id })
+    const result = await coll.findOne({
+      magicLinkId: id,
+      consumed: { $ne: true }
+    })
 
     logger.info('Read save and exit record')
 
@@ -31,7 +34,7 @@ export async function getSaveAndExitRecord(id) {
   } catch (err) {
     logger.error(
       err,
-      `Failed to read save and exit records - ${getErrorMessage(err)}`
+      `Failed to read save and exit record - ${getErrorMessage(err)}`
     )
     throw err
   }
@@ -55,7 +58,8 @@ export async function createSaveAndExitRecord(recordInput, session) {
       {
         ...recordInput,
         expireAt: addDays(new Date(), expiryInDays),
-        invalidPasswordAttempts: 0
+        invalidPasswordAttempts: 0,
+        consumed: false
       },
       { session }
     )
@@ -73,8 +77,8 @@ export async function createSaveAndExitRecord(recordInput, session) {
 }
 
 /**
- * Increment invalid password attempts on a record based on id
- * @param {string} id
+ * Increment invalid password attempts on a record based on magic link id
+ * @param {string} id - magic link id
  * @returns { Promise<WithId<SaveAndExitDocument>> }
  */
 export async function incrementInvalidPasswordAttempts(id) {
@@ -97,9 +101,9 @@ export async function incrementInvalidPasswordAttempts(id) {
 
     if (result.invalidPasswordAttempts >= maxInvalidPasswordAttempts) {
       logger.info(
-        'Reached max number of invalid password - record being deleted'
+        'Reached max number of invalid password - record being marked as consumed'
       )
-      await coll.deleteOne({ magicLinkId: id })
+      await markSaveAndExitRecordAsConsumed(id)
     }
 
     logger.info('Incremented invalid password attempts')
@@ -115,22 +119,25 @@ export async function incrementInvalidPasswordAttempts(id) {
 }
 
 /**
- * Deletes a save and exit record
- * @param {string} id - message id/magic link id
+ * Marks a save and exit record as consumed
+ * @param {string} id - magic link id
  */
-export async function deleteSaveAndExitRecord(id) {
-  logger.info(`Deleting ${id}`)
+export async function markSaveAndExitRecordAsConsumed(id) {
+  logger.info(`Marking ${id} as consumed`)
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
-    await coll.deleteOne({ magicLinkId: id })
+    await coll.updateOne({ magicLinkId: id }, { $set: { consumed: true } })
 
-    logger.info(`Deleted ${id}`)
+    logger.info(`Marked ${id} as consumed`)
   } catch (err) {
-    logger.error(err, `Failed to delete ${id} - ${getErrorMessage(err)} `)
+    logger.error(
+      err,
+      `Failed to mark as consumed ${id} - ${getErrorMessage(err)} `
+    )
     throw err
   }
 }

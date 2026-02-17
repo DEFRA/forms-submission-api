@@ -41,6 +41,7 @@
  *   form: SaveAndExitRecord['form'] & { title?: string },
  *   expireAt: Date,
  *   version?: number | null,
+ *   consumed?: boolean,
  *   notify?: SaveAndExitNotify | null
  * }} SaveAndExitDocument
  */
