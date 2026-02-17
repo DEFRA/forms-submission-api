@@ -8,7 +8,8 @@ import {
   createSaveAndExitRecord,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
-  markSaveAndExitRecordAsConsumed
+  markSaveAndExitRecordAsConsumed,
+  resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -173,6 +174,25 @@ describe('save-and-exit-repository', () => {
     it('should handle failures', async () => {
       mockCollection.updateOne.mockRejectedValueOnce(new Error('Failed'))
       await expect(markSaveAndExitRecordAsConsumed('123')).rejects.toThrow(
+        new Error('Failed')
+      )
+    })
+  })
+
+  describe('resetSaveAndExitRecord', () => {
+    it('should reset a save and exit record', async () => {
+      jest.mocked(mockCollection.updateOne.mockResolvedValueOnce({}))
+      await resetSaveAndExitRecord('123')
+      const [filter, update] = mockCollection.updateOne.mock.calls[0]
+      expect(filter).toEqual({ magicLinkId: '123' })
+      expect(update).toEqual({
+        $set: { consumed: false, invalidPasswordAttempts: 0 }
+      })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.updateOne.mockRejectedValueOnce(new Error('Failed'))
+      await expect(resetSaveAndExitRecord('123')).rejects.toThrow(
         new Error('Failed')
       )
     })

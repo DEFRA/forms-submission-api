@@ -11,6 +11,7 @@
 /**
  * @typedef {{ link: string }} GetSavedLinkParams
  * @typedef {{ Params: { link: string }, Payload: { securityAnswer: string }}} ValidateSaveAndExit
+ * @typedef {{ Params: { link: string }}} ResetSaveAndExit
  */
 
 /**

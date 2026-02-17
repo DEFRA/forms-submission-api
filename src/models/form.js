@@ -40,3 +40,8 @@ export const generateFormSubmissionsFileResponseSchema = Joi.object({
 export const generateFeedbackSubmissionsFileResponseSchema = Joi.object({
   message: Joi.string().required()
 }).label('generateFeedbackSubmissionsFileResponse')
+
+export const resetSaveAndExitLinkResponseSchema = Joi.object({
+  recordFound: Joi.boolean().required(),
+  recordUpdated: Joi.boolean().required()
+}).label('resetSaveAndExitLinkResponseSchema')
