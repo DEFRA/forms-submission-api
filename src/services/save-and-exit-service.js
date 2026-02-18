@@ -5,7 +5,8 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
-  markSaveAndExitRecordAsConsumed
+  markSaveAndExitRecordAsConsumed,
+  resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
 const logger = createLogger()
@@ -74,4 +75,13 @@ export async function validateSavedLinkCredentials(
     question: record.security.question,
     validPassword
   }
+}
+
+/**
+ * Reset the save and exit link by setting the consumed
+ * flag to false and invalidPasswordAttempts to zero
+ * @param {string} magicLinkId - magic link id
+ */
+export async function resetSaveAndExitLink(magicLinkId) {
+  return resetSaveAndExitRecord(magicLinkId)
 }
