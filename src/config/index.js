@@ -6,9 +6,10 @@ import convict from 'convict'
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const DEFAULT_MESSAGE_TIMEOUT = 30
+const POSITIVE_NUMBER_VALIDATOR = 'positive-number'
 
 convict.addFormat({
-  name: 'positive-number',
+  name: POSITIVE_NUMBER_VALIDATOR,
   validate(value) {
     if (typeof value !== 'number' || value <= 0) {
       throw new TypeError('must be a positive number')
@@ -323,13 +324,13 @@ export const config = convict({
     },
     expiryWindowInHours: {
       doc: 'Number of hours before expiry to send reminder email',
-      format: 'positive-number',
+      format: POSITIVE_NUMBER_VALIDATOR,
       default: 36,
       env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_EXPIRY_WINDOW_HOURS'
     },
     minimumHoursRemaining: {
       doc: 'Minimum hours that must remain before expiry to send reminder email',
-      format: 'positive-number',
+      format: POSITIVE_NUMBER_VALIDATOR,
       default: 2,
       env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_MINIMUM_HOURS_REMAINING'
     }
