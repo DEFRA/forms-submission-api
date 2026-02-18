@@ -12,9 +12,7 @@ import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
-const notifyExpiryReminderTemplateId = config.get(
-  'notifyExpiryReminderTemplateId'
-)
+const notifyTemplateId = config.get('notifyTemplateId')
 const notifyReplyToId = config.get('notifyReplyToId')
 const minimumHoursRemaining = config.get(
   'emailUsersExpiringSoonSavedForLaterLink.minimumHoursRemaining'
@@ -81,7 +79,7 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
 
   return {
     emailAddress: document.email,
-    templateId: notifyExpiryReminderTemplateId,
+    templateId: notifyTemplateId,
     personalisation: {
       subject: emailSubject,
       body: emailBody

@@ -304,12 +304,6 @@ export const config = convict({
     default: null,
     env: 'NOTIFY_REPLY_TO_ID'
   },
-  /** @type {SchemaObj<string>} */
-  notifyExpiryReminderTemplateId: {
-    format: String,
-    default: null,
-    env: 'NOTIFY_EXPIRY_REMINDER_TEMPLATE_ID'
-  },
 
   /**
    * Scheduler

@@ -113,9 +113,7 @@ describe('expiring-save-and-exit', () => {
       )
 
       expect(result.emailAddress).toBe('test@example.com')
-      expect(result.templateId).toBe(
-        config.get('notifyExpiryReminderTemplateId')
-      )
+      expect(result.templateId).toBe(config.get('notifyTemplateId'))
       expect(result.personalisation.subject).toBe(
         'Form progress expires in 48 hours'
       )
