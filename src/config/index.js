@@ -147,6 +147,12 @@ export const config = convict({
     default: null,
     env: 'MANAGER_URL'
   },
+  entitlementUrl: {
+    doc: 'Forms entitlements API URL',
+    format: String,
+    default: 'http://localhost:3004',
+    env: 'ENTITLEMENT_URL'
+  },
   /**
    * @todo We plan to replace `node-convict` with `joi` and remove all defaults.
    * These OIDC/roles are for the DEV application in the DEFRA tenant.
@@ -174,6 +180,12 @@ export const config = convict({
     default: null,
     nullable: false,
     env: 'OIDC_VERIFY_ISS'
+  },
+  roleEditorGroupId: {
+    doc: 'The AD security group the access token needs to claim membership of',
+    format: String,
+    default: '9af646c4-fa14-4606-8ebf-ec187ac03386',
+    env: 'ROLE_EDITOR_GROUP_ID'
   },
   /** @type {SchemaObj<string>} */
   cognitoJwksUri: {
@@ -291,6 +303,12 @@ export const config = convict({
     format: String,
     default: null,
     env: 'NOTIFY_REPLY_TO_ID'
+  },
+  useEntitlementApi: {
+    doc: 'Feature flag to enable entitlement API for fetching scopes',
+    format: Boolean,
+    default: false,
+    env: 'FEATURE_FLAG_USE_ENTITLEMENT_API'
   }
 })
 
