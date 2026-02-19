@@ -1,15 +1,22 @@
+import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import {
+  getDefaultScopes,
+  getUserScopes
+} from '~/src/services/entitlements-service.js'
 
 const oidcJwksUri = config.get('oidcJwksUri')
 const oidcVerifyAud = config.get('oidcVerifyAud')
 const oidcVerifyIss = config.get('oidcVerifyIss')
+const roleEditorGroupId = config.get('roleEditorGroupId')
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
+const useEntitlementApi = config.get('useEntitlementApi')
 
 /**
  * Raw configuration mapping Cognito client IDs to arrays of permitted retrievalKeys.
@@ -75,10 +82,49 @@ export const auth = {
 }
 
 /**
- * Additional validation for azure oidc token based authentiation
- * @param {Artifacts<UserCredentials>} artifacts
+ * Processes the groups claim from the token payload
+ * @param {unknown} groupsClaim - The groups claim from the token
+ * @param {string} oid - User OID for logging purposes
+ * @returns {string[]} Processed groups array
  */
-export function validateAuth(artifacts) {
+function processGroupsClaim(groupsClaim, oid) {
+  let processedGroups = []
+
+  // For the integration tests, the OIDC mock server sends the 'groups' claim as a stringified JSON array which
+  // requires parsing, while a real Azure AD would typically provide 'groups' as a proper array.
+  // We handle both formats for flexibility between test and production environments.
+  if (typeof groupsClaim === 'string') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- we know this is a stringified JSON array
+      const parsed = JSON.parse(groupsClaim)
+      if (Array.isArray(parsed)) {
+        processedGroups = parsed
+      } else {
+        logger.warn(
+          `[authGroupsInvalid] Auth: User ${oid}: 'groups' claim was string but not valid JSON array: '${groupsClaim}'`
+        )
+      }
+    } catch (err) {
+      logger.error(
+        err,
+        `[authGroupsParseError] Auth: User ${oid}: Failed to parse 'groups' claim - ${getErrorMessage(err)}`
+      )
+    }
+  } else if (Array.isArray(groupsClaim)) {
+    processedGroups = groupsClaim
+  } else {
+    processedGroups = []
+  }
+
+  return processedGroups
+}
+
+/**
+ * Additional validation for azure oidc token based authentiation
+ * @param {Artifacts<UserCredentials>} artifacts - JWT artifacts
+ * @returns {Promise<{ isValid: boolean, credentials?: any }>} Validation result
+ */
+export async function validateAuth(artifacts) {
   const user = artifacts.decoded.payload
 
   if (!user) {
@@ -99,9 +145,36 @@ export function validateAuth(artifacts) {
 
   logger.debug(`User ${oid}: passed authentication`)
 
+  const groupsClaim = user.groups
+  const processedGroups = processGroupsClaim(groupsClaim, oid)
+
+  if (!useEntitlementApi && !processedGroups.includes(roleEditorGroupId)) {
+    logger.warn(
+      `[authGroupNotFound] Auth: User ${oid}: Authorisation failed. Required group "${roleEditorGroupId}" not found`
+    )
+    return {
+      isValid: false
+    }
+  }
+
+  let userScopes = []
+
+  if (useEntitlementApi) {
+    const authToken = artifacts.token
+    userScopes = await getUserScopes(oid, authToken)
+  } else {
+    userScopes = getDefaultScopes()
+  }
+
   return {
     isValid: true,
-    credentials: { user }
+    credentials: {
+      user: {
+        ...user,
+        groups: processedGroups
+      },
+      scope: userScopes
+    }
   }
 }
 
@@ -166,6 +239,6 @@ export function validateRetrievalKey(clientId, retrievalKey) {
 }
 
 /**
- * @import { AppCredentials, Request, ResponseToolkit, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */

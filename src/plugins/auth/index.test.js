@@ -50,32 +50,46 @@ describe('Auth plugin', () => {
       }
     }
 
-    test('Testing validateAuth with a valid artifact returns isValid: true', () => {
+    test('Testing validateAuth with a valid artifact returns isValid: true', async () => {
       const artifacts = buildArtifactStub()
-      const res = validateAuth(artifacts)
+      const res = await validateAuth(artifacts)
 
       expect(res).toEqual({
         isValid: true,
-        credentials: { user: artifacts.decoded.payload }
+        credentials: {
+          user: artifacts.decoded.payload,
+          scope: [
+            'form-delete',
+            'form-edit',
+            'form-read',
+            'form-publish',
+            'user-create',
+            'user-delete',
+            'user-edit',
+            'forms-feedback',
+            'forms-backup',
+            'reset-save-and-exit'
+          ]
+        }
       })
     })
 
-    test('Testing validateAuth with an invalid payload in the artifact returns isValid: false', () => {
+    test('Testing validateAuth with an invalid payload in the artifact returns isValid: false', async () => {
       const artifacts = buildArtifactStub({ client_id: 'invalid' })
 
       // @ts-expect-error - test stub
       artifacts.decoded.payload = undefined
 
-      const res = validateAuth(artifacts)
+      const res = await validateAuth(artifacts)
 
       expect(res).toEqual({
         isValid: false
       })
     })
 
-    test('Testing validateAuth with an invalid oid in the artifact returns isValid: false', () => {
+    test('Testing validateAuth with an invalid oid in the artifact returns isValid: false', async () => {
       const artifacts = buildArtifactStub({ oid: undefined })
-      const res = validateAuth(artifacts)
+      const res = await validateAuth(artifacts)
 
       expect(res).toEqual({
         isValid: false
