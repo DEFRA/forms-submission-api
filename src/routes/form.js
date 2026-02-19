@@ -168,7 +168,7 @@ export default [
     options: {
       tags: ['api'],
       auth: {
-        scope: [`+${Scopes.FormsFeedback}`]
+        scope: [`+${Scopes.FormEdit}`]
       },
       validate: {
         params: Joi.object()
@@ -210,6 +210,9 @@ export default [
     },
     options: {
       tags: ['api'],
+      auth: {
+        scope: [`+${Scopes.FormsFeedback}`]
+      },
       validate: {
         params: Joi.object()
           .keys({
