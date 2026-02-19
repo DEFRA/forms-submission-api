@@ -1,4 +1,4 @@
-import { formSubmitPayloadSchema, idSchema } from '@defra/forms-model'
+import { Scopes, formSubmitPayloadSchema, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
 import {
@@ -130,6 +130,9 @@ export default [
     },
     options: {
       tags: ['api'],
+      auth: {
+        scope: [`+${Scopes.ResetSaveAndExit}`]
+      },
       validate: {
         params: Joi.object()
           .keys({
@@ -164,6 +167,9 @@ export default [
     },
     options: {
       tags: ['api'],
+      auth: {
+        scope: [`+${Scopes.FormsFeedback}`]
+      },
       validate: {
         params: Joi.object()
           .keys({
