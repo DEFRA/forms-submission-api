@@ -235,10 +235,7 @@ describe('save-and-exit-repository', () => {
         magicLinkId: 'magic-id',
         consumed: { $ne: true },
         version: 1,
-        $or: [
-          { 'notify.expireEmailSentTimestamp': null },
-          { 'notify.expireEmailSentTimestamp': { $exists: false } }
-        ]
+        'notify.expireEmailSentTimestamp': null
       })
       expect(update).toEqual({
         $set: {

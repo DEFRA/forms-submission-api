@@ -55,7 +55,8 @@ class SchedulerService {
       }
 
       const task = cron.createTask(cronExpression, executeScheduledTask, {
-        timezone: 'UTC'
+        timezone: 'UTC',
+        noOverlap: true
       })
 
       this.tasks.set(name, {

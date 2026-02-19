@@ -212,29 +212,11 @@ export async function findExpiringRecords(
       .find({
         consumed: { $ne: true },
         expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
+        'notify.expireEmailSentTimestamp': null,
         $or: [
-          { 'notify.expireEmailSentTimestamp': null },
-          { 'notify.expireEmailSentTimestamp': { $exists: false } }
-        ],
-        $and: [
-          {
-            $or: [
-              { 'notify.expireLockId': null },
-              { 'notify.expireLockId': { $exists: false } },
-              {
-                $and: [
-                  { 'notify.expireLockId': { $ne: null } },
-                  {
-                    $or: [
-                      { 'notify.expireLockTimestamp': null },
-                      { 'notify.expireLockTimestamp': { $exists: false } },
-                      { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
+          { 'notify.expireLockId': null },
+          { 'notify.expireLockTimestamp': null },
+          { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
         ]
       })
       .toArray()
@@ -275,10 +257,7 @@ export async function lockRecordForExpiryEmail(
         magicLinkId,
         consumed: { $ne: true },
         version: currentVersion,
-        $or: [
-          { 'notify.expireEmailSentTimestamp': null },
-          { 'notify.expireEmailSentTimestamp': { $exists: false } }
-        ]
+        'notify.expireEmailSentTimestamp': null
       },
       {
         $set: {
