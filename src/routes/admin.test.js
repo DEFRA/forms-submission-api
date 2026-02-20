@@ -24,7 +24,7 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
   })
 }))
 
-describe('Forms route', () => {
+describe('Admin route', () => {
   /** @type {Server} */
   let server
 
