@@ -109,6 +109,66 @@ describe('Auth plugin', () => {
       })
     })
 
+    test('Testing validateAuth with a invalid artifact (OIDC mock server) returns isValid: false', async () => {
+      const artifacts = buildArtifactStub()
+
+      const res = await validateAuth({
+        ...artifacts,
+        decoded: {
+          ...artifacts.decoded,
+          payload: {
+            ...artifacts.decoded.payload,
+            // @ts-expect-error - OIDC test
+            groups: '[]'
+          }
+        }
+      })
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
+    test('Testing validateAuth with a invalid JSON groups artifact (OIDC mock server) returns isValid: false', async () => {
+      const artifacts = buildArtifactStub()
+
+      const res = await validateAuth({
+        ...artifacts,
+        decoded: {
+          ...artifacts.decoded,
+          payload: {
+            ...artifacts.decoded.payload,
+            // @ts-expect-error - OIDC test invalid JSON
+            groups: '['
+          }
+        }
+      })
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
+    test('Testing validateAuth with a invalid JSON groups object artifact (OIDC mock server) returns isValid: false', async () => {
+      const artifacts = buildArtifactStub()
+
+      const res = await validateAuth({
+        ...artifacts,
+        decoded: {
+          ...artifacts.decoded,
+          payload: {
+            ...artifacts.decoded.payload,
+            // @ts-expect-error - OIDC test invalid JSON
+            groups: '{}'
+          }
+        }
+      })
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
     test('Testing validateAuth with an invalid payload in the artifact returns isValid: false', async () => {
       const artifacts = buildArtifactStub({ client_id: 'invalid' })
 
