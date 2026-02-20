@@ -74,6 +74,41 @@ describe('Auth plugin', () => {
       })
     })
 
+    test('Testing validateAuth with a valid artifact (OIDC mock server) returns isValid: true', async () => {
+      const artifacts = buildArtifactStub()
+
+      const res = await validateAuth({
+        ...artifacts,
+        decoded: {
+          ...artifacts.decoded,
+          payload: {
+            ...artifacts.decoded.payload,
+            // @ts-expect-error - OIDC test
+            groups: JSON.stringify(artifacts.decoded.payload.groups)
+          }
+        }
+      })
+
+      expect(res).toEqual({
+        isValid: true,
+        credentials: {
+          user: artifacts.decoded.payload,
+          scope: [
+            'form-delete',
+            'form-edit',
+            'form-read',
+            'form-publish',
+            'user-create',
+            'user-delete',
+            'user-edit',
+            'forms-feedback',
+            'forms-backup',
+            'reset-save-and-exit'
+          ]
+        }
+      })
+    })
+
     test('Testing validateAuth with an invalid payload in the artifact returns isValid: false', async () => {
       const artifacts = buildArtifactStub({ client_id: 'invalid' })
 
