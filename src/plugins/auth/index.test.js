@@ -149,6 +149,26 @@ describe('Auth plugin', () => {
       })
     })
 
+    test('Testing validateAuth with a invalid JSON groups object artifact (OIDC mock server) returns isValid: false', async () => {
+      const artifacts = buildArtifactStub()
+
+      const res = await validateAuth({
+        ...artifacts,
+        decoded: {
+          ...artifacts.decoded,
+          payload: {
+            ...artifacts.decoded.payload,
+            // @ts-expect-error - test invalid data
+            groups: '{}'
+          }
+        }
+      })
+
+      expect(res).toEqual({
+        isValid: false
+      })
+    })
+
     test('Testing validateAuth with a invalid JSON groups object artifact returns isValid: false', async () => {
       const artifacts = buildArtifactStub()
 
