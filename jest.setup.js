@@ -13,6 +13,8 @@ process.env.COGNITO_JWKS_URI = 'https://cognito.com/.well_known/jwks.json'
 process.env.COGNITO_CLIENT_IDS =
   '{"dummy": ["test-key-1", "test-key-2"], "6v87ae6bg5tltqsdfe3icgjv": ["test"]}'
 process.env.COGNITO_VERIFY_ISS = 'dummy'
+process.env.FEATURE_FLAG_USE_ENTITLEMENT_API = 'false'
+process.env.ROLE_EDITOR_GROUP_ID = '7049296f-2156-4d61-8ac3-349276438ef9'
 
 // Sample JWKS response for @hapi/jwt
 const jwks = {

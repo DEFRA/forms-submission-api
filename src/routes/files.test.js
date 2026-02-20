@@ -7,7 +7,7 @@ import {
   ingestFile,
   persistFiles
 } from '~/src/services/file-service.js'
-import { appAuth, auth } from '~/test/fixtures/auth.js'
+import { appAuth, authAdmin } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -117,7 +117,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/file/link',
-        auth,
+        auth: authAdmin,
         payload: {
           fileId: '1234',
           retrievalKey: 'test'
@@ -159,7 +159,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/files/persist',
-        auth,
+        auth: authAdmin,
         payload: {
           files: [
             {
@@ -267,7 +267,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/file/link',
-        auth,
+        auth: authAdmin,
         payload: {
           fileId: '1234'
         }
@@ -284,7 +284,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/files/persist',
-        auth,
+        auth: authAdmin,
         payload: {
           files: [
             {
@@ -306,7 +306,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/files/persist',
-        auth,
+        auth: authAdmin,
         payload: {
           files: [
             {
@@ -328,7 +328,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/file/link',
-        auth,
+        auth: authAdmin,
         payload: {
           retrievalKey: '1234'
         }
@@ -363,7 +363,7 @@ describe('Files route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/files/persist',
-        auth,
+        auth: authAdmin,
         payload: {
           files: [
             {

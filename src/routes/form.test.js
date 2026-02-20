@@ -14,7 +14,7 @@ import {
   generateFormSubmissionsFile,
   generateSubmissionsFile
 } from '~/src/services/submission-service.js'
-import { auth } from '~/test/fixtures/auth.js'
+import { authAdmin, authSuperadmin } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -249,7 +249,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: `/save-and-exit/reset/${GUID_EMPTY}`,
-        auth
+        auth: authSuperadmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -263,7 +263,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: `/save-and-exit/reset/00-11-22`,
-        auth
+        auth: authSuperadmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
@@ -297,7 +297,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/submissions/688131eeff67f889d52c66cc',
-        auth
+        auth: authAdmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -313,7 +313,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/submissions/invalid-form-id',
-        auth
+        auth: authAdmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
@@ -343,7 +343,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/feedback/688131eeff67f889d52c66cc',
-        auth
+        auth: authAdmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -363,7 +363,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/feedback',
-        auth
+        auth: authAdmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -377,7 +377,7 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/feedback/invalid-form-id',
-        auth
+        auth: authAdmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
@@ -398,7 +398,7 @@ describe('Forms route', () => {
     })
 
     test('Testing POST /feedback/{formId} route fails if user missing and optional missing param', async () => {
-      const badAuth = structuredClone(auth)
+      const badAuth = structuredClone(authAdmin)
       // @ts-expect-error - forceably construct bad user object
       badAuth.credentials.user = undefined
       const response = await server.inject({
