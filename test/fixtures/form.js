@@ -39,7 +39,7 @@ export const metadata = {
   updatedAt: now,
   updatedBy: author,
   privacyNoticeType: 'link',
-  privacyNoticeUrl: '',
+  privacyNoticeUrl: 'https://gov.uk/privacy',
   privacyNoticeText: ''
 }
 
