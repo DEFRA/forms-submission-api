@@ -153,6 +153,18 @@
             "schema": {},
             "list": "0a710998-bf6a-4bb1-adda-29e332fa3471",
             "id": "aa937e8a-c09c-4e3f-aa0c-65a63785ff9e"
+          },
+          {
+            "type": "TextField",
+            "title": "This has a leading space in short desc",
+            "name": "xYYgwE",
+            "shortDescription": " Leading space",
+            "hint": "",
+            "options": {
+              "required": true
+            },
+            "schema": {},
+            "id": "bb937e8a-c09c-4e3f-aa0c-65a63785ff1a"
           }
         ],
         "next": [],
@@ -1092,6 +1104,18 @@
             "schema": {},
             "list": "0a710998-bf6a-4bb1-adda-29e332fa3471",
             "id": "aa937e8a-c09c-4e3f-aa0c-65a63785ff9e"
+          },
+          {
+            "type": "TextField",
+            "title": "This has a leading space in short desc",
+            "name": "xYYgwE",
+            "shortDescription": " Leading space",
+            "hint": "",
+            "options": {
+              "required": true
+            },
+            "schema": {},
+            "id": "bb937e8a-c09c-4e3f-aa0c-65a63785ff1a"
           }
         ],
         "next": [],
