@@ -44,7 +44,7 @@ async function getFormTitle(record, formTitleCache) {
   } catch (err) {
     logger.warn(
       err,
-      `Failed to fetch form title for ${record.form.id}, using fallback`
+      `save-and-exit: Failed to fetch form title for ${record.form.id}, using fallback`
     )
     return 'your form'
   }
@@ -121,7 +121,9 @@ export async function processExpiringSaveAndExitRecords(
     return { processed: 0, failed: 0 }
   }
 
-  logger.info(`Processing ${expiringRecords.length} expiring records`)
+  logger.info(
+    `Processing ${expiringRecords.length} expiring save-and-exit records`
+  )
 
   let processedCount = 0
   let failedCount = 0
@@ -134,17 +136,19 @@ export async function processExpiringSaveAndExitRecords(
       const lockedRecord = await lockRecordForExpiryEmail(
         record.magicLinkId,
         runtimeId,
-        record.version ?? 1
+        record.version
       )
 
       if (!lockedRecord) {
-        logger.info(`Skipping ${record.magicLinkId} - failed to obtain lock`)
+        logger.info(
+          `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
+        )
         continue
       }
 
       if (lockedRecord.notify?.expireLockId !== runtimeId) {
         logger.warn(
-          `Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
+          `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
         )
         continue
       }
@@ -157,7 +161,7 @@ export async function processExpiringSaveAndExitRecords(
       await sendNotification(emailContent)
 
       logger.info(
-        `Sent expiry reminder email for ${record.magicLinkId} to ${record.email}`
+        `save-and-exit: Sent expiry reminder email for ${record.magicLinkId}`
       )
 
       await markExpiryEmailSent(record.magicLinkId, runtimeId)
@@ -166,14 +170,14 @@ export async function processExpiringSaveAndExitRecords(
     } catch (err) {
       logger.error(
         err,
-        `Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+        `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
       )
       failedCount++
     }
   }
 
   logger.info(
-    `Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
+    `save-and-exit: Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
   )
 
   return { processed: processedCount, failed: failedCount }
