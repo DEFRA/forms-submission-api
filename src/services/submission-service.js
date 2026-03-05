@@ -267,7 +267,8 @@ function addHeader(
   }
 
   if (!headers.has(key)) {
-    headers.set(key, value)
+    // Trim value (column name) in case short description has a leading space
+    headers.set(key, value.trim())
   }
 }
 
