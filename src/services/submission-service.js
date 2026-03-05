@@ -267,7 +267,8 @@ function addHeader(
   }
 
   if (!headers.has(key)) {
-    headers.set(key, value)
+    // Trim value (column name) in case short description has a leading space
+    headers.set(key, value.trim())
   }
 }
 
@@ -367,8 +368,6 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
     if (!component.isFormComponent) {
       return
     }
-
-    component.name = component.name.trim()
 
     if (hasRepeater(component.page.pageDef)) {
       const repeaterName = component.page.pageDef.repeat.options.name
