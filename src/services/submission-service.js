@@ -390,6 +390,12 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
 
       addCellToRow(row, component.name, fileLinks, options)
       addHeader(context, component)
+    } else if (component.type === ComponentType.GeospatialField) {
+      const features = record.data.main[component.name]
+      const value = JSON.stringify(features)
+
+      addCellToRow(row, component.name, value, options)
+      addHeader(context, component)
     } else {
       const value = getValue(record.data.main, key, component)
 

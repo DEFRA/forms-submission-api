@@ -30,7 +30,8 @@
           "postcode": "M15 5TX"
         },
         "MXYIAq": ["A", "C"],
-        "xYYgwE": "With leading space"
+        "xYYgwE": "With leading space",
+        "DzDkCy": []
       },
       "repeaters": {
         "ZQJhLL": [
@@ -91,7 +92,8 @@
           "town": "London",
           "postcode": "SW1A 2AA"
         },
-        "MXYIAq": ["A", "C"]
+        "MXYIAq": ["A", "C"],
+        "DzDkCy": []
       },
       "repeaters": {
         "ZQJhLL": [
@@ -165,7 +167,8 @@
           "postcode": "M15 5TX"
         },
         "MXYIAq": ["A", "C"],
-        "xYYgwE": "With leading space"
+        "xYYgwE": "With leading space",
+        "DzDkCy": []
       },
       "repeaters": {
         "ZQJhLL": [
@@ -234,7 +237,8 @@
           "town": "Town",
           "postcode": "M15 5TX"
         },
-        "MXYIAq": ["A", "B"]
+        "MXYIAq": ["A", "B"],
+        "DzDkCy": []
       },
       "repeaters": {
         "ZQJhLL": [
@@ -304,7 +308,8 @@
           "postcode": "SW1A 2AA"
         },
         "MXYIAq": ["A", "B", "C"],
-        "czExlx": "d@s.com"
+        "czExlx": "d@s.com",
+        "DzDkCy": []
       },
       "repeaters": {
         "ZQJhLL": [
@@ -366,7 +371,58 @@
           "postcode": "M15 5TX"
         },
         "MXYIAq": ["A"],
-        "czExlx": "d@s.com"
+        "czExlx": "d@s.com",
+        "DzDkCy": [
+          {
+            "id": "6e9bd871-d9a9-44f8-a065-d02b30782c31",
+            "type": "Feature",
+            "properties": {
+              "description": "The quadrangle"
+            },
+            "geometry": {
+              "coordinates": [
+                [
+                  [-0.14301008297061912, 51.50124368719568],
+                  [-0.14226083598384776, 51.501549070063504],
+                  [-0.14205122521880753, 51.5013519595378],
+                  [-0.1420913634506462, 51.501329749847514],
+                  [-0.141948649739021, 51.501193715259205],
+                  [-0.1418995919000281, 51.50120482013867],
+                  [-0.14168106152902737, 51.50100493189194],
+                  [-0.14244641795605162, 51.500686867437906],
+                  [-0.14301008297061912, 51.50124368719568]
+                ]
+              ],
+              "type": "Polygon"
+            }
+          },
+          {
+            "id": "36deedeb-54e6-4abf-a32e-233acf35f0cb",
+            "type": "Feature",
+            "properties": {
+              "description": "Birdcage walk"
+            },
+            "geometry": {
+              "coordinates": [
+                [-0.14075460239675408, 51.5002266684821],
+                [-0.12978924563600458, 51.50130199419283],
+                [-0.14012872586908998, 51.502050031896914]
+              ],
+              "type": "LineString"
+            }
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "description": "St James' park"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-0.13359457492299498, 51.5026889710461]
+            },
+            "id": "ea4d3d46-64ac-4f31-87f4-8aa0d8b6ad96"
+          }
+        ]
       },
       "repeaters": {
         "ZQJhLL": [
@@ -424,7 +480,8 @@
           "postcode": "M15 5TX"
         },
         "MXYIAq": ["A", "C"],
-        "czExlx": "d@s.com"
+        "czExlx": "d@s.com",
+        "DzDkCy": []
       },
       "repeaters": {},
       "files": {}
@@ -463,7 +520,8 @@
           "month": 2,
           "year": 1980
         },
-        "qHKjBt": "Chocolate"
+        "qHKjBt": "Chocolate",
+        "DzDkCy": []
       },
       "repeaters": {},
       "files": {}
@@ -498,7 +556,8 @@
           "month": 2,
           "year": 1980
         },
-        "qHKjBt": "Chocolate"
+        "qHKjBt": "Chocolate",
+        "DzDkCy": []
       },
       "repeaters": {},
       "files": {}
