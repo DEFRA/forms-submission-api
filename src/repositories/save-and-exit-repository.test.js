@@ -6,8 +6,11 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
+  findExpiringRecords,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
+  lockRecordForExpiryEmail,
+  markExpiryEmailSent,
   markSaveAndExitRecordAsConsumed,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
@@ -176,6 +179,136 @@ describe('save-and-exit-repository', () => {
       await expect(markSaveAndExitRecordAsConsumed('123')).rejects.toThrow(
         new Error('Failed')
       )
+    })
+  })
+
+  describe('findExpiringRecords', () => {
+    it('should find expiring records within the specified window', async () => {
+      const expiringRecords = [
+        { ...submissionDocument, magicLinkId: 'expiring-1' },
+        { ...submissionDocument, magicLinkId: 'expiring-2' }
+      ]
+      mockCollection.find.mockReturnValueOnce({
+        toArray: jest.fn().mockResolvedValueOnce(expiringRecords)
+      })
+
+      const result = await findExpiringRecords(36)
+
+      expect(result).toEqual(expiringRecords)
+      const [query] = mockCollection.find.mock.calls[0]
+      expect(query).toMatchObject({
+        expireAt: { $lte: expect.any(Date), $gt: expect.any(Date) }
+      })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.find.mockReturnValueOnce({
+        toArray: jest.fn().mockRejectedValueOnce(new Error('Failed'))
+      })
+      await expect(findExpiringRecords(36)).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('lockRecordForExpiryEmail', () => {
+    it('should lock a record successfully', async () => {
+      const lockedRecord = {
+        ...submissionDocument,
+        notify: {
+          expireLockId: 'runtime-123',
+          expireLockTimestamp: new Date(),
+          expireEmailSentTimestamp: null
+        },
+        version: 2
+      }
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(lockedRecord)
+
+      const result = await lockRecordForExpiryEmail(
+        'magic-id',
+        'runtime-123',
+        1
+      )
+
+      expect(result).toEqual(lockedRecord)
+      const [query, update, options] =
+        mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(query).toEqual({
+        magicLinkId: 'magic-id',
+        consumed: { $ne: true },
+        version: 1,
+        'notify.expireEmailSentTimestamp': null
+      })
+      expect(update).toEqual({
+        $set: {
+          'notify.expireLockId': 'runtime-123',
+          'notify.expireLockTimestamp': expect.any(Date)
+        },
+        $inc: { version: 1 }
+      })
+      expect(options).toEqual({ returnDocument: 'after' })
+    })
+
+    it('should return null when lock fails', async () => {
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(null)
+
+      const result = await lockRecordForExpiryEmail(
+        'magic-id',
+        'runtime-123',
+        1
+      )
+
+      expect(result).toBeNull()
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.findOneAndUpdate.mockRejectedValueOnce(new Error('Failed'))
+      await expect(
+        lockRecordForExpiryEmail('magic-id', 'runtime-123', 1)
+      ).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('markExpiryEmailSent', () => {
+    it('should mark expiry email as sent', async () => {
+      const updatedRecord = {
+        ...submissionDocument,
+        notify: {
+          expireLockId: 'runtime-123',
+          expireLockTimestamp: new Date(),
+          expireEmailSentTimestamp: new Date()
+        }
+      }
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(updatedRecord)
+
+      const result = await markExpiryEmailSent('magic-id', 'runtime-123')
+
+      expect(result).toEqual(updatedRecord)
+      const [query, update, options] =
+        mockCollection.findOneAndUpdate.mock.calls[0]
+      expect(query).toEqual({
+        magicLinkId: 'magic-id',
+        'notify.expireLockId': 'runtime-123'
+      })
+      expect(update).toEqual({
+        $set: {
+          'notify.expireEmailSentTimestamp': expect.any(Date)
+        }
+      })
+      expect(options).toEqual({ returnDocument: 'after' })
+    })
+
+    it('should return null when lock ID does not match', async () => {
+      mockCollection.findOneAndUpdate.mockResolvedValueOnce(null)
+
+      const result = await markExpiryEmailSent('magic-id', 'runtime-123')
+
+      expect(result).toBeNull()
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.findOneAndUpdate.mockRejectedValueOnce(new Error('Failed'))
+      await expect(
+        markExpiryEmailSent('magic-id', 'runtime-123')
+      ).rejects.toThrow(new Error('Failed'))
     })
   })
 

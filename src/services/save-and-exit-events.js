@@ -55,7 +55,7 @@ export async function mapSaveAndExitMessageToData(message) {
 
 /**
  * @param {{ messageId: string, parsedContent: SaveAndExitMessage}} message
- * @returns {SaveAndExitRecord}
+ * @returns {Omit<SaveAndExitDocument, 'expireAt'>}
  */
 export function mapSaveAndExitDataToDocument(message) {
   const { form, security, state, email } = message.parsedContent.data
@@ -65,7 +65,8 @@ export function mapSaveAndExitDataToDocument(message) {
       id: form.id,
       isPreview: form.isPreview,
       status: form.status,
-      baseUrl: form.baseUrl
+      baseUrl: form.baseUrl,
+      title: form.title
     },
     email,
     security: {
@@ -74,7 +75,13 @@ export function mapSaveAndExitDataToDocument(message) {
     },
     state,
     invalidPasswordAttempts: 0,
-    createdAt: new Date()
+    createdAt: new Date(),
+    version: 1,
+    notify: {
+      expireLockId: null,
+      expireLockTimestamp: null,
+      expireEmailSentTimestamp: null
+    }
   }
 }
 
@@ -179,4 +186,5 @@ export async function processSaveAndExitEvents(messages) {
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
  * @import { SaveAndExitMessage, SaveAndExitRecord } from '@defra/forms-model'
+ * @import { SaveAndExitDocument } from '~/src/api/types.js'
  */

@@ -54,6 +54,11 @@ export async function prepareDb(logger) {
 
   await saveColl.createIndex({ magicLinkId: 1 }, { unique: true })
   await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+  await saveColl.createIndex({
+    'notify.expireEmailSentTimestamp': 1,
+    expireAt: 1,
+    consumed: 1
+  })
 
   /**
    * @type {Collection<FormSubmissionDocument>}

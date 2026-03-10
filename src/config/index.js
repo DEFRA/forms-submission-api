@@ -6,6 +6,19 @@ import convict from 'convict'
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const DEFAULT_MESSAGE_TIMEOUT = 30
+const POSITIVE_NUMBER_VALIDATOR = 'positive-number'
+
+convict.addFormat({
+  name: POSITIVE_NUMBER_VALIDATOR,
+  validate(value) {
+    if (typeof value !== 'number' || value <= 0) {
+      throw new TypeError('must be a positive number')
+    }
+  },
+  coerce(value) {
+    return Number(value)
+  }
+})
 
 export const config = convict({
   env: {
@@ -309,10 +322,52 @@ export const config = convict({
     format: Boolean,
     default: false,
     env: 'FEATURE_FLAG_USE_ENTITLEMENT_API'
+  },
+
+  /**
+   * Scheduler
+   */
+  emailUsersExpiringSoonSavedForLaterLink: {
+    enabled: {
+      doc: 'Enable periodic emailing of users with expiring saved for later links',
+      format: Boolean,
+      default: true,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_ENABLED'
+    },
+    cronSchedule: {
+      doc: 'Cron schedule for emailing users with expiring saved for later links (default: every hour from 9am to 8pm UTC)',
+      format: String,
+      default: '0 9-20 * * *',
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_CRON'
+    },
+    expiryWindowInHours: {
+      doc: 'Number of hours before expiry to send reminder email',
+      format: POSITIVE_NUMBER_VALIDATOR,
+      default: 36,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_EXPIRY_WINDOW_HOURS'
+    },
+    minimumHoursRemaining: {
+      doc: 'Minimum hours that must remain before expiry to send reminder email',
+      format: POSITIVE_NUMBER_VALIDATOR,
+      default: 2,
+      env: 'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_MINIMUM_HOURS_REMAINING'
+    }
   }
 })
 
 config.validate({ allowed: 'strict' })
+
+const expiryWindow = config.get(
+  'emailUsersExpiringSoonSavedForLaterLink.expiryWindowInHours'
+)
+const minimumHours = config.get(
+  'emailUsersExpiringSoonSavedForLaterLink.minimumHoursRemaining'
+)
+if (expiryWindow <= minimumHours) {
+  throw new Error(
+    `expiryWindowInHours (${expiryWindow}) must be greater than minimumHoursRemaining (${minimumHours})`
+  )
+}
 
 /**
  * @import { SchemaObj } from 'convict'
