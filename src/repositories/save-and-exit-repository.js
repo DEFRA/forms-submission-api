@@ -54,9 +54,24 @@ export async function createSaveAndExitRecord(recordInput, session) {
   )
 
   try {
+    // Mark any older (existing) save-and-exit records (from same user same form) as consumed
+    // so they can't be used without admin reactivation
+    await coll.updateMany(
+      {
+        email: recordInput.email.toLowerCase(),
+        'form.id': recordInput.form.id,
+        'form.isPreview': recordInput.form.isPreview,
+        'form.status': recordInput.form.status,
+        consumed: { $ne: true }
+      },
+      { $set: { consumed: true } }
+    )
+
+    // Insert new record
     const res = await coll.insertOne(
       {
         ...recordInput,
+        email: recordInput.email.toLowerCase(),
         expireAt: addDays(new Date(), expiryInDays),
         invalidPasswordAttempts: 0,
         consumed: false

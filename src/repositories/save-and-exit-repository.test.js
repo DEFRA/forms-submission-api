@@ -90,6 +90,9 @@ describe('save-and-exit-repository', () => {
   describe('createSaveAndExitRecord', () => {
     it('should create a save and exit record', async () => {
       jest.mocked(
+        mockCollection.updateMany.mockResolvedValueOnce({ updatedCount: 1 })
+      )
+      jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
       await createSaveAndExitRecord(submissionRecordInput, mockSession)

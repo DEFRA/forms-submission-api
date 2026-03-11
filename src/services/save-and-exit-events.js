@@ -98,7 +98,7 @@ export function constructEmailContent(document, formTitle) {
 
   [Continue with your form](${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId})
 
-  ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
+  ^ If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
   The link is valid for ${expiryInDays} days. After that time, your saved information will be deleted.
   `
