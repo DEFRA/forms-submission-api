@@ -377,7 +377,8 @@
             "id": "6e9bd871-d9a9-44f8-a065-d02b30782c31",
             "type": "Feature",
             "properties": {
-              "description": "The quadrangle"
+              "description": "The quadrangle",
+              "gridReference": "ST 000001"
             },
             "geometry": {
               "coordinates": [
@@ -400,7 +401,8 @@
             "id": "36deedeb-54e6-4abf-a32e-233acf35f0cb",
             "type": "Feature",
             "properties": {
-              "description": "Birdcage walk"
+              "description": "Birdcage walk",
+              "gridReference": "ST 000002"
             },
             "geometry": {
               "coordinates": [
@@ -414,7 +416,8 @@
           {
             "type": "Feature",
             "properties": {
-              "description": "St James' park"
+              "description": "St James' park",
+              "gridReference": "ST 000003"
             },
             "geometry": {
               "type": "Point",
