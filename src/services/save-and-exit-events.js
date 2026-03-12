@@ -58,9 +58,11 @@ export async function mapSaveAndExitMessageToData(message) {
  * @returns {Omit<SaveAndExitDocument, 'expireAt'>}
  */
 export function mapSaveAndExitDataToDocument(message) {
-  const { form, security, state, email } = message.parsedContent.data
+  const { form, security, state, email, magicLinkGroupId } =
+    message.parsedContent.data
   return {
     magicLinkId: message.messageId,
+    magicLinkGroupId: magicLinkGroupId ?? '',
     form: {
       id: form.id,
       isPreview: form.isPreview,
@@ -86,7 +88,7 @@ export function mapSaveAndExitDataToDocument(message) {
 }
 
 /**
- * @param {SaveAndExitRecord} document
+ * @param {Omit<SaveAndExitDocument, 'expireAt'>} document
  * @param {string} formTitle
  * @returns {SendNotificationArgs}
  */

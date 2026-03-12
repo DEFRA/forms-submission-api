@@ -41,7 +41,7 @@
     "@aws-sdk/client-sqs": "^3.982.0",
     "@aws-sdk/s3-request-presigner": "^3.679.0",
     "@defra/forms-engine-plugin": "^4.0.57",
-    "@defra/forms-model": "^3.0.627",
+    "@defra/forms-model": "^3.0.635",
     "@defra/hapi-tracing": "^1.12.0",
     "@elastic/ecs-pino-format": "^1.5.0",
     "@hapi/boom": "^10.0.1",

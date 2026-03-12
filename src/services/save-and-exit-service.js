@@ -3,9 +3,9 @@ import argon2 from 'argon2'
 
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
+  deleteSaveAndExitGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
-  markSaveAndExitRecordAsConsumed,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
@@ -60,11 +60,8 @@ export async function validateSavedLinkCredentials(
     )
   }
 
-  if (validPassword) {
-    // Once a valid password has been provided, mark the save and exit record as consumed
-    await markSaveAndExitRecordAsConsumed(magicLinkId)
-  } else {
-    // Otherwise, increment the password attempts and return updated record
+  if (!validPassword) {
+    // Increment the password attempts and return updated record
     record = await incrementInvalidPasswordAttempts(magicLinkId)
   }
 
@@ -73,7 +70,8 @@ export async function validateSavedLinkCredentials(
     state: !validPassword ? {} : record.state,
     invalidPasswordAttempts: record.invalidPasswordAttempts,
     question: record.security.question,
-    validPassword
+    validPassword,
+    magicLinkGroupId: record.magicLinkGroupId
   }
 }
 
@@ -85,3 +83,25 @@ export async function validateSavedLinkCredentials(
 export async function resetSaveAndExitLink(magicLinkId) {
   return resetSaveAndExitRecord(magicLinkId)
 }
+
+/**
+ * Remove any save-and-exit records related to this submission
+ * @param {FormAdapterSubmissionMessageMeta} meta
+ * @param {ClientSession} session
+ */
+export async function cleanUpSaveAndExit(meta, session) {
+  const magicLinkGroupId = meta.custom?.magicLinkGroupId
+  if (!magicLinkGroupId) {
+    return
+  }
+
+  await deleteSaveAndExitGroup(
+    /** @type {string} */ (magicLinkGroupId),
+    session
+  )
+}
+
+/**
+ * @import { ClientSession } from 'mongodb'
+ * @import { FormAdapterSubmissionMessageMeta } from '@defra/forms-engine-plugin/engine/types.js'
+ */

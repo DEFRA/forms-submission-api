@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 
@@ -54,24 +56,24 @@ export async function createSaveAndExitRecord(recordInput, session) {
   )
 
   try {
-    // Mark any older (existing) save-and-exit records (from same user same form) as consumed
-    // so they can't be used without admin reactivation
-    await coll.updateMany(
-      {
-        email: recordInput.email.toLowerCase(),
-        'form.id': recordInput.form.id,
-        'form.isPreview': recordInput.form.isPreview,
-        'form.status': recordInput.form.status,
-        consumed: { $ne: true }
-      },
-      { $set: { consumed: true } }
-    )
+    if (recordInput.magicLinkGroupId) {
+      // Disable any existing save-and-exit records so user will only have the most up-to-date one
+      await coll.updateMany(
+        {
+          magicLinkGroupId: recordInput.magicLinkGroupId,
+          consumed: { $ne: true }
+        },
+        { $set: { consumed: true } }
+      )
+    }
 
     // Insert new record
     const res = await coll.insertOne(
       {
         ...recordInput,
-        email: recordInput.email.toLowerCase(),
+        magicLinkGroupId: recordInput.magicLinkGroupId
+          ? recordInput.magicLinkGroupId
+          : randomUUID(),
         expireAt: addDays(new Date(), expiryInDays),
         invalidPasswordAttempts: 0,
         consumed: false
@@ -187,6 +189,36 @@ export async function markSaveAndExitRecordAsConsumed(id) {
     logger.error(
       err,
       `Failed to mark as consumed ${id} - ${getErrorMessage(err)} `
+    )
+    throw err
+  }
+}
+
+/**
+ * Delete all save-and-exit records belonging to the specified group
+ * @param {string} magicLinkGroupId
+ * @param {ClientSession} session
+ */
+export async function deleteSaveAndExitGroup(magicLinkGroupId, session) {
+  logger.info(`Deleting records of magicLinkGroupId ${magicLinkGroupId}`)
+
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    await coll.deleteMany(
+      {
+        magicLinkGroupId
+      },
+      { session }
+    )
+
+    logger.info(`Deleted records of magicLinkGroupId ${magicLinkGroupId}`)
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to delete records of magicLinkGroupId ${magicLinkGroupId} - ${getErrorMessage(err)} `
     )
     throw err
   }

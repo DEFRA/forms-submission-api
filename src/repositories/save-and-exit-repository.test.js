@@ -88,10 +88,7 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('createSaveAndExitRecord', () => {
-    it('should create a save and exit record', async () => {
-      jest.mocked(
-        mockCollection.updateMany.mockResolvedValueOnce({ updatedCount: 1 })
-      )
+    it('should create a save and exit record when no previous relevant ones', async () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
@@ -100,6 +97,30 @@ describe('save-and-exit-repository', () => {
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
         ...submissionRecordInput,
+        magicLinkGroupId: expect.any(String),
+        expireAt: expect.any(Date),
+        invalidPasswordAttempts: 0,
+        consumed: false
+      })
+      expect(session).toEqual({ session: mockSession })
+    })
+
+    it('should create a save and exit record using existing magicLinkGroupId from previous relevant ones', async () => {
+      jest.mocked(
+        mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
+      )
+      await createSaveAndExitRecord(
+        {
+          ...submissionRecordInput,
+          magicLinkGroupId: 'group-id'
+        },
+        mockSession
+      )
+      const [insertedSubmissionRecordInput, session] =
+        mockCollection.insertOne.mock.calls[0]
+      expect(insertedSubmissionRecordInput).toEqual({
+        ...submissionRecordInput,
+        magicLinkGroupId: 'group-id',
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 0,
         consumed: false
