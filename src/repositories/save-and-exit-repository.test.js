@@ -6,6 +6,7 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   createSaveAndExitRecord,
+  deleteSaveAndExitGroup,
   findExpiringRecords,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
@@ -352,6 +353,22 @@ describe('save-and-exit-repository', () => {
       await expect(resetSaveAndExitRecord('123')).rejects.toThrow(
         new Error('Failed')
       )
+    })
+  })
+
+  describe('deleteSaveAndExitGroup', () => {
+    it('should delete all records in a save and exit group', async () => {
+      jest.mocked(mockCollection.deleteMany.mockResolvedValueOnce({}))
+      await deleteSaveAndExitGroup('group-id', mockSession)
+      const [filter] = mockCollection.deleteMany.mock.calls[0]
+      expect(filter).toEqual({ magicLinkGroupId: 'group-id' })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.deleteMany.mockRejectedValueOnce(new Error('Failed'))
+      await expect(
+        deleteSaveAndExitGroup('group-id', mockSession)
+      ).rejects.toThrow(new Error('Failed'))
     })
   })
 })

@@ -2,12 +2,14 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 
 import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
+  deleteSaveAndExitGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   markSaveAndExitRecordAsConsumed,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
+  cleanUpSaveAndExit,
   getSavedLinkDetails,
   resetSaveAndExitLink,
   validateSavedLinkCredentials
@@ -121,6 +123,22 @@ describe('save-and-exit service', () => {
         recordFound: true,
         recordUpdated: true
       })
+    })
+  })
+
+  describe('cleanUpSaveAndExit', () => {
+    test('should call repo method', async () => {
+      jest.mocked(deleteSaveAndExitGroup).mockResolvedValue()
+      // @ts-expect-error - partial mock of message
+      await cleanUpSaveAndExit({ custom: { magicLinkGroupId: 'group-id' } }, {})
+      expect(deleteSaveAndExitGroup).toHaveBeenCalledWith('group-id', {})
+    })
+
+    test('should ignore if no group id passed', async () => {
+      jest.mocked(deleteSaveAndExitGroup).mockResolvedValue()
+      // @ts-expect-error - partial mock of message
+      await cleanUpSaveAndExit({}, {})
+      expect(deleteSaveAndExitGroup).not.toHaveBeenCalled()
     })
   })
 })
