@@ -3,6 +3,7 @@ import argon2 from 'argon2'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
+import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
@@ -152,7 +153,7 @@ export async function processSaveAndExitEvents(messages) {
     } catch (err) {
       logger.error(
         err,
-        `[processSaveAndExitEvents] Failed to process message - ${getErrorMessage(err)}`
+        `[processSaveAndExitEvents] Failed to process message - ${getBoomErrorMessage(err)}`
       )
       throw err
     } finally {
