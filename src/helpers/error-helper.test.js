@@ -8,6 +8,11 @@ describe('error-helper', () => {
     expect(getBoomErrorMessage(err)).toBe('error message 1')
   })
 
+  test('handles boom error with no underlying message', () => {
+    const err = Boom.badRequest('general error message')
+    expect(getBoomErrorMessage(err)).toBe('general error message')
+  })
+
   test('handles boom error with one message', () => {
     const err = Boom.badRequest('general error message', {
       errors: [{ error: 'error type 2', message: 'error message 2' }]
