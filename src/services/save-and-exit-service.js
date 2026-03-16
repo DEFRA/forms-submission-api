@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 
@@ -90,15 +91,26 @@ export async function resetSaveAndExitLink(magicLinkId) {
  * @param {ClientSession} session
  */
 export async function cleanUpSaveAndExit(meta, session) {
-  const magicLinkGroupId = meta.custom?.magicLinkGroupId
-  if (!magicLinkGroupId) {
-    return
-  }
+  try {
+    const magicLinkGroupId = meta.custom?.magicLinkGroupId
+    if (!magicLinkGroupId) {
+      return
+    }
 
-  await deleteSaveAndExitGroup(
-    /** @type {string} */ (magicLinkGroupId),
-    session
-  )
+    await deleteSaveAndExitGroup(
+      /** @type {string} */ (magicLinkGroupId),
+      session
+    )
+  } catch (err) {
+    const groupId = /** @type {string | undefined} */ (
+      meta.custom?.magicLinkGroupId
+    )
+    logger.error(
+      err,
+      `[cleanSaveAndExit] Failed to delete old save-and-exit records of group ${groupId}: ${getErrorMessage(err)}`
+    )
+    // Silently fail otherwise submission would go to DLQ even though it's been processed ok
+  }
 }
 
 /**

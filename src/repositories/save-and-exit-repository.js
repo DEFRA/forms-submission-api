@@ -63,7 +63,8 @@ export async function createSaveAndExitRecord(recordInput, session) {
           magicLinkGroupId: recordInput.magicLinkGroupId,
           consumed: { $ne: true }
         },
-        { $set: { consumed: true } }
+        { $set: { consumed: true } },
+        { session }
       )
     }
 
