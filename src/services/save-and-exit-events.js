@@ -3,6 +3,7 @@ import argon2 from 'argon2'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
+import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
@@ -58,9 +59,11 @@ export async function mapSaveAndExitMessageToData(message) {
  * @returns {Omit<SaveAndExitDocument, 'expireAt'>}
  */
 export function mapSaveAndExitDataToDocument(message) {
-  const { form, security, state, email } = message.parsedContent.data
+  const { form, security, state, email, magicLinkGroupId } =
+    message.parsedContent.data
   return {
     magicLinkId: message.messageId,
+    magicLinkGroupId: magicLinkGroupId ?? '',
     form: {
       id: form.id,
       isPreview: form.isPreview,
@@ -86,7 +89,7 @@ export function mapSaveAndExitDataToDocument(message) {
 }
 
 /**
- * @param {SaveAndExitRecord} document
+ * @param {Omit<SaveAndExitDocument, 'expireAt'>} document
  * @param {string} formTitle
  * @returns {SendNotificationArgs}
  */
@@ -98,7 +101,7 @@ export function constructEmailContent(document, formTitle) {
 
   [Continue with your form](${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId})
 
-  ^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
+  ^ If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
   The link is valid for ${expiryInDays} days. After that time, your saved information will be deleted.
   `
@@ -150,7 +153,7 @@ export async function processSaveAndExitEvents(messages) {
     } catch (err) {
       logger.error(
         err,
-        `[processSaveAndExitEvents] Failed to process message - ${getErrorMessage(err)}`
+        `[processSaveAndExitEvents] Failed to process message - ${getBoomErrorMessage(err)}`
       )
       throw err
     } finally {

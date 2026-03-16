@@ -234,7 +234,8 @@ describe('events', () => {
           expireLockId: null,
           expireLockTimestamp: null,
           expireEmailSentTimestamp: null
-        }
+        },
+        magicLinkGroupId: ''
       }
 
       const expectedMapped2 = {
@@ -262,7 +263,8 @@ describe('events', () => {
           expireLockId: null,
           expireLockTimestamp: null,
           expireEmailSentTimestamp: null
-        }
+        },
+        magicLinkGroupId: ''
       }
 
       const expectedMapped3 = {
@@ -290,7 +292,8 @@ describe('events', () => {
           expireLockId: null,
           expireLockTimestamp: null,
           expireEmailSentTimestamp: null
-        }
+        },
+        magicLinkGroupId: ''
       }
 
       const result = await processSaveAndExitEvents(messages)

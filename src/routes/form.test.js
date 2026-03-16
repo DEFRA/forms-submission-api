@@ -216,7 +216,8 @@ describe('Forms route', () => {
         },
         invalidPasswordAttempts: 0,
         question: SecurityQuestionsEnum.MemorablePlace,
-        validPassword: true
+        validPassword: true,
+        magicLinkGroupId: 'group-id'
       })
       const response = await server.inject({
         method: 'POST',

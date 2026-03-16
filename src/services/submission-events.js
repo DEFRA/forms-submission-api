@@ -8,6 +8,7 @@ import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
+import { cleanUpSaveAndExit } from '~/src/services/save-and-exit-service.js'
 
 const logger = createLogger()
 
@@ -86,6 +87,8 @@ export async function processSubmissionMessages(messages) {
         await deleteMessage(queueUrl, message)
 
         logger.info(`Deleted submission message ${message.MessageId}`)
+
+        await cleanUpSaveAndExit(document.meta, session)
 
         return message
       })
