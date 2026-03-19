@@ -4,6 +4,7 @@ import Boom from '@hapi/boom'
 import { config } from '~/src/config/index.js'
 import { addDays } from '~/src/helpers/date-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { createTimer } from '~/src/helpers/timer.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
@@ -16,24 +17,33 @@ const maxInvalidPasswordAttempts = 5
  * @returns { Promise<WithId<SaveAndExitDocument> | null> }
  */
 export async function getSaveAndExitRecord(id) {
-  logger.info('Reading save and exit record')
+  const event = {
+    category: 'save-and-exit',
+    action: 'read-record',
+    reference: id
+  }
+  logger.info({ event }, 'Reading save and exit record')
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const result = await coll.findOne({
       magicLinkId: id,
       consumed: { $ne: true }
     })
 
-    logger.info('Read save and exit record')
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Read save and exit record (${timer.elapsed}ms)`
+    )
 
     return result
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `Failed to read save and exit record - ${getErrorMessage(err)}`
     )
     throw err
@@ -47,13 +57,19 @@ export async function getSaveAndExitRecord(id) {
  * @returns {Promise<ObjectId>} newId
  */
 export async function createSaveAndExitRecord(recordInput, session) {
-  logger.info(`Inserting ${recordInput.magicLinkId}`)
+  const event = {
+    category: 'save-and-exit',
+    action: 'create-record',
+    reference: recordInput.magicLinkId
+  }
+  logger.info({ event }, `Inserting ${recordInput.magicLinkId}`)
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const res = await coll.insertOne(
       {
         ...recordInput,
@@ -64,12 +80,15 @@ export async function createSaveAndExitRecord(recordInput, session) {
       { session }
     )
 
-    logger.info(`Inserted ${recordInput.magicLinkId}`)
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Inserted ${recordInput.magicLinkId} (${timer.elapsed}ms)`
+    )
 
     return res.insertedId
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `Failed to insert ${recordInput.magicLinkId} - ${getErrorMessage(err)} `
     )
     throw err
@@ -82,13 +101,19 @@ export async function createSaveAndExitRecord(recordInput, session) {
  * @returns { Promise<WithId<SaveAndExitDocument>> }
  */
 export async function incrementInvalidPasswordAttempts(id) {
-  logger.info('Increment invalid password attempts')
+  const event = {
+    category: 'save-and-exit',
+    action: 'increment-invalid-password-attempts',
+    reference: id
+  }
+  logger.info({ event }, 'Increment invalid password attempts')
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const result = await coll.findOneAndUpdate(
       { magicLinkId: id },
       { $inc: { invalidPasswordAttempts: 1 } },
@@ -101,17 +126,27 @@ export async function incrementInvalidPasswordAttempts(id) {
 
     if (result.invalidPasswordAttempts >= maxInvalidPasswordAttempts) {
       logger.info(
-        'Reached max number of invalid password - record being marked as consumed'
+        {
+          event: {
+            ...event,
+            action: 'max-invalid-password-attempts',
+            duration: timer.elapsed
+          }
+        },
+        `Reached max number of invalid password - record being marked as consumed (${timer.elapsed}ms)`
       )
       await markSaveAndExitRecordAsConsumed(id)
     }
 
-    logger.info('Incremented invalid password attempts')
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Incremented invalid password attempts (${timer.elapsed}ms)`
+    )
 
     return result
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `Failed to increment invalid password attempts - ${getErrorMessage(err)}`
     )
     throw err
@@ -124,20 +159,27 @@ export async function incrementInvalidPasswordAttempts(id) {
  * @param {string} id - magic link id
  */
 export async function resetSaveAndExitRecord(id) {
-  logger.info(`Resetting save and exit record ${id}`)
+  const event = {
+    category: 'save-and-exit',
+    action: 'reset-record',
+    reference: id
+  }
+  logger.info({ event }, `Resetting save and exit record ${id}`)
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const result = await coll.updateOne(
       { magicLinkId: id },
       { $set: { consumed: false, invalidPasswordAttempts: 0 } }
     )
 
     logger.info(
-      `Reset save and exit record ${id} - modified ${result.modifiedCount} record`
+      { event: { ...event, duration: timer.elapsed } },
+      `Reset save and exit record ${id} - modified ${result.modifiedCount} record (${timer.elapsed}ms)`
     )
 
     return {
@@ -146,7 +188,7 @@ export async function resetSaveAndExitRecord(id) {
     }
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `Failed to reset save and exit record ${id} - ${getErrorMessage(err)} `
     )
     throw err
@@ -158,19 +200,28 @@ export async function resetSaveAndExitRecord(id) {
  * @param {string} id - magic link id
  */
 export async function markSaveAndExitRecordAsConsumed(id) {
-  logger.info(`Marking ${id} as consumed`)
+  const event = {
+    category: 'save-and-exit',
+    action: 'mark-consumed',
+    reference: id
+  }
+  logger.info({ event }, `Marking ${id} as consumed`)
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     await coll.updateOne({ magicLinkId: id }, { $set: { consumed: true } })
 
-    logger.info(`Marked ${id} as consumed`)
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Marked ${id} as consumed (${timer.elapsed}ms)`
+    )
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `Failed to mark as consumed ${id} - ${getErrorMessage(err)} `
     )
     throw err
@@ -225,9 +276,12 @@ export async function findExpiringRecords(
       cursor = cursor.limit(limit)
     }
 
+    const timer = createTimer()
     const results = await cursor.toArray()
 
-    logger.info(`Found ${results.length} expiring save-and-exit records`)
+    logger.info(
+      `Found ${results.length} expiring save-and-exit records (${timer.elapsed}ms)`
+    )
 
     return results
   } catch (err) {
@@ -251,13 +305,22 @@ export async function lockRecordForExpiryEmail(
   runtimeId,
   currentVersion
 ) {
-  logger.info(`save-and-exit: Locking record ${magicLinkId} for expiry email`)
+  const event = {
+    category: 'save-and-exit',
+    action: 'lock-record',
+    reference: magicLinkId
+  }
+  logger.info(
+    { event },
+    `save-and-exit: Locking record ${magicLinkId} for expiry email`
+  )
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const result = await coll.findOneAndUpdate(
       {
         magicLinkId,
@@ -276,17 +339,27 @@ export async function lockRecordForExpiryEmail(
     )
 
     if (result) {
-      logger.info(`save-and-exit: Successfully locked record ${magicLinkId}`)
+      logger.info(
+        { event: { ...event, duration: timer.elapsed } },
+        `save-and-exit: Successfully locked record ${magicLinkId} (${timer.elapsed}ms)`
+      )
     } else {
       logger.info(
-        `save-and-exit: Failed to lock record ${magicLinkId} - already locked or processed`
+        {
+          event: {
+            ...event,
+            action: 'lock-record-failed',
+            duration: timer.elapsed
+          }
+        },
+        `save-and-exit: Failed to lock record ${magicLinkId} - already locked or processed (${timer.elapsed}ms)`
       )
     }
 
     return result
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `save-and-exit: Failed to lock record ${magicLinkId} - ${getErrorMessage(err)}`
     )
     throw err
@@ -300,13 +373,22 @@ export async function lockRecordForExpiryEmail(
  * @returns {Promise<WithId<SaveAndExitDocument> | null>}
  */
 export async function markExpiryEmailSent(magicLinkId, runtimeId) {
-  logger.info(`save-and-exit: Marking expiry email sent for ${magicLinkId}`)
+  const event = {
+    category: 'save-and-exit',
+    action: 'mark-email-sent',
+    reference: magicLinkId
+  }
+  logger.info(
+    { event },
+    `save-and-exit: Marking expiry email sent for ${magicLinkId}`
+  )
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
   try {
+    const timer = createTimer()
     const result = await coll.findOneAndUpdate(
       {
         magicLinkId,
@@ -322,17 +404,27 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
     )
 
     if (result) {
-      logger.info(`save-and-exit: Marked expiry email sent for ${magicLinkId}`)
+      logger.info(
+        { event: { ...event, duration: timer.elapsed } },
+        `save-and-exit: Marked expiry email sent for ${magicLinkId} (${timer.elapsed}ms)`
+      )
     } else {
       logger.warn(
-        `save-and-exit: Failed to mark expiry email sent for ${magicLinkId} - lock mismatch`
+        {
+          event: {
+            ...event,
+            action: 'mark-email-sent-failed',
+            duration: timer.elapsed
+          }
+        },
+        `save-and-exit: Failed to mark expiry email sent for ${magicLinkId} - lock mismatch (${timer.elapsed}ms)`
       )
     }
 
     return result
   } catch (err) {
     logger.error(
-      err,
+      { err, event },
       `save-and-exit: Failed to mark expiry email sent for ${magicLinkId} - ${getErrorMessage(err)}`
     )
     throw err

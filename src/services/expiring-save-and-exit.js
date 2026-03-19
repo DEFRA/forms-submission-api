@@ -2,6 +2,7 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { createTimer } from '~/src/helpers/timer.js'
 import {
   findExpiringRecords,
   lockRecordForExpiryEmail,
@@ -37,13 +38,32 @@ async function getFormTitle(record, formTitleCache) {
 
   // Fetch from forms service and cache it
   try {
+    const timer = createTimer()
     const metadata = await getFormMetadataById(record.form.id)
     const title = metadata.title
     formTitleCache.set(record.form.id, title)
+    logger.info(
+      {
+        event: {
+          category: 'save-and-exit',
+          action: 'fetch-form-title',
+          reference: record.magicLinkId,
+          duration: timer.elapsed
+        }
+      },
+      `save-and-exit: Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
+    )
     return title
   } catch (err) {
     logger.warn(
-      err,
+      {
+        err,
+        event: {
+          category: 'save-and-exit',
+          action: 'fetch-form-title-failed',
+          reference: record.magicLinkId
+        }
+      },
       `save-and-exit: Failed to fetch form title for ${record.form.id}, using fallback`
     )
     return 'your form'
@@ -149,6 +169,13 @@ export async function processExpiringSaveAndExitRecords(
 
         if (!lockedRecord) {
           logger.info(
+            {
+              event: {
+                category: 'save-and-exit',
+                action: 'skip-lock-failed',
+                reference: record.magicLinkId
+              }
+            },
             `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
           )
           continue
@@ -156,6 +183,13 @@ export async function processExpiringSaveAndExitRecords(
 
         if (lockedRecord.notify?.expireLockId !== runtimeId) {
           logger.warn(
+            {
+              event: {
+                category: 'save-and-exit',
+                action: 'lock-verification-failed',
+                reference: record.magicLinkId
+              }
+            },
             `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
           )
           continue
@@ -166,10 +200,20 @@ export async function processExpiringSaveAndExitRecords(
           lockedRecord,
           formTitle
         )
+
+        const timer = createTimer()
         await sendNotification(emailContent)
 
         logger.info(
-          `save-and-exit: Sent expiry reminder email for ${record.magicLinkId}`
+          {
+            event: {
+              category: 'save-and-exit',
+              action: 'send-expiry-email',
+              reference: record.magicLinkId,
+              duration: timer.elapsed
+            }
+          },
+          `save-and-exit: Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
         )
 
         await markExpiryEmailSent(record.magicLinkId, runtimeId)
@@ -177,7 +221,14 @@ export async function processExpiringSaveAndExitRecords(
         processedCount++
       } catch (err) {
         logger.error(
-          err,
+          {
+            err,
+            event: {
+              category: 'save-and-exit',
+              action: 'process-record-failed',
+              reference: record.magicLinkId
+            }
+          },
           `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
         )
         failedCount++
