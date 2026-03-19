@@ -181,11 +181,13 @@ export async function markSaveAndExitRecordAsConsumed(id) {
  * Finds save-and-exit records that are about to expire within the specified hours
  * @param {number} expiryWindowInHours - Number of hours before expiry
  * @param {number} minimumHoursRemaining - Minimum hours that must remain before expiry
+ * @param {number} [limit] - Maximum number of records to return
  * @returns {Promise<WithId<SaveAndExitDocument>[]>}
  */
 export async function findExpiringRecords(
   expiryWindowInHours,
-  minimumHoursRemaining = 2
+  minimumHoursRemaining = 2,
+  limit
 ) {
   logger.info('Finding expiring save-and-exit records')
 
@@ -208,18 +210,22 @@ export async function findExpiringRecords(
     // - Have at least Y hours remaining before expiry.
     // - Haven't already been fully processed.
     // - Aren't currently being processed by another instance (locked within the last hour).
-    const results = await saveAndExitCollection
-      .find({
-        consumed: { $ne: true },
-        expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
-        'notify.expireEmailSentTimestamp': null,
-        $or: [
-          { 'notify.expireLockId': null },
-          { 'notify.expireLockTimestamp': null },
-          { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
-        ]
-      })
-      .toArray()
+    let cursor = saveAndExitCollection.find({
+      consumed: { $ne: true },
+      expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
+      'notify.expireEmailSentTimestamp': null,
+      $or: [
+        { 'notify.expireLockId': null },
+        { 'notify.expireLockTimestamp': null },
+        { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
+      ]
+    })
+
+    if (limit) {
+      cursor = cursor.limit(limit)
+    }
+
+    const results = await cursor.toArray()
 
     logger.info(`Found ${results.length} expiring save-and-exit records`)
 
