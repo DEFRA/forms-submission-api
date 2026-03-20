@@ -28,11 +28,6 @@ declare module '@hapi/hapi' {
      * Object ID of the user
      */
     oid?: string
-
-    /**
-     * Groups of the user
-     */
-    groups?: string[]
   }
 
   interface AppCredentials {

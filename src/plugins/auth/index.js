@@ -3,6 +3,7 @@ import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { getUserScopes } from '~/src/services/entitlements-service.js'
 
 const oidcJwksUri = config.get('oidcJwksUri')
 const oidcVerifyAud = config.get('oidcVerifyAud')
@@ -76,9 +77,10 @@ export const auth = {
 
 /**
  * Additional validation for azure oidc token based authentiation
- * @param {Artifacts<UserCredentials>} artifacts
+ * @param {Artifacts<UserCredentials>} artifacts - JWT artifacts
+ * @returns {Promise<{ isValid: boolean, credentials?: any }>} Validation result
  */
-export function validateAuth(artifacts) {
+export async function validateAuth(artifacts) {
   const user = artifacts.decoded.payload
 
   if (!user) {
@@ -99,9 +101,16 @@ export function validateAuth(artifacts) {
 
   logger.debug(`User ${oid}: passed authentication`)
 
+  const userScopes = await getUserScopes(oid, artifacts.token)
+
   return {
     isValid: true,
-    credentials: { user }
+    credentials: {
+      user: {
+        ...user
+      },
+      scope: userScopes
+    }
   }
 }
 
@@ -166,6 +175,6 @@ export function validateRetrievalKey(clientId, retrievalKey) {
 }
 
 /**
- * @import { AppCredentials, Request, ResponseToolkit, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
+ * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts } from '~/src/plugins/auth/types.js'
  */
