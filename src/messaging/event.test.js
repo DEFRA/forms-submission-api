@@ -59,13 +59,26 @@ describe('event', () => {
   })
 
   describe('receiveDlqMessages', () => {
-    it('should receive dead-letter queue messages', async () => {
+    it('should receive dead-letter queue messages from form-submissions', async () => {
       const receivedMessage = {
         Messages: [messageStub]
       }
 
       snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
-      await receiveDlqMessages('my-queue')
+      await receiveDlqMessages('form-submissions')
+      expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
+        QueueUrl: expect.any(String),
+        VisibilityTimeout: 5
+      })
+    })
+
+    it('should receive dead-letter queue messages from save-and-exit', async () => {
+      const receivedMessage = {
+        Messages: [messageStub]
+      }
+
+      snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
+      await receiveDlqMessages('save-and-exit')
       expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
         QueueUrl: expect.any(String),
         VisibilityTimeout: 5
@@ -74,7 +87,7 @@ describe('event', () => {
   })
 
   describe('redriveDlqMessages', () => {
-    it('should redrive dead-letter queue messages', async () => {
+    it('should redrive dead-letter queue messages from form-submissions', async () => {
       /**
        * @type {StartMessageMoveTaskCommandOutput}
        */
@@ -84,7 +97,23 @@ describe('event', () => {
       }
 
       snsMock.on(StartMessageMoveTaskCommand).resolves(redriveResult)
-      await redriveDlqMessages('my-arn')
+      await redriveDlqMessages('form-submissions')
+      expect(snsMock).toHaveReceivedCommandWith(StartMessageMoveTaskCommand, {
+        SourceArn: expect.any(String)
+      })
+    })
+
+    it('should redrive dead-letter queue messages from save-and-exit', async () => {
+      /**
+       * @type {StartMessageMoveTaskCommandOutput}
+       */
+      const redriveResult = {
+        TaskHandle: '123',
+        $metadata: {}
+      }
+
+      snsMock.on(StartMessageMoveTaskCommand).resolves(redriveResult)
+      await redriveDlqMessages('save-and-exit')
       expect(snsMock).toHaveReceivedCommandWith(StartMessageMoveTaskCommand, {
         SourceArn: expect.any(String)
       })
