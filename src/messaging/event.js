@@ -1,6 +1,7 @@
 import {
   DeleteMessageCommand,
-  ReceiveMessageCommand
+  ReceiveMessageCommand,
+  StartMessageMoveTaskCommand
 } from '@aws-sdk/client-sqs'
 
 import { config } from '~/src/config/index.js'
@@ -31,6 +32,40 @@ export function receiveMessages(queueUrl) {
 }
 
 /**
+ * Receive dead-letter queue messages
+ * @param {string} dlq - the SQS deadletter queue identifier
+ * @returns {Promise<ReceiveMessageResult>}
+ */
+export function receiveDlqMessages(dlq) {
+  const queueUrl =
+    dlq === 'save-and-exit'
+      ? `${config.get('saveAndExitQueueUrl')}-deadletter`
+      : `${config.get('submissionQueueUrl')}-deadletter`
+  const command = new ReceiveMessageCommand({
+    QueueUrl: queueUrl,
+    MaxNumberOfMessages: 10,
+    VisibilityTimeout: 5
+  })
+  return sqsClient.send(command)
+}
+
+/**
+ * Redrive the specified message from the dead-letter queue to the main queue
+ * @param {string} dlq - the SQS deadletter queue ARN
+ * @returns {Promise<StartMessageMoveTaskResult>}
+ */
+export function redriveDlqMessages(dlq) {
+  const queueArn =
+    dlq === 'save-and-exit'
+      ? config.get('sqsSaveAndExitDlqArn')
+      : config.get('sqsFormSubmissionsDlqArn')
+  const command = new StartMessageMoveTaskCommand({
+    SourceArn: queueArn
+  })
+  return sqsClient.send(command)
+}
+
+/**
  * Delete event message
  * @param {string} queueUrl - the SQS queue url
  * @param {Message} message - the received message
@@ -46,5 +81,5 @@ export function deleteMessage(queueUrl, message) {
 }
 
 /**
- * @import { ReceiveMessageCommandInput, ReceiveMessageResult, DeleteMessageCommandOutput, Message } from '@aws-sdk/client-sqs'
+ * @import { ReceiveMessageCommandInput, ReceiveMessageResult, DeleteMessageCommandOutput, Message, StartMessageMoveTaskResult } from '@aws-sdk/client-sqs'
  */

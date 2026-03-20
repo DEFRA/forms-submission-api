@@ -46,3 +46,5 @@ export const resetSaveAndExitLinkResponseSchema = Joi.object({
   recordFound: Joi.boolean().required(),
   recordUpdated: Joi.boolean().required()
 }).label('resetSaveAndExitLinkResponseSchema')
+
+export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')

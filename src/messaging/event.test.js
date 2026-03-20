@@ -1,12 +1,18 @@
 import {
   DeleteMessageCommand,
   ReceiveMessageCommand,
-  SQSClient
+  SQSClient,
+  StartMessageMoveTaskCommand
 } from '@aws-sdk/client-sqs'
 import { mockClient } from 'aws-sdk-client-mock'
 
 import 'aws-sdk-client-mock-jest'
-import { deleteMessage, receiveMessages } from '~/src/messaging/event.js'
+import {
+  deleteMessage,
+  receiveDlqMessages,
+  receiveMessages,
+  redriveDlqMessages
+} from '~/src/messaging/event.js'
 
 jest.mock('~/src/helpers/logging/logger.js')
 
@@ -51,8 +57,41 @@ describe('event', () => {
       })
     })
   })
+
+  describe('receiveDlqMessages', () => {
+    it('should receive dead-letter queue messages', async () => {
+      const receivedMessage = {
+        Messages: [messageStub]
+      }
+
+      snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
+      await receiveDlqMessages('my-queue')
+      expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
+        QueueUrl: expect.any(String),
+        VisibilityTimeout: 5
+      })
+    })
+  })
+
+  describe('redriveDlqMessages', () => {
+    it('should redrive dead-letter queue messages', async () => {
+      /**
+       * @type {StartMessageMoveTaskCommandOutput}
+       */
+      const redriveResult = {
+        TaskHandle: '123',
+        $metadata: {}
+      }
+
+      snsMock.on(StartMessageMoveTaskCommand).resolves(redriveResult)
+      await redriveDlqMessages('my-arn')
+      expect(snsMock).toHaveReceivedCommandWith(StartMessageMoveTaskCommand, {
+        SourceArn: expect.any(String)
+      })
+    })
+  })
 })
 
 /**
- * @import { DeleteMessageCommandOutput } from '@aws-sdk/client-sqs'
+ * @import { DeleteMessageCommandOutput, StartMessageMoveTaskCommandOutput } from '@aws-sdk/client-sqs'
  */
