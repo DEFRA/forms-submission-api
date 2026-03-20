@@ -53,6 +53,7 @@ export async function prepareDb(logger) {
   const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
 
   await saveColl.createIndex({ magicLinkId: 1 }, { unique: true })
+  await saveColl.createIndex({ magicLinkGroupId: 1 })
   await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
   await saveColl.createIndex({
     'notify.expireEmailSentTimestamp': 1,
