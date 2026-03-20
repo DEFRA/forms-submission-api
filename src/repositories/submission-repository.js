@@ -66,6 +66,35 @@ export async function createSubmissionRecord(document, session) {
 }
 
 /**
+ * Gets a submission record based on reference number
+ * @param {string} referenceNumber - the reference number
+ * @returns { Promise<WithId<FormSubmissionDocument> | null> }
+ */
+export async function getSubmissionRecordByReference(referenceNumber) {
+  logger.info('Reading submission record')
+
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.findOne({
+      'meta.referenceNumber': referenceNumber
+    })
+
+    logger.info('Read submission record')
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to read submission record - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * @import { ClientSession, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
