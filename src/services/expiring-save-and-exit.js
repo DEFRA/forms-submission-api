@@ -6,7 +6,8 @@ import { createTimer } from '~/src/helpers/timer.js'
 import {
   findExpiringRecords,
   lockRecordForExpiryEmail,
-  markExpiryEmailSent
+  markExpiryEmailSent,
+  saveAndExitLabel
 } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
@@ -45,7 +46,7 @@ async function getFormTitle(record, formTitleCache) {
     logger.info(
       {
         event: {
-          category: 'save-and-exit',
+          category: saveAndExitLabel,
           action: 'fetch-form-title',
           reference: record.magicLinkId,
           duration: timer.elapsed
@@ -59,7 +60,7 @@ async function getFormTitle(record, formTitleCache) {
       {
         err,
         event: {
-          category: 'save-and-exit',
+          category: saveAndExitLabel,
           action: 'fetch-form-title-failed',
           reference: record.magicLinkId
         }
@@ -105,6 +106,89 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
       body: emailBody
     },
     emailReplyToId: notifyReplyToId
+  }
+}
+
+/**
+ * Process a single expiring record: lock, send email, mark as sent
+ * @param {Awaited<ReturnType<typeof findExpiringRecords>>[number]} record
+ * @param {string} runtimeId
+ * @param {Map<string, string>} formTitleCache
+ * @returns {Promise<'processed' | 'skipped' | 'failed'>}
+ */
+async function processExpiringRecord(record, runtimeId, formTitleCache) {
+  try {
+    const lockedRecord = await lockRecordForExpiryEmail(
+      record.magicLinkId,
+      runtimeId,
+      record.version
+    )
+
+    if (!lockedRecord) {
+      logger.info(
+        {
+          event: {
+            category: saveAndExitLabel,
+            action: 'skip-lock-failed',
+            reference: record.magicLinkId
+          }
+        },
+        `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
+      )
+      return 'skipped'
+    }
+
+    if (lockedRecord.notify?.expireLockId !== runtimeId) {
+      logger.warn(
+        {
+          event: {
+            category: saveAndExitLabel,
+            action: 'lock-verification-failed',
+            reference: record.magicLinkId
+          }
+        },
+        `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
+      )
+      return 'skipped'
+    }
+
+    const formTitle = await getFormTitle(lockedRecord, formTitleCache)
+    const emailContent = constructExpiryReminderEmailContent(
+      lockedRecord,
+      formTitle
+    )
+
+    const timer = createTimer()
+    await sendNotification(emailContent)
+
+    logger.info(
+      {
+        event: {
+          category: saveAndExitLabel,
+          action: 'send-expiry-email',
+          reference: record.magicLinkId,
+          duration: timer.elapsed
+        }
+      },
+      `save-and-exit: Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
+    )
+
+    await markExpiryEmailSent(record.magicLinkId, runtimeId)
+
+    return 'processed'
+  } catch (err) {
+    logger.error(
+      {
+        err,
+        event: {
+          category: saveAndExitLabel,
+          action: 'process-record-failed',
+          reference: record.magicLinkId
+        }
+      },
+      `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+    )
+    return 'failed'
   }
 }
 
@@ -160,77 +244,15 @@ export async function processExpiringSaveAndExitRecords(
     )
 
     for (const record of expiringRecords) {
-      try {
-        const lockedRecord = await lockRecordForExpiryEmail(
-          record.magicLinkId,
-          runtimeId,
-          record.version
-        )
+      const outcome = await processExpiringRecord(
+        record,
+        runtimeId,
+        formTitleCache
+      )
 
-        if (!lockedRecord) {
-          logger.info(
-            {
-              event: {
-                category: 'save-and-exit',
-                action: 'skip-lock-failed',
-                reference: record.magicLinkId
-              }
-            },
-            `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
-          )
-          continue
-        }
-
-        if (lockedRecord.notify?.expireLockId !== runtimeId) {
-          logger.warn(
-            {
-              event: {
-                category: 'save-and-exit',
-                action: 'lock-verification-failed',
-                reference: record.magicLinkId
-              }
-            },
-            `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
-          )
-          continue
-        }
-
-        const formTitle = await getFormTitle(lockedRecord, formTitleCache)
-        const emailContent = constructExpiryReminderEmailContent(
-          lockedRecord,
-          formTitle
-        )
-
-        const timer = createTimer()
-        await sendNotification(emailContent)
-
-        logger.info(
-          {
-            event: {
-              category: 'save-and-exit',
-              action: 'send-expiry-email',
-              reference: record.magicLinkId,
-              duration: timer.elapsed
-            }
-          },
-          `save-and-exit: Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
-        )
-
-        await markExpiryEmailSent(record.magicLinkId, runtimeId)
-
+      if (outcome === 'processed') {
         processedCount++
-      } catch (err) {
-        logger.error(
-          {
-            err,
-            event: {
-              category: 'save-and-exit',
-              action: 'process-record-failed',
-              reference: record.magicLinkId
-            }
-          },
-          `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
-        )
+      } else if (outcome === 'failed') {
         failedCount++
       }
     }

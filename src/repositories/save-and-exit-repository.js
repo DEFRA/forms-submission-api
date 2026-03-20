@@ -11,6 +11,8 @@ import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
 const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
+
+export const saveAndExitLabel = 'save-and-exit'
 const maxInvalidPasswordAttempts = 5
 
 /**
@@ -20,7 +22,7 @@ const maxInvalidPasswordAttempts = 5
  */
 export async function getSaveAndExitRecord(id) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'read-record',
     reference: id
   }
@@ -60,7 +62,7 @@ export async function getSaveAndExitRecord(id) {
  */
 export async function createSaveAndExitRecord(recordInput, session) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'create-record',
     reference: recordInput.magicLinkId
   }
@@ -120,7 +122,7 @@ export async function createSaveAndExitRecord(recordInput, session) {
  */
 export async function incrementInvalidPasswordAttempts(id) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'increment-invalid-password-attempts',
     reference: id
   }
@@ -178,7 +180,7 @@ export async function incrementInvalidPasswordAttempts(id) {
  */
 export async function resetSaveAndExitRecord(id) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'reset-record',
     reference: id
   }
@@ -219,7 +221,7 @@ export async function resetSaveAndExitRecord(id) {
  */
 export async function markSaveAndExitRecordAsConsumed(id) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'mark-consumed',
     reference: id
   }
@@ -354,7 +356,7 @@ export async function lockRecordForExpiryEmail(
   currentVersion
 ) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'lock-record',
     reference: magicLinkId
   }
@@ -422,7 +424,7 @@ export async function lockRecordForExpiryEmail(
  */
 export async function markExpiryEmailSent(magicLinkId, runtimeId) {
   const event = {
-    category: 'save-and-exit',
+    category: saveAndExitLabel,
     action: 'mark-email-sent',
     reference: magicLinkId
   }
