@@ -31,7 +31,8 @@ export const validateSavedLinkResponseSchema = Joi.object({
   state: Joi.object(),
   securityQuestion: Joi.string().required(),
   invalidPasswordAttempts: Joi.number().min(0).required(),
-  validPassword: Joi.boolean().required()
+  validPassword: Joi.boolean().required(),
+  magicLinkGroupId: Joi.string().required()
 }).label('validateSavedLinkResponse')
 
 export const generateFormSubmissionsFileResponseSchema = Joi.object({

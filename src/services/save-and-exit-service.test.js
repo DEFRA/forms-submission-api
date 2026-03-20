@@ -2,12 +2,14 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 
 import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
+  deleteSaveAndExitGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   markSaveAndExitRecordAsConsumed,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
+  cleanUpSaveAndExit,
   getSavedLinkDetails,
   resetSaveAndExitLink,
   validateSavedLinkCredentials
@@ -63,7 +65,7 @@ describe('save-and-exit service', () => {
       expect(markSaveAndExitRecordAsConsumed).not.toHaveBeenCalled()
     })
 
-    test('should return state (and mark record as consumed) if all valid', async () => {
+    test('should return state if all valid', async () => {
       const submissionDocument2 = structuredClone(submissionDocument)
       submissionDocument2.security.answer =
         '$argon2id$v=19$m=65536,t=3,p=4$Rqca11F5xejLRd804Gc8Uw$6opyTQEN4I0WFCw5BM/7SCaOaECMm62LQaKvVH/DXQ0'
@@ -75,7 +77,6 @@ describe('save-and-exit service', () => {
       // @ts-expect-error - dynamic field names
       expect(res.state.formField2).toBe('val2')
       expect(res.form.id).toBe('form-id')
-      expect(markSaveAndExitRecordAsConsumed).toHaveBeenCalled()
     })
   })
 
@@ -122,6 +123,22 @@ describe('save-and-exit service', () => {
         recordFound: true,
         recordUpdated: true
       })
+    })
+  })
+
+  describe('cleanUpSaveAndExit', () => {
+    test('should call repo method', async () => {
+      jest.mocked(deleteSaveAndExitGroup).mockResolvedValue()
+      // @ts-expect-error - partial mock of message
+      await cleanUpSaveAndExit({ custom: { magicLinkGroupId: 'group-id' } }, {})
+      expect(deleteSaveAndExitGroup).toHaveBeenCalledWith('group-id', {})
+    })
+
+    test('should ignore if no group id passed', async () => {
+      jest.mocked(deleteSaveAndExitGroup).mockResolvedValue()
+      // @ts-expect-error - partial mock of message
+      await cleanUpSaveAndExit({}, {})
+      expect(deleteSaveAndExitGroup).not.toHaveBeenCalled()
     })
   })
 })
