@@ -160,6 +160,12 @@ export const config = convict({
     default: null,
     env: 'MANAGER_URL'
   },
+  entitlementUrl: {
+    doc: 'Forms entitlements API URL',
+    format: String,
+    default: 'http://localhost:3004',
+    env: 'ENTITLEMENT_URL'
+  },
   /**
    * @todo We plan to replace `node-convict` with `joi` and remove all defaults.
    * These OIDC/roles are for the DEV application in the DEFRA tenant.
@@ -305,7 +311,6 @@ export const config = convict({
     default: null,
     env: 'NOTIFY_REPLY_TO_ID'
   },
-
   /**
    * Scheduler
    */
