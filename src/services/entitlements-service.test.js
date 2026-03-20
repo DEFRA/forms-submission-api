@@ -8,8 +8,6 @@ describe('Entitlements service', () => {
     error: jest.fn()
   }
 
-  /** @type {() => string[]} */
-  let getDefaultScopes
   /** @type {(oid: string, authToken?: string) => Promise<string[]>} */
   let getUserScopes
   /** @type {any} */
@@ -46,7 +44,6 @@ describe('Entitlements service', () => {
     getJson = /** @type {any} */ (fetchModule.getJson)
 
     const serviceModule = await import('~/src/services/entitlements-service.js')
-    getDefaultScopes = serviceModule.getDefaultScopes
     getUserScopes = serviceModule.getUserScopes
   })
 
@@ -169,33 +166,6 @@ describe('Entitlements service', () => {
         new URL(`http://localhost:3003/users/${testOid}`),
         {}
       )
-    })
-  })
-
-  describe('getDefaultScopes', () => {
-    it('should return admin scopes', () => {
-      const result = getDefaultScopes()
-
-      expect(result).toEqual([
-        'form-delete',
-        'form-edit',
-        'form-read',
-        'form-publish',
-        'user-create',
-        'user-delete',
-        'user-edit',
-        'forms-feedback',
-        'forms-backup',
-        'reset-save-and-exit'
-      ])
-    })
-
-    it('should return a new array instance each time', () => {
-      const result1 = getDefaultScopes()
-      const result2 = getDefaultScopes()
-
-      expect(result1).not.toBe(result2)
-      expect(result1).toEqual(result2)
     })
   })
 })

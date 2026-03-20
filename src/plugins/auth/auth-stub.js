@@ -22,7 +22,6 @@ export const buildArtifactStub = function (partialpayload = {}) {
         azpacr: '1',
         family_name: 'Chase',
         given_name: 'Enrique',
-        groups: ['7049296f-2156-4d61-8ac3-349276438ef9'],
         login_hint: 'O.CiQ',
         name: 'Enrique Chase (Defra)',
         oid: '396e84b4-1cbd-40d0-af83-857be2aaefa7',

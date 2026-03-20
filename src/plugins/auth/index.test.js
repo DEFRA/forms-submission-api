@@ -4,145 +4,30 @@ import {
   validateAuth,
   validateRetrievalKey
 } from '~/src/plugins/auth/index.js'
+import { getUserScopes } from '~/src/services/entitlements-service.js'
+
+jest.mock('~/src/services/entitlements-service.js')
 
 describe('Auth plugin', () => {
   describe('Validate azure JWT', () => {
     test('Testing validateAuth with a valid artifact returns isValid: true', async () => {
+      jest
+        .mocked(getUserScopes)
+        .mockResolvedValueOnce(['form-delete', 'form-edit', 'form-read'])
+
       const artifacts = buildArtifactStub()
       const res = await validateAuth(artifacts)
 
+      expect(getUserScopes).toHaveBeenCalledWith(
+        artifacts.decoded.payload.oid,
+        artifacts.token
+      )
       expect(res).toEqual({
         isValid: true,
         credentials: {
           user: artifacts.decoded.payload,
-          scope: [
-            'form-delete',
-            'form-edit',
-            'form-read',
-            'form-publish',
-            'user-create',
-            'user-delete',
-            'user-edit',
-            'forms-feedback',
-            'forms-backup',
-            'reset-save-and-exit'
-          ]
+          scope: ['form-delete', 'form-edit', 'form-read']
         }
-      })
-    })
-
-    test('Testing validateAuth with a valid artifact (OIDC mock server) returns isValid: true', async () => {
-      const artifacts = buildArtifactStub()
-
-      const res = await validateAuth({
-        ...artifacts,
-        decoded: {
-          ...artifacts.decoded,
-          payload: {
-            ...artifacts.decoded.payload,
-            // @ts-expect-error - OIDC test
-            groups: JSON.stringify(artifacts.decoded.payload.groups)
-          }
-        }
-      })
-
-      expect(res).toEqual({
-        isValid: true,
-        credentials: {
-          user: artifacts.decoded.payload,
-          scope: [
-            'form-delete',
-            'form-edit',
-            'form-read',
-            'form-publish',
-            'user-create',
-            'user-delete',
-            'user-edit',
-            'forms-feedback',
-            'forms-backup',
-            'reset-save-and-exit'
-          ]
-        }
-      })
-    })
-
-    test('Testing validateAuth with a invalid artifact (OIDC mock server) returns isValid: false', async () => {
-      const artifacts = buildArtifactStub()
-
-      const res = await validateAuth({
-        ...artifacts,
-        decoded: {
-          ...artifacts.decoded,
-          payload: {
-            ...artifacts.decoded.payload,
-            // @ts-expect-error - OIDC test
-            groups: '[]'
-          }
-        }
-      })
-
-      expect(res).toEqual({
-        isValid: false
-      })
-    })
-
-    test('Testing validateAuth with a invalid JSON groups artifact (OIDC mock server) returns isValid: false', async () => {
-      const artifacts = buildArtifactStub()
-
-      const res = await validateAuth({
-        ...artifacts,
-        decoded: {
-          ...artifacts.decoded,
-          payload: {
-            ...artifacts.decoded.payload,
-            // @ts-expect-error - OIDC test invalid JSON
-            groups: '['
-          }
-        }
-      })
-
-      expect(res).toEqual({
-        isValid: false
-      })
-    })
-
-    test('Testing validateAuth with a invalid JSON groups object artifact (OIDC mock server) returns isValid: false', async () => {
-      const artifacts = buildArtifactStub()
-
-      const res = await validateAuth({
-        ...artifacts,
-        decoded: {
-          ...artifacts.decoded,
-          payload: {
-            ...artifacts.decoded.payload,
-            // @ts-expect-error - test invalid data
-            groups: '{}'
-          }
-        }
-      })
-
-      expect(res).toEqual({
-        isValid: false
-      })
-    })
-
-    test('Testing validateAuth with a invalid JSON groups object artifact returns isValid: false', async () => {
-      const artifacts = buildArtifactStub()
-
-      const res = await validateAuth({
-        ...artifacts,
-        decoded: {
-          ...artifacts.decoded,
-          payload: {
-            ...artifacts.decoded.payload,
-            // @ts-expect-error - test invalid data
-            groups: {}
-          }
-        }
-      })
-
-      expect(res).toEqual({
-        isValid: false
       })
     })
 

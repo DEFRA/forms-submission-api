@@ -1,4 +1,3 @@
-import { RoleScopes, Roles } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 
 import { config } from '~/src/config/index.js'
@@ -57,12 +56,4 @@ export async function getUserScopes(oid, authToken) {
 
     return []
   }
-}
-
-/**
- * Gets the default scopes when entitlements API is not used
- * @returns {string[]} Default scopes array
- */
-export function getDefaultScopes() {
-  return [...RoleScopes[Roles.Superadmin]]
 }

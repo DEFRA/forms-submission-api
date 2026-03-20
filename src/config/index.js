@@ -194,12 +194,6 @@ export const config = convict({
     nullable: false,
     env: 'OIDC_VERIFY_ISS'
   },
-  roleEditorGroupId: {
-    doc: 'The AD security group the access token needs to claim membership of',
-    format: String,
-    default: '9af646c4-fa14-4606-8ebf-ec187ac03386',
-    env: 'ROLE_EDITOR_GROUP_ID'
-  },
   /** @type {SchemaObj<string>} */
   cognitoJwksUri: {
     doc: 'The URI that defines the cognito json web key set. This is a URL formatted as https://cognito-idp.<Region>.amazonaws.com/<userPoolId>/.well-known/jwks.json',
@@ -317,13 +311,6 @@ export const config = convict({
     default: null,
     env: 'NOTIFY_REPLY_TO_ID'
   },
-  useEntitlementApi: {
-    doc: 'Feature flag to enable entitlement API for fetching scopes',
-    format: Boolean,
-    default: false,
-    env: 'FEATURE_FLAG_USE_ENTITLEMENT_API'
-  },
-
   /**
    * Scheduler
    */
