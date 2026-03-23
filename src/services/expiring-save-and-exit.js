@@ -254,7 +254,7 @@ export async function processExpiringSaveAndExitRecords(
         processedCount++
       } else if (outcome === 'failed') {
         failedCount++
-      }
+      } // Else do nothing, record has been skipped.
     }
 
     hasMore = expiringRecords.length >= batchLimit
