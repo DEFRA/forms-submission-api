@@ -145,7 +145,7 @@ export default [
     async handler(request, h) {
       const { params } = request
       const messages = await receiveDlqMessages(params.dlq)
-      return h.response({ messages: messages.Messages }).code(OK_RESPONSE)
+      return h.response({ messages: messages.Messages ?? [] }).code(OK_RESPONSE)
     },
     options: {
       tags: ['api'],
