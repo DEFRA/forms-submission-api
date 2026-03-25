@@ -4,12 +4,6 @@ on:
   push:
     branches:
       - feat/DF-697-save-and-exit-expiry-email
-    paths:
-      - '.browserslistrc'
-      - 'babel.config.*'
-      - 'Dockerfile'
-      - 'src/**'
-      - '!**/*.test.*'
 
   workflow_dispatch:
     inputs:
