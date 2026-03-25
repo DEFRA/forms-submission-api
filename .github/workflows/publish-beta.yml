@@ -41,12 +41,17 @@ jobs:
       - name: Compute beta version
         id: version
         run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
           if [ -n "${{ inputs.version }}" ]; then
-            echo "value=${{ inputs.version }}-beta" >> "$GITHUB_OUTPUT"
+            echo "value=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           else
-            # Get latest version tag and append beta suffix
-            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.2")
-            echo "value=${BASE_VERSION}-beta" >> "$GITHUB_OUTPUT"
+            # Get latest version tag, bump patch, and append beta suffix
+            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.87.2")
+            MAJOR=$(echo "$BASE_VERSION" | cut -d. -f1)
+            MINOR=$(echo "$BASE_VERSION" | cut -d. -f2)
+            PATCH=$(echo "$BASE_VERSION" | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            echo "value=${MAJOR}.${MINOR}.${NEXT_PATCH}-beta" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build and Publish
