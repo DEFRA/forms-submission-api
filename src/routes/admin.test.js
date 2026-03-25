@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
 import {
+  deleteDlqMessage,
   receiveDlqMessages,
   redriveDlqMessages
 } from '~/src/messaging/event.js'
@@ -249,6 +250,34 @@ describe('Admin route', () => {
       expect(response.headers['content-type']).toContain(jsonContentType)
       expect(response.result).toEqual({ message: 'success' })
       expect(redriveDlqMessages).toHaveBeenCalled()
+    })
+  })
+
+  describe('DELETE', () => {
+    test('/admin/dead-letter/save-and-exit/receiptHandle route returns 200', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/admin/deadletter/save-and-exit/receipt-handle',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(deleteDlqMessage).toHaveBeenCalled()
+    })
+
+    test('/admin/dead-letter/form-submissions/receiptHandle route returns 200', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/admin/deadletter/form-submissions/receipt-handle',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(deleteDlqMessage).toHaveBeenCalled()
     })
   })
 })
