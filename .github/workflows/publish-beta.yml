@@ -5,7 +5,7 @@ on:
     branches:
       - feat/DF-697-save-and-exit-expiry-email
     paths:
-      - '.github/workflows/**'
+      - '.github/workflows/publish-beta.yml'
       - '.browserslistrc'
       - 'babel.config.*'
       - 'Dockerfile'
@@ -45,7 +45,7 @@ jobs:
             echo "value=${{ inputs.version }}-beta" >> "$GITHUB_OUTPUT"
           else
             # Get latest version tag and append beta suffix
-            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.2")
             echo "value=${BASE_VERSION}-beta" >> "$GITHUB_OUTPUT"
           fi
 
