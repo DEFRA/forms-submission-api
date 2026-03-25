@@ -1,0 +1,57 @@
+name: Publish Beta
+
+on:
+  push:
+    branches:
+      - feat/DF-697-save-and-exit-expiry-email
+    paths:
+      - '.browserslistrc'
+      - 'babel.config.*'
+      - 'Dockerfile'
+      - 'src/**'
+      - '!**/*.test.*'
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number manual override'
+        required: false
+
+concurrency:
+  group: publish-beta
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+env:
+  AWS_REGION: eu-west-2
+  AWS_ACCOUNT_ID: "094954420758"
+
+jobs:
+  build:
+    if: github.run_number != 1
+    name: CDP-build-workflow
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Compute beta version
+        id: version
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "value=${{ inputs.version }}-beta.${COMMIT_HASH}" >> "$GITHUB_OUTPUT"
+          else
+            # Get latest version tag and append beta suffix
+            BASE_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+            echo "value=${BASE_VERSION}-beta.${COMMIT_HASH}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and Publish
+        uses: DEFRA/cdp-build-action/build@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          version: ${{ steps.version.outputs.value }}
