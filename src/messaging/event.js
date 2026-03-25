@@ -13,6 +13,15 @@ const maxNumberOfMessages = config.get('maxNumberOfMessages')
 const visibilityTimeout = config.get('visibilityTimeout')
 
 /**
+ * @param {string} dlqName
+ */
+function getDeadLetterQueueUrl(dlqName) {
+  return dlqName === 'save-and-exit'
+    ? `${config.get('saveAndExitQueueUrl')}-deadletter`
+    : `${config.get('submissionQueueUrl')}-deadletter`
+}
+
+/**
  * Receive event messages
  * @param {string} queueUrl - the SQS queue url
  * @returns {Promise<ReceiveMessageResult>}
@@ -37,20 +46,18 @@ export function receiveMessages(queueUrl) {
  * @returns {Promise<ReceiveMessageResult>}
  */
 export function receiveDlqMessages(dlq) {
-  const queueUrl =
-    dlq === 'save-and-exit'
-      ? `${config.get('saveAndExitQueueUrl')}-deadletter`
-      : `${config.get('submissionQueueUrl')}-deadletter`
+  const queueUrl = getDeadLetterQueueUrl(dlq)
   const command = new ReceiveMessageCommand({
     QueueUrl: queueUrl,
     MaxNumberOfMessages: 10,
-    VisibilityTimeout: 5
+    VisibilityTimeout: 1,
+    WaitTimeSeconds: 0
   })
   return sqsClient.send(command)
 }
 
 /**
- * Redrive the specified message from the dead-letter queue to the main queue
+ * Redrive all messages from the dead-letter queue to the main queue
  * @param {string} dlq - the SQS deadletter queue ARN
  * @returns {Promise<StartMessageMoveTaskResult>}
  */
@@ -61,6 +68,21 @@ export function redriveDlqMessages(dlq) {
       : config.get('sqsFormSubmissionsDlqArn')
   const command = new StartMessageMoveTaskCommand({
     SourceArn: queueArn
+  })
+  return sqsClient.send(command)
+}
+
+/**
+ * Delete the specified message from the dead-letter queue
+ * @param {string} dlq - the SQS deadletter queue ARN
+ * @param {string} receiptHandle - the message receipt handle (not the same as the message id)
+ * @returns {Promise<DeleteMessageCommandOutput>}
+ */
+export function deleteDlqMessage(dlq, receiptHandle) {
+  const queueUrl = getDeadLetterQueueUrl(dlq)
+  const command = new DeleteMessageCommand({
+    QueueUrl: queueUrl,
+    ReceiptHandle: receiptHandle
   })
   return sqsClient.send(command)
 }

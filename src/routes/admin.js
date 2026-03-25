@@ -2,6 +2,7 @@ import { Scopes, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
 import {
+  deleteDlqMessage,
   receiveDlqMessages,
   redriveDlqMessages
 } from '~/src/messaging/event.js'
@@ -10,6 +11,7 @@ import {
   generateFeedbackSubmissionsFileResponseSchema,
   generateFormSubmissionsFileResponseSchema,
   magicLinkSchema,
+  receiptHandleSchema,
   resetSaveAndExitLinkResponseSchema
 } from '~/src/models/form.js'
 import { resetSaveAndExitLink } from '~/src/services/save-and-exit-service.js'
@@ -184,10 +186,37 @@ export default [
           .label('deadLetterQueueParams')
       }
     }
+  }),
+
+  /**
+   * @satisfies {ServerRoute<DeadLetterQueueAndHandleRequest>}
+   */
+  ({
+    method: 'DELETE',
+    path: '/admin/deadletter/{dlq}/{receiptHandle}',
+    async handler(request, h) {
+      const { params } = request
+      await deleteDlqMessage(params.dlq, params.receiptHandle)
+      return h.response({ message: 'success' }).code(OK_RESPONSE)
+    },
+    options: {
+      tags: ['api'],
+      auth: {
+        scope: [`+${Scopes.DeadLetterQueues}`]
+      },
+      validate: {
+        params: Joi.object()
+          .keys({
+            dlq: dqlSchema.required(),
+            receiptHandle: receiptHandleSchema.required()
+          })
+          .label('deadLetterQueueAndHandleParams')
+      }
+    }
   })
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { DeadLetterQueueRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
+ * @import { DeadLetterQueueRequest, DeadLetterQueueAndHandleRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
  */

@@ -8,6 +8,7 @@ import { mockClient } from 'aws-sdk-client-mock'
 
 import 'aws-sdk-client-mock-jest'
 import {
+  deleteDlqMessage,
   deleteMessage,
   receiveDlqMessages,
   receiveMessages,
@@ -68,7 +69,8 @@ describe('event', () => {
       await receiveDlqMessages('form-submissions')
       expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
         QueueUrl: expect.any(String),
-        VisibilityTimeout: 5
+        VisibilityTimeout: 1,
+        WaitTimeSeconds: 0
       })
     })
 
@@ -81,7 +83,8 @@ describe('event', () => {
       await receiveDlqMessages('save-and-exit')
       expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
         QueueUrl: expect.any(String),
-        VisibilityTimeout: 5
+        VisibilityTimeout: 1,
+        WaitTimeSeconds: 0
       })
     })
   })
@@ -116,6 +119,24 @@ describe('event', () => {
       await redriveDlqMessages('save-and-exit')
       expect(snsMock).toHaveReceivedCommandWith(StartMessageMoveTaskCommand, {
         SourceArn: expect.any(String)
+      })
+    })
+  })
+
+  describe('deleteDlqMessage', () => {
+    it('should delete event message', async () => {
+      /**
+       * @type {DeleteMessageCommandOutput}
+       */
+      const deleteResult = {
+        $metadata: {}
+      }
+
+      snsMock.on(DeleteMessageCommand).resolves(deleteResult)
+      await deleteDlqMessage('save-and-exit', messageStub.ReceiptHandle)
+      expect(snsMock).toHaveReceivedCommandWith(DeleteMessageCommand, {
+        QueueUrl: expect.any(String),
+        ReceiptHandle: receiptHandle
       })
     })
   })
