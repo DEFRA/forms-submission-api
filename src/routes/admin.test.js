@@ -1,6 +1,11 @@
 import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
+import {
+  deleteDlqMessage,
+  receiveDlqMessages,
+  redriveDlqMessages
+} from '~/src/messaging/event.js'
 import { resetSaveAndExitLink } from '~/src/services/save-and-exit-service.js'
 import {
   generateFeedbackSubmissionsFileForAll,
@@ -23,6 +28,10 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
     debug: jest.fn()
   })
 }))
+jest.mock('~/src/messaging/event.js')
+
+const okStatusCode = 200
+const jsonContentType = 'application/json'
 
 describe('Admin route', () => {
   /** @type {Server} */
@@ -210,6 +219,65 @@ describe('Admin route', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.INTERNAL_SERVER_ERROR)
+    })
+  })
+
+  describe('Dead letter queues', () => {
+    test('GET /admin/dead-letter/save-and-exit/view route returns 200', async () => {
+      jest
+        .mocked(receiveDlqMessages)
+        .mockResolvedValue({ Messages: [{ MessageId: 'message1' }] })
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/admin/deadletter/save-and-exit/view',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ messages: [{ MessageId: 'message1' }] })
+    })
+
+    test('POST /admin/dead-letter/save-and-exit/redrive route returns 200', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/admin/deadletter/save-and-exit/redrive',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(redriveDlqMessages).toHaveBeenCalled()
+    })
+  })
+
+  describe('DELETE', () => {
+    test('/admin/dead-letter/save-and-exit/receiptHandle route returns 200', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/admin/deadletter/save-and-exit/receipt-handle',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(deleteDlqMessage).toHaveBeenCalled()
+    })
+
+    test('/admin/dead-letter/form-submissions/receiptHandle route returns 200', async () => {
+      const response = await server.inject({
+        method: 'DELETE',
+        url: '/admin/deadletter/form-submissions/receipt-handle',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(deleteDlqMessage).toHaveBeenCalled()
     })
   })
 })

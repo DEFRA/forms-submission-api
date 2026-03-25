@@ -25,7 +25,8 @@ export const authSuperadmin = {
       Scopes.UserEdit,
       Scopes.FormsFeedback,
       Scopes.FormsBackup,
-      Scopes.ResetSaveAndExit
+      Scopes.ResetSaveAndExit,
+      Scopes.DeadLetterQueues
     ]
   }
 }
