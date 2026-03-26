@@ -1,11 +1,14 @@
 import { StatusCodes } from 'http-status-codes'
 
+import { STUB_SUBMISSION_REF } from '../repositories/__stubs__/submission.js'
+
 import { createServer } from '~/src/api/server.js'
 import {
   deleteDlqMessage,
   receiveDlqMessages,
   redriveDlqMessages
 } from '~/src/messaging/event.js'
+import { getSubmissionRecordByReference } from '~/src/repositories/submission-repository.js'
 import { resetSaveAndExitLink } from '~/src/services/save-and-exit-service.js'
 import {
   generateFeedbackSubmissionsFileForAll,
@@ -14,6 +17,8 @@ import {
   generateSubmissionsFile
 } from '~/src/services/submission-service.js'
 import { authAdmin, authSuperadmin } from '~/test/fixtures/auth.js'
+// @ts-expect-error - import json
+import formSubmissions from '~/test/fixtures/forms-submissions.json'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -21,6 +26,7 @@ jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
 jest.mock('~/src/services/submission-service.js')
+jest.mock('~/src/repositories/submission-repository.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
   createLogger: () => ({
     error: jest.fn(),
@@ -222,6 +228,36 @@ describe('Admin route', () => {
     })
   })
 
+  describe('Get submission record', () => {
+    test('Testing GET /submission/{referenceNumber} route is successful with valid params', async () => {
+      const expectedRecord = formSubmissions.at(0)
+      // @ts-expect-error - test data is not fully compliant with FormSubmissionDocument type
+      jest
+        .mocked(getSubmissionRecordByReference)
+        .mockResolvedValue(expectedRecord)
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/submission/${STUB_SUBMISSION_REF}`,
+        auth: authAdmin
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+    })
+
+    test('Testing GET /submission/{referenceNumber} returns 404 when record not found', async () => {
+      jest.mocked(getSubmissionRecordByReference).mockResolvedValue(null)
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/submission/${STUB_SUBMISSION_REF}`,
+        auth: authAdmin
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.NOT_FOUND)
+    })
+  })
+
   describe('Dead letter queues', () => {
     test('GET /admin/dead-letter/save-and-exit/view route returns 200', async () => {
       jest
@@ -285,4 +321,6 @@ describe('Admin route', () => {
 /**
  * @import { Server } from '@hapi/hapi'
  * @import { UUID } from 'crypto'
+ * @import { WithId } from 'mongodb'
+ * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
