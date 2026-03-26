@@ -1,6 +1,7 @@
 import { Scopes, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
+import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   deleteDlqMessage,
   receiveDlqMessages,
@@ -11,6 +12,7 @@ import {
   generateFeedbackSubmissionsFileResponseSchema,
   generateFormSubmissionsFileResponseSchema,
   magicLinkSchema,
+  messageIdSchema,
   receiptHandleSchema,
   resetSaveAndExitLinkResponseSchema
 } from '~/src/models/form.js'
@@ -22,6 +24,8 @@ import {
 } from '~/src/services/submission-service.js'
 
 const OK_RESPONSE = 200
+
+const logger = createLogger()
 
 export default [
   /**
@@ -170,7 +174,10 @@ export default [
     path: '/admin/deadletter/{dlq}/redrive',
     async handler(request, h) {
       const { params } = request
-      await redriveDlqMessages(params.dlq)
+      const { dlq } = params
+      logger.info(`Redriving DLQ ${dlq}`)
+      await redriveDlqMessages(dlq)
+      logger.info(`Redriving DLQ ${dlq} triggered successfully`)
       return h.response({ message: 'success' }).code(OK_RESPONSE)
     },
     options: {
@@ -193,10 +200,14 @@ export default [
    */
   ({
     method: 'DELETE',
-    path: '/admin/deadletter/{dlq}/{receiptHandle}',
+    path: '/admin/deadletter/{dlq}/{messageId}',
     async handler(request, h) {
-      const { params } = request
-      await deleteDlqMessage(params.dlq, params.receiptHandle)
+      const { params, payload } = request
+      const { dlq, messageId } = params
+      const { receiptHandle } = payload
+      logger.info(`Deleting DLQ message ${messageId} on ${dlq}`)
+      await deleteDlqMessage(dlq, receiptHandle)
+      logger.info(`Deleted DLQ message ${messageId} on ${dlq}`)
       return h.response({ message: 'success' }).code(OK_RESPONSE)
     },
     options: {
@@ -208,9 +219,14 @@ export default [
         params: Joi.object()
           .keys({
             dlq: dqlSchema.required(),
+            messageId: messageIdSchema.required()
+          })
+          .label('deadLetterDeleteMessageParams'),
+        payload: Joi.object()
+          .keys({
             receiptHandle: receiptHandleSchema.required()
           })
-          .label('deadLetterQueueAndHandleParams')
+          .label('deadLetterDeleteMessagePayload')
       }
     }
   })

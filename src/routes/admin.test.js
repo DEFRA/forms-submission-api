@@ -254,30 +254,42 @@ describe('Admin route', () => {
   })
 
   describe('DELETE', () => {
-    test('/admin/dead-letter/save-and-exit/receiptHandle route returns 200', async () => {
+    test('/admin/dead-letter/save-and-exit/message-id route returns 200', async () => {
       const response = await server.inject({
         method: 'DELETE',
-        url: '/admin/deadletter/save-and-exit/receipt-handle',
-        auth: authSuperadmin
+        url: '/admin/deadletter/save-and-exit/message-id',
+        auth: authSuperadmin,
+        payload: {
+          receiptHandle: 'receipt-handle'
+        }
       })
 
       expect(response.statusCode).toEqual(okStatusCode)
       expect(response.headers['content-type']).toContain(jsonContentType)
       expect(response.result).toEqual({ message: 'success' })
-      expect(deleteDlqMessage).toHaveBeenCalled()
+      expect(deleteDlqMessage).toHaveBeenCalledWith(
+        'save-and-exit',
+        'receipt-handle'
+      )
     })
 
-    test('/admin/dead-letter/form-submissions/receiptHandle route returns 200', async () => {
+    test('/admin/dead-letter/form-submissions/message-id route returns 200', async () => {
       const response = await server.inject({
         method: 'DELETE',
-        url: '/admin/deadletter/form-submissions/receipt-handle',
-        auth: authSuperadmin
+        url: '/admin/deadletter/form-submissions/message-id',
+        auth: authSuperadmin,
+        payload: {
+          receiptHandle: 'receipt-handle'
+        }
       })
 
       expect(response.statusCode).toEqual(okStatusCode)
       expect(response.headers['content-type']).toContain(jsonContentType)
       expect(response.result).toEqual({ message: 'success' })
-      expect(deleteDlqMessage).toHaveBeenCalled()
+      expect(deleteDlqMessage).toHaveBeenCalledWith(
+        'form-submissions',
+        'receipt-handle'
+      )
     })
   })
 })
