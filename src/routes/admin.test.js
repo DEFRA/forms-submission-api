@@ -231,9 +231,9 @@ describe('Admin route', () => {
   describe('Get submission record', () => {
     test('Testing GET /submission/{referenceNumber} route is successful with valid params', async () => {
       const expectedRecord = formSubmissions.at(0)
-      // @ts-expect-error - test data is not fully compliant with FormSubmissionDocument type
       jest
         .mocked(getSubmissionRecordByReference)
+        // @ts-expect-error - test data is not fully compliant with FormSubmissionDocument type
         .mockResolvedValue(expectedRecord)
 
       const response = await server.inject({
