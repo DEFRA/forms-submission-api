@@ -2,10 +2,12 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
+import { createTimer } from '~/src/helpers/timer.js'
 import {
   findExpiringRecords,
   lockRecordForExpiryEmail,
-  markExpiryEmailSent
+  markExpiryEmailSent,
+  saveAndExitLabel
 } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
@@ -37,14 +39,33 @@ async function getFormTitle(record, formTitleCache) {
 
   // Fetch from forms service and cache it
   try {
+    const timer = createTimer()
     const metadata = await getFormMetadataById(record.form.id)
     const title = metadata.title
     formTitleCache.set(record.form.id, title)
+    logger.info(
+      {
+        event: {
+          category: saveAndExitLabel,
+          action: 'fetch-form-title',
+          reference: record.magicLinkId,
+          duration: timer.elapsed
+        }
+      },
+      `save-and-exit: Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
+    )
     return title
   } catch (err) {
     logger.warn(
-      err,
-      `Failed to fetch form title for ${record.form.id}, using fallback`
+      {
+        err,
+        event: {
+          category: saveAndExitLabel,
+          action: 'fetch-form-title-failed',
+          reference: record.magicLinkId
+        }
+      },
+      `save-and-exit: Failed to fetch form title for ${record.form.id}, using fallback`
     )
     return 'your form'
   }
@@ -89,6 +110,89 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
 }
 
 /**
+ * Process a single expiring record: lock, send email, mark as sent
+ * @param {Awaited<ReturnType<typeof findExpiringRecords>>[number]} record
+ * @param {string} runtimeId
+ * @param {Map<string, string>} formTitleCache
+ * @returns {Promise<'processed' | 'skipped' | 'failed'>}
+ */
+async function processExpiringRecord(record, runtimeId, formTitleCache) {
+  try {
+    const lockedRecord = await lockRecordForExpiryEmail(
+      record.magicLinkId,
+      runtimeId,
+      record.version
+    )
+
+    if (!lockedRecord) {
+      logger.info(
+        {
+          event: {
+            category: saveAndExitLabel,
+            action: 'skip-lock-failed',
+            reference: record.magicLinkId
+          }
+        },
+        `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
+      )
+      return 'skipped'
+    }
+
+    if (lockedRecord.notify?.expireLockId !== runtimeId) {
+      logger.warn(
+        {
+          event: {
+            category: saveAndExitLabel,
+            action: 'lock-verification-failed',
+            reference: record.magicLinkId
+          }
+        },
+        `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
+      )
+      return 'skipped'
+    }
+
+    const formTitle = await getFormTitle(lockedRecord, formTitleCache)
+    const emailContent = constructExpiryReminderEmailContent(
+      lockedRecord,
+      formTitle
+    )
+
+    const timer = createTimer()
+    await sendNotification(emailContent)
+
+    logger.info(
+      {
+        event: {
+          category: saveAndExitLabel,
+          action: 'send-expiry-email',
+          reference: record.magicLinkId,
+          duration: timer.elapsed
+        }
+      },
+      `save-and-exit: Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
+    )
+
+    await markExpiryEmailSent(record.magicLinkId, runtimeId)
+
+    return 'processed'
+  } catch (err) {
+    logger.error(
+      {
+        err,
+        event: {
+          category: saveAndExitLabel,
+          action: 'process-record-failed',
+          reference: record.magicLinkId
+        }
+      },
+      `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+    )
+    return 'failed'
+  }
+}
+
+/**
  * Process expiring save-and-exit records
  * @param {string} runtimeId - The global runtime ID
  * @param {number} expiryWindowInHours - Number of hours before expiry
@@ -100,28 +204,7 @@ export async function processExpiringSaveAndExitRecords(
 ) {
   logger.info('Starting to process expiring save-and-exit records')
 
-  /** @type {Awaited<ReturnType<typeof findExpiringRecords>>} */
-  let expiringRecords
-
-  try {
-    expiringRecords = await findExpiringRecords(
-      expiryWindowInHours,
-      minimumHoursRemaining
-    )
-  } catch (err) {
-    logger.error(
-      err,
-      `Failed to process expiring save-and-exit records: ${getErrorMessage(err)}`
-    )
-    throw err
-  }
-
-  if (expiringRecords.length === 0) {
-    logger.info('No expiring save-and-exit records found')
-    return { processed: 0, failed: 0 }
-  }
-
-  logger.info(`Processing ${expiringRecords.length} expiring records`)
+  const batchLimit = 100
 
   let processedCount = 0
   let failedCount = 0
@@ -129,51 +212,56 @@ export async function processExpiringSaveAndExitRecords(
   // Local cache for form titles (scoped to this run)
   const formTitleCache = new Map()
 
-  for (const record of expiringRecords) {
+  let hasMore = true
+
+  while (hasMore) {
+    /** @type {Awaited<ReturnType<typeof findExpiringRecords>>} */
+    let expiringRecords
+
     try {
-      const lockedRecord = await lockRecordForExpiryEmail(
-        record.magicLinkId,
-        runtimeId,
-        record.version ?? 1
+      expiringRecords = await findExpiringRecords(
+        expiryWindowInHours,
+        minimumHoursRemaining,
+        batchLimit
       )
-
-      if (!lockedRecord) {
-        logger.info(`Skipping ${record.magicLinkId} - failed to obtain lock`)
-        continue
-      }
-
-      if (lockedRecord.notify?.expireLockId !== runtimeId) {
-        logger.warn(
-          `Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
-        )
-        continue
-      }
-
-      const formTitle = await getFormTitle(lockedRecord, formTitleCache)
-      const emailContent = constructExpiryReminderEmailContent(
-        lockedRecord,
-        formTitle
-      )
-      await sendNotification(emailContent)
-
-      logger.info(
-        `Sent expiry reminder email for ${record.magicLinkId} to ${record.email}`
-      )
-
-      await markExpiryEmailSent(record.magicLinkId, runtimeId)
-
-      processedCount++
     } catch (err) {
       logger.error(
         err,
-        `Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+        `Failed to process expiring save-and-exit records: ${getErrorMessage(err)}`
       )
-      failedCount++
+      throw err
     }
+
+    if (expiringRecords.length === 0) {
+      if (processedCount === 0 && failedCount === 0) {
+        logger.info('No expiring save-and-exit records found')
+      }
+      break
+    }
+
+    logger.info(
+      `Processing ${expiringRecords.length} expiring save-and-exit records`
+    )
+
+    for (const record of expiringRecords) {
+      const outcome = await processExpiringRecord(
+        record,
+        runtimeId,
+        formTitleCache
+      )
+
+      if (outcome === 'processed') {
+        processedCount++
+      } else if (outcome === 'failed') {
+        failedCount++
+      } // Else do nothing, record has been skipped.
+    }
+
+    hasMore = expiringRecords.length >= batchLimit
   }
 
   logger.info(
-    `Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
+    `save-and-exit: Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
   )
 
   return { processed: processedCount, failed: failedCount }

@@ -183,7 +183,8 @@ describe('expiring-save-and-exit', () => {
       expect(result).toEqual({ processed: 0, failed: 0 })
       expect(mockFindExpiringRecords).toHaveBeenCalledWith(
         36,
-        minimumHoursRemaining
+        minimumHoursRemaining,
+        100
       )
       expect(mockLockRecordForExpiryEmail).not.toHaveBeenCalled()
       expect(mockSendNotification).not.toHaveBeenCalled()
@@ -248,7 +249,8 @@ describe('expiring-save-and-exit', () => {
       expect(result).toEqual({ processed: 2, failed: 0 })
       expect(mockFindExpiringRecords).toHaveBeenCalledWith(
         36,
-        minimumHoursRemaining
+        minimumHoursRemaining,
+        100
       )
       expect(mockLockRecordForExpiryEmail).toHaveBeenCalledTimes(2)
       expect(mockLockRecordForExpiryEmail).toHaveBeenCalledWith(

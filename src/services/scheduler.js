@@ -205,7 +205,7 @@ export function initialiseEmailExpiringSoonScheduler(runtimeId) {
     async () => {
       await processExpiringSaveAndExitRecords(runtimeId, expiryWindowInHours)
     },
-    false
+    true
   )
 
   if (!success) {

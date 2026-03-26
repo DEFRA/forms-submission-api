@@ -316,7 +316,8 @@ describe('save-and-exit-repository', () => {
       expect(update).toEqual({
         $set: {
           'notify.expireEmailSentTimestamp': expect.any(Date)
-        }
+        },
+        $inc: { version: 1 }
       })
       expect(options).toEqual({ returnDocument: 'after' })
     })
