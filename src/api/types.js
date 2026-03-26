@@ -60,6 +60,7 @@
  */
 
 /**
+ * @typedef {{ Params: { referenceNumber: string }}} GetSubmissionByReference
  * @typedef {{ Params: { dlq: string }}} DeadLetterQueueRequest
  */
 
