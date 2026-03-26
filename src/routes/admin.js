@@ -261,6 +261,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSubmissionByReference, ResetSaveAndExit } from '~/src/api/types.js'
- * @import { DeadLetterQueueRequest, DeadLetterQueueAndHandleRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
+ * @import { DeadLetterQueueRequest, DeadLetterQueueAndHandleRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSubmissionByReference, ResetSaveAndExit } from '~/src/api/types.js'
  */
