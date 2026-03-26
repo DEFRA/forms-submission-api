@@ -64,3 +64,6 @@ export const getSubmissionByReferenceResponseSchema = Joi.object()
 /**
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
+export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
+
+export const receiptHandleSchema = Joi.string()
