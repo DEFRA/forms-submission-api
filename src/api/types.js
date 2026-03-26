@@ -65,7 +65,7 @@
  */
 
 /**
- * @typedef {{ Params: { dlq: string, receiptHandle: string }}} DeadLetterQueueAndHandleRequest
+ * @typedef {{ Params: { dlq: string, messageId: string }, Payload: { receiptHandle: string }}} DeadLetterQueueAndHandleRequest
  */
 
 /**
