@@ -160,6 +160,8 @@ describe('SchedulerService', () => {
       scheduler.scheduleTask('error-task', '* * * * *', taskFunction, true)
 
       jest.runAllTimers()
+      // Wait for the immediate execution to settle before triggering the second run
+      await Promise.resolve()
 
       const taskData = scheduler.tasks.get('error-task')
       expect(taskData).toBeDefined()
@@ -186,6 +188,8 @@ describe('SchedulerService', () => {
       )
 
       jest.runAllTimers()
+      // Wait for the immediate execution to settle before triggering the second run
+      await Promise.resolve()
 
       const taskData = scheduler.tasks.get('string-error-task')
       expect(taskData).toBeDefined()
