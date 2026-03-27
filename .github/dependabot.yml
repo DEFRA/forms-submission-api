@@ -16,7 +16,6 @@ updates:
 
       lint:
         patterns:
-          - '@typescript-eslint/*'
           - 'editorconfig-checker'
           - 'eslint'
           - 'eslint-*'
@@ -34,12 +33,41 @@ updates:
       tools:
         patterns:
           - 'jest'
+          - 'jest-*'
+          - 'nock'
           - 'tsx'
 
       types:
         patterns:
           - '@types/*'
           - 'oidc-client-ts'
+
+      forms:
+        patterns:
+          - '@defra/forms-model'
+          - '@defra/forms-engine-plugin'
+
+      aws:
+        patterns:
+          - '@aws-sdk/*'
+
+      hapi:
+        patterns:
+          - '@hapi/*'
+          - 'hapi-*'
+          - 'joi'
+
+      runtime:
+        patterns:
+          - '@defra/hapi-tracing'
+          - 'dotenv'
+          - 'mongodb'
+
+      dependencies:
+        patterns:
+          - '*'
+        update-types:
+          - patch
 
     # Schedule run every Monday, local time
     schedule:
@@ -56,6 +84,11 @@ updates:
   # Update GitHub Actions
   - package-ecosystem: github-actions
     directory: /
+
+    groups:
+      actions:
+        patterns:
+          - '*'
 
     # Schedule run every Monday, local time
     schedule:
