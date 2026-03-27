@@ -171,6 +171,26 @@
         "id": "e96e3b61-5861-4d78-b492-147fdad28184"
       },
       {
+        "title": "",
+        "path": "/add-site-geospatial-features",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Add site geospatial features",
+            "name": "DzDkCy",
+            "shortDescription": "Site features",
+            "hint": "",
+            "options": {
+              "required": false
+            },
+            "schema": {},
+            "id": "6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7"
+          }
+        ],
+        "next": [],
+        "id": "0b608f84-d2e2-4158-9737-37bd49305fd3"
+      },
+      {
         "title": "Summary",
         "path": "/summary",
         "controller": "SummaryPageController",
@@ -452,6 +472,26 @@
         ],
         "next": [],
         "id": "e96e3b61-5861-4d78-b492-147fdad28184"
+      },
+      {
+        "title": "",
+        "path": "/add-site-geospatial-features",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Add site geospatial features",
+            "name": "DzDkCy",
+            "shortDescription": "Site features",
+            "hint": "",
+            "options": {
+              "required": false
+            },
+            "schema": {},
+            "id": "6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7"
+          }
+        ],
+        "next": [],
+        "id": "0b608f84-d2e2-4158-9737-37bd49305fd3"
       },
       {
         "title": "What are your email address?",
@@ -755,6 +795,26 @@
         ],
         "next": [],
         "id": "e96e3b61-5861-4d78-b492-147fdad28184"
+      },
+      {
+        "title": "",
+        "path": "/add-site-geospatial-features",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Add site geospatial features",
+            "name": "DzDkCy",
+            "shortDescription": "Site features",
+            "hint": "",
+            "options": {
+              "required": false
+            },
+            "schema": {},
+            "id": "6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7"
+          }
+        ],
+        "next": [],
+        "id": "0b608f84-d2e2-4158-9737-37bd49305fd3"
       },
       {
         "title": "What are your email address?",
@@ -1120,6 +1180,26 @@
         ],
         "next": [],
         "id": "e96e3b61-5861-4d78-b492-147fdad28184"
+      },
+      {
+        "title": "",
+        "path": "/add-site-geospatial-features",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Add site geospatial features",
+            "name": "DzDkCy",
+            "shortDescription": "Site features",
+            "hint": "",
+            "options": {
+              "required": false
+            },
+            "schema": {},
+            "id": "6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7"
+          }
+        ],
+        "next": [],
+        "id": "0b608f84-d2e2-4158-9737-37bd49305fd3"
       },
       {
         "title": "Add new pizza",

@@ -265,6 +265,18 @@ export const config = convict({
     default: '',
     env: 'SUBMISSION_QUEUE_URL'
   },
+  sqsFormSubmissionsDlqArn: {
+    doc: 'SQS deadletter queue ARN for form submission events',
+    format: String,
+    default: '',
+    env: 'FORM_SUBMISSIONS_SQS_DLQ_ARN'
+  },
+  sqsSaveAndExitDlqArn: {
+    doc: 'SQS deadletter queue ARN for save-and-exit events',
+    format: String,
+    default: '',
+    env: 'SAVE_AND_EXIT_SQS_DLQ_ARN'
+  },
   receiveMessageTimeout: {
     doc: 'The wait time between each poll in milliseconds',
     format: Number,

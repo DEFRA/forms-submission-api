@@ -1,3 +1,4 @@
+import { formAdapterSubmissionMessagePayloadSchema } from '@defra/forms-engine-plugin/engine/types/schema.js'
 import Joi from 'joi'
 
 export const magicLinkSchema = Joi.string().uuid().required()
@@ -38,6 +39,7 @@ export const validateSavedLinkResponseSchema = Joi.object({
 export const generateFormSubmissionsFileResponseSchema = Joi.object({
   message: Joi.string().required()
 }).label('generateFormSubmissionsFileResponse')
+
 export const generateFeedbackSubmissionsFileResponseSchema = Joi.object({
   message: Joi.string().required()
 }).label('generateFeedbackSubmissionsFileResponse')
@@ -46,3 +48,24 @@ export const resetSaveAndExitLinkResponseSchema = Joi.object({
   recordFound: Joi.boolean().required(),
   recordUpdated: Joi.boolean().required()
 }).label('resetSaveAndExitLinkResponseSchema')
+
+/**
+ * @type {Joi.ObjectSchema<FormSubmissionDocument>}
+ */
+export const getSubmissionByReferenceResponseSchema = Joi.object()
+  .keys({
+    _id: Joi.string().hex().required(),
+    recordCreatedAt: Joi.string().isoDate().required(),
+    expireAt: Joi.string().isoDate().required()
+  })
+  .concat(formAdapterSubmissionMessagePayloadSchema)
+  .label('getSubmissionByReferenceResponseSchema')
+
+/**
+ * @import { FormSubmissionDocument } from '~/src/api/types.js'
+ */
+export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
+
+export const messageIdSchema = Joi.string()
+
+export const receiptHandleSchema = Joi.string()
