@@ -280,6 +280,139 @@ describe('Files service', () => {
       )
     })
 
+    it('should ingest multiple files from an array payload', async () => {
+      /** @type {FileUploadStatus} */
+      const secondFile = {
+        fileId: '789012',
+        filename: 'second.pdf',
+        contentType: 'application/pdf',
+        s3Key: 'second.pdf',
+        s3Bucket: 'dummy',
+        hasError: false,
+        fileStatus: 'complete'
+      }
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: [successfulFile, secondFile]
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockResolvedValue()
+      jest.mocked(hash).mockResolvedValueOnce('dummy')
+
+      const dbSpy = jest.spyOn(repository, 'create')
+
+      await ingestFile(uploadPayload)
+
+      expect(dbSpy).toHaveBeenCalledTimes(2)
+      expect(dbSpy.mock.calls[0][0]).toMatchObject({
+        fileId: '123456',
+        filename: 'dummy.txt',
+        contentType: 'text/plain',
+        s3Key: 'dummy.txt',
+        s3Bucket: 'dummy',
+        retrievalKey: 'dummy'
+      })
+      expect(dbSpy.mock.calls[1][0]).toMatchObject({
+        fileId: '789012',
+        filename: 'second.pdf',
+        contentType: 'application/pdf',
+        s3Key: 'second.pdf',
+        s3Bucket: 'dummy',
+        retrievalKey: 'dummy'
+      })
+    })
+
+    it('should hash the retrieval key only once for multiple files', async () => {
+      /** @type {FileUploadStatus} */
+      const secondFile = {
+        fileId: '789012',
+        filename: 'second.pdf',
+        contentType: 'application/pdf',
+        s3Key: 'second.pdf',
+        s3Bucket: 'dummy',
+        hasError: false,
+        fileStatus: 'complete'
+      }
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: [successfulFile, secondFile]
+        },
+        metadata: {
+          retrievalKey: 'Test@Example.com'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockResolvedValue()
+      jest.mocked(hash).mockResolvedValueOnce('hashed')
+
+      await ingestFile(uploadPayload)
+
+      expect(hash).toHaveBeenCalledTimes(1)
+      expect(hash).toHaveBeenCalledWith('test@example.com')
+    })
+
+    it('should throw if any file in a multi-file payload does not exist in S3', async () => {
+      /** @type {FileUploadStatus} */
+      const secondFile = {
+        fileId: '789012',
+        filename: 'second.pdf',
+        contentType: 'application/pdf',
+        s3Key: 'second.pdf',
+        s3Bucket: 'dummy',
+        hasError: false,
+        fileStatus: 'complete'
+      }
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: [successfulFile, secondFile]
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(hash).mockResolvedValueOnce('dummy')
+
+      // First file passes HeadObject, second fails
+      s3Mock
+        .on(HeadObjectCommand)
+        .resolvesOnce({})
+        .rejectsOnce(
+          new NotFound({
+            message: 'Not found',
+            $metadata: {}
+          })
+        )
+
+      jest.mocked(repository.create).mockResolvedValueOnce()
+
+      await expect(ingestFile(uploadPayload)).rejects.toThrow(
+        Boom.badRequest('File does not exist in S3')
+      )
+    })
+
     it('should handle ingestion with empty strings as valid values', async () => {
       /**
        * @type {UploadPayload}

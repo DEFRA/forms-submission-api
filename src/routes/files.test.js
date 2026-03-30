@@ -70,6 +70,37 @@ describe('Files route', () => {
       })
     })
 
+    test('Testing POST /file route returns OK200 with multiple files in an array', async () => {
+      jest.mocked(ingestFile).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file',
+        payload: {
+          uploadStatus: 'ready',
+          metadata: {
+            retrievalKey: 'test'
+          },
+          form: {
+            file: [
+              successfulFile,
+              {
+                ...successfulFile,
+                fileId: '789012',
+                filename: 'second.pdf'
+              }
+            ]
+          },
+          numberOfRejectedFiles: 0
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Ingestion completed'
+      })
+    })
+
     test('Testing GET /file/{uploadId} route returns explicit retrievalKeyIsCaseSensitive value', async () => {
       jest.mocked(checkFileStatus).mockResolvedValue({
         retrievalKeyIsCaseSensitive: true,
