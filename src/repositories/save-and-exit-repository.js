@@ -35,8 +35,7 @@ export async function getSaveAndExitRecord(id) {
   try {
     const timer = createTimer()
     const result = await coll.findOne({
-      magicLinkId: id,
-      consumed: { $ne: true }
+      magicLinkId: id
     })
 
     logger.info(
@@ -44,6 +43,14 @@ export async function getSaveAndExitRecord(id) {
       `Read save and exit record (${timer.elapsed}ms)`
     )
 
+    if (result?.consumed) {
+      // Look for a non-comsumed link of the same group
+      const linkResult = await coll.findOne({
+        magicLinkGroupId: result.magicLinkGroupId,
+        consumed: { $ne: true }
+      })
+      return linkResult
+    }
     return result
   } catch (err) {
     logger.error(

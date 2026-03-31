@@ -70,12 +70,29 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('getSaveAndExitRecord', () => {
-    it('should get save and exit record', async () => {
+    it('should get save and exit record if not comsumed', async () => {
       mockCollection.findOne.mockReturnValueOnce(submissionDocument)
       const submissionRecord = await getSaveAndExitRecord(
         STUB_SAVE_AND_EXIT_RECORD_ID
       )
       expect(submissionRecord).toEqual(submissionDocument)
+    })
+
+    it('should get save and exit linked group record if original is comsumed', async () => {
+      mockCollection.findOne
+        .mockReturnValueOnce({
+          ...submissionDocument,
+          consumed: true
+        })
+        .mockReturnValueOnce({
+          ...submissionDocument,
+          magicLinkId: 'magic-id-grouped-2',
+          consumed: false
+        })
+      const submissionRecord = await getSaveAndExitRecord(
+        STUB_SAVE_AND_EXIT_RECORD_ID
+      )
+      expect(submissionRecord?.magicLinkId).toBe('magic-id-grouped-2')
     })
 
     it('should handle get save and exit record failures', async () => {
