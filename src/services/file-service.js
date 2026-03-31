@@ -41,11 +41,27 @@ export async function ingestFile(uploadPayload) {
   // both to an array via .single(), but handle both for safety.
   const files = Array.isArray(rawFile) ? rawFile : [rawFile]
 
+  const completeFiles = files.filter((f) => f.fileStatus === 'complete')
+  const rejectedFiles = files.filter((f) => f.fileStatus !== 'complete')
+
+  for (const rejected of rejectedFiles) {
+    logger.info(
+      `[ingestFile] Skipping file ${rejected.fileId} (${rejected.filename}) - status: ${rejected.fileStatus} - error: ${rejected.errorMessage ?? 'none'}`
+    )
+  }
+
+  if (!completeFiles.length) {
+    logger.info(
+      `[ingestFile] No complete files to ingest out of ${files.length} file(s)`
+    )
+    return
+  }
+
   // Force new files to use a case insensitive password match
   const retrievalKeyIsCaseSensitive = false
   const hashed = await argon2.hash(retrievalKey.toLowerCase())
 
-  for (const fileContainer of files) {
+  for (const fileContainer of completeFiles) {
     await assertFileExists(
       fileContainer,
       Boom.badRequest('File does not exist in S3'),
