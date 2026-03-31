@@ -886,7 +886,7 @@ describe('Files service', () => {
       })
     })
 
-    it('should not allow a previously extended file to be extended again', async () => {
+    it('should allow a previously extended file to be extended again', async () => {
       /** @type {FormFileUploadStatus} */
       const dummyData = {
         ...successfulFile,
@@ -897,20 +897,25 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await expect(
-        persistFiles(
-          [
-            {
-              fileId: dummyData.fileId,
-              initiatedRetrievalKey: dummyData.retrievalKey
-            }
-          ],
-          dummyData.retrievalKey
-        )
-      ).rejects.toThrow(
-        Boom.badRequest(
-          `File ID ${dummyData.fileId} has already been persisted`
-        )
+      jest.mocked(hash).mockResolvedValueOnce('caseSensitiveHash')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
+        dummyData.retrievalKey
+      )
+
+      expect(hash).toHaveBeenCalledWith(dummyData.retrievalKey.toLowerCase())
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [dummyData.fileId],
+        'caseSensitiveHash',
+        false,
+        expect.any(Object)
       )
     })
 
