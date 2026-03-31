@@ -78,7 +78,7 @@ describe('save-and-exit-repository', () => {
       expect(submissionRecord).toEqual(submissionDocument)
     })
 
-    it('should get save and exit linked group record if original is comsumed', async () => {
+    it('should get save and exit linked group record if original is consumed', async () => {
       mockCollection.findOne
         .mockReturnValueOnce({
           ...submissionDocument,
