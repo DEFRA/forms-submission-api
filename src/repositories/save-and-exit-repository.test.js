@@ -8,6 +8,7 @@ import {
   createSaveAndExitRecord,
   deleteSaveAndExitGroup,
   findExpiringRecords,
+  getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   lockRecordForExpiryEmail,
@@ -78,30 +79,34 @@ describe('save-and-exit-repository', () => {
       expect(submissionRecord).toEqual(submissionDocument)
     })
 
-    it('should get save and exit linked group record if original is consumed', async () => {
-      mockCollection.findOne
-        .mockReturnValueOnce({
-          ...submissionDocument,
-          magicLinkGroupId: 'some-group',
-          consumed: true
-        })
-        .mockReturnValueOnce({
-          ...submissionDocument,
-          magicLinkId: 'magic-id-grouped-2',
-          consumed: false
-        })
-      const submissionRecord = await getSaveAndExitRecord(
-        STUB_SAVE_AND_EXIT_RECORD_ID
-      )
-      expect(submissionRecord?.magicLinkId).toBe('magic-id-grouped-2')
-    })
-
     it('should handle get save and exit record failures', async () => {
       mockCollection.findOne.mockImplementation(() => {
         throw new Error('an error')
       })
       await expect(
         getSaveAndExitRecord(STUB_SAVE_AND_EXIT_RECORD_ID)
+      ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('getLatestSaveAndExitByGroup', () => {
+    it('should get latest save and exit record by group', async () => {
+      const documentWithGroup = {
+        ...submissionDocument,
+        magicLinkGroupId: 'magic-group-id'
+      }
+      mockCollection.findOne.mockReturnValueOnce(documentWithGroup)
+      const submissionRecord =
+        await getLatestSaveAndExitByGroup('magic-group-id')
+      expect(submissionRecord).toEqual(documentWithGroup)
+    })
+
+    it('should handle get latest save and exit record failures', async () => {
+      mockCollection.findOne.mockImplementation(() => {
+        throw new Error('an error')
+      })
+      await expect(
+        getLatestSaveAndExitByGroup(STUB_SAVE_AND_EXIT_RECORD_ID)
       ).rejects.toThrow(new Error('an error'))
     })
   })

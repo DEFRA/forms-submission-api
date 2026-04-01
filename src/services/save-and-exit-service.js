@@ -5,6 +5,7 @@ import argon2 from 'argon2'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
+  getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   resetSaveAndExitRecord
@@ -13,6 +14,7 @@ import {
 const logger = createLogger()
 
 const INVALID_MAGIC_LINK = 'Invalid magic link'
+const CONSUMED_MAGIC_LINK = 'Magic link has already been consumed'
 
 /**
  * Get the save and exit link by magic link id
@@ -23,6 +25,17 @@ export async function getSavedLinkDetails(magicLinkId) {
 
   if (!record) {
     throw Boom.notFound(INVALID_MAGIC_LINK)
+  }
+
+  if (record.consumed && record.magicLinkGroupId) {
+    // Look for a non-comsumed link of the same group
+    // This allows a user to use an old email link but still always point them at the latest save-and-exit record
+    const latestRecord = await getLatestSaveAndExitByGroup(
+      record.magicLinkGroupId
+    )
+    throw Boom.resourceGone(CONSUMED_MAGIC_LINK, {
+      latestId: latestRecord?.magicLinkId
+    })
   }
 
   return {

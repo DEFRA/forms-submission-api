@@ -43,20 +43,50 @@ export async function getSaveAndExitRecord(id) {
       `Read save and exit record (${timer.elapsed}ms)`
     )
 
-    if (result?.consumed && result.magicLinkGroupId) {
-      // Look for a non-comsumed link of the same group
-      // This allows a user to use an old email link but still always point them at the latest save-and-exit record
-      const linkResult = await coll.findOne({
-        magicLinkGroupId: result.magicLinkGroupId,
-        consumed: { $ne: true }
-      })
-      return linkResult
-    }
     return result
   } catch (err) {
     logger.error(
       { err, event },
       `Failed to read save and exit record - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * Find the latest (active) link in a group of save-and-exit records
+ * @param {string} groupId - group id of save-and-exit record
+ * @returns { Promise<WithId<SaveAndExitDocument> | null> }
+ */
+export async function getLatestSaveAndExitByGroup(groupId) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'read-latest-record-by-group',
+    reference: groupId
+  }
+  logger.info({ event }, 'Reading latest save and exit record')
+
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const timer = createTimer()
+    const result = await coll.findOne({
+      magicLinkGroupId: groupId,
+      consumed: { $ne: true }
+    })
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Read latest save and exit record (${timer.elapsed}ms)`
+    )
+
+    return result
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to read latest save and exit record - ${getErrorMessage(err)}`
     )
     throw err
   }
