@@ -72,17 +72,22 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 
   try {
     const timer = createTimer()
-    const result = await coll.findOne({
-      magicLinkGroupId: groupId,
-      consumed: { $ne: true }
-    })
+    const result = await coll
+      .find({
+        magicLinkGroupId: groupId,
+        consumed: { $ne: true }
+      })
+      .sort({
+        createdAt: -1
+      })
+      .toArray()
 
     logger.info(
       { event: { ...event, duration: timer.elapsed } },
       `Read latest save and exit record (${timer.elapsed}ms)`
     )
 
-    return result
+    return result.length ? result[0] : null
   } catch (err) {
     logger.error(
       { err, event },

@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 import {
   formSubmitResponseSchema,
+  getSavedLinkGoneSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
   validateSavedLinkResponseSchema
@@ -67,7 +68,8 @@ export default [
       },
       response: {
         status: {
-          200: getSavedLinkResponseSchema
+          200: getSavedLinkResponseSchema,
+          410: getSavedLinkGoneSchema
         }
       }
     }

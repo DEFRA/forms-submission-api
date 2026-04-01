@@ -91,18 +91,28 @@ describe('save-and-exit-repository', () => {
 
   describe('getLatestSaveAndExitByGroup', () => {
     it('should get latest save and exit record by group', async () => {
-      const documentWithGroup = {
+      const document1WithGroup = {
         ...submissionDocument,
+        magicLinkId: 'id1',
         magicLinkGroupId: 'magic-group-id'
       }
-      mockCollection.findOne.mockReturnValueOnce(documentWithGroup)
+      const document2WithGroup = {
+        ...submissionDocument,
+        magicLinkId: 'id2',
+        magicLinkGroupId: 'magic-group-id'
+      }
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { toArray: () => [document2WithGroup, document1WithGroup] }
+        })
+      })
       const submissionRecord =
         await getLatestSaveAndExitByGroup('magic-group-id')
-      expect(submissionRecord).toEqual(documentWithGroup)
+      expect(submissionRecord).toEqual(document2WithGroup)
     })
 
     it('should handle get latest save and exit record failures', async () => {
-      mockCollection.findOne.mockImplementation(() => {
+      mockCollection.find.mockImplementation(() => {
         throw new Error('an error')
       })
       await expect(

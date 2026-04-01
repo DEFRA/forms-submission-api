@@ -33,9 +33,11 @@ export async function getSavedLinkDetails(magicLinkId) {
     const latestRecord = await getLatestSaveAndExitByGroup(
       record.magicLinkGroupId
     )
-    throw Boom.resourceGone(CONSUMED_MAGIC_LINK, {
+    const boomError = Boom.resourceGone(CONSUMED_MAGIC_LINK)
+    boomError.output.payload.custom = {
       latestId: latestRecord?.magicLinkId
-    })
+    }
+    throw boomError
   }
 
   return {

@@ -1,4 +1,5 @@
 import { FormStatus, SecurityQuestionsEnum } from '@defra/forms-model'
+import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
@@ -174,6 +175,27 @@ describe('Forms route', () => {
           status: 'draft'
         },
         question: 'memorable-place'
+      })
+    })
+
+    test('Testing GET /save-and-exit route returns record with latest id when current one is consumed', async () => {
+      jest.mocked(getSavedLinkDetails).mockImplementationOnce(() => {
+        const boomError = Boom.resourceGone('consumed magic link')
+        boomError.output.payload.custom = {
+          latestId: 'latest-link-id'
+        }
+        throw boomError
+      })
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/${GUID_EMPTY}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.GONE)
+      expect(response.result).toMatchObject({
+        custom: {
+          latestId: 'latest-link-id'
+        }
       })
     })
 
