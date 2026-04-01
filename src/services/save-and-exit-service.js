@@ -34,7 +34,8 @@ export async function getSavedLinkDetails(magicLinkId) {
       record.magicLinkGroupId
     )
     const boomError = Boom.resourceGone(CONSUMED_MAGIC_LINK)
-    boomError.output.payload.custom = {
+    boomError.output.payload = {
+      ...boomError.output.payload,
       latestId: latestRecord?.magicLinkId
     }
     throw boomError

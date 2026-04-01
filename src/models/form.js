@@ -25,9 +25,7 @@ export const getSavedLinkResponseSchema = Joi.object({
 export const getSavedLinkGoneSchema = Joi.object({
   output: {
     payload: {
-      custom: {
-        latestId: Joi.string().required()
-      }
+      latestId: Joi.string().required()
     }
   }
 }).label('getSavedLinkGoneResponse')

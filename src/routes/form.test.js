@@ -181,7 +181,7 @@ describe('Forms route', () => {
     test('Testing GET /save-and-exit route returns record with latest id when current one is consumed', async () => {
       jest.mocked(getSavedLinkDetails).mockImplementationOnce(() => {
         const boomError = Boom.resourceGone('consumed magic link')
-        boomError.output.payload.custom = {
+        boomError.output.payload = {
           latestId: 'latest-link-id'
         }
         throw boomError
@@ -193,9 +193,7 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.GONE)
       expect(response.result).toMatchObject({
-        custom: {
-          latestId: 'latest-link-id'
-        }
+        latestId: 'latest-link-id'
       })
     })
 
