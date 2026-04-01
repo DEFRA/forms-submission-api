@@ -27,7 +27,7 @@ export const fileIngestPayloadSchema = Joi.object()
       .label('fileIngestMetadata'),
     form: Joi.object()
       .keys({
-        file: fileUploadStatusSchema
+        file: Joi.array().items(fileUploadStatusSchema).single().required()
       })
       .required()
       .unknown(true)

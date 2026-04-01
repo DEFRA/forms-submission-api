@@ -34,47 +34,54 @@ const ALREADY_INGESTED = 11000
  */
 export async function ingestFile(uploadPayload) {
   const { retrievalKey } = uploadPayload.metadata
-  const { file: fileContainer } = uploadPayload.form
+  const rawFile = uploadPayload.form.file
 
-  await assertFileExists(
-    fileContainer,
-    Boom.badRequest('File does not exist in S3'),
-    false
-  )
+  // CDP returns form.file as a single object for one file,
+  // or an array for multiple files. The Joi schema normalises
+  // both to an array via .single(), but handle both for safety.
+  const files = Array.isArray(rawFile) ? rawFile : [rawFile]
 
   // Force new files to use a case insensitive password match
   const retrievalKeyIsCaseSensitive = false
   const hashed = await argon2.hash(retrievalKey.toLowerCase())
 
-  /** @type {FormFileUploadStatus} */
-  const dataToSave = {
-    fileId: fileContainer.fileId,
-    filename: fileContainer.filename,
-    contentType: fileContainer.contentType,
-    s3Key: fileContainer.s3Key,
-    s3Bucket: fileContainer.s3Bucket,
-    retrievalKey: hashed,
-    retrievalKeyIsCaseSensitive
-  }
+  for (const fileContainer of files) {
+    await assertFileExists(
+      fileContainer,
+      Boom.badRequest('File does not exist in S3'),
+      false
+    )
 
-  try {
-    await repository.create(dataToSave)
-  } catch (err) {
-    if (
-      err instanceof MongoServerError &&
-      err.errorResponse.code === ALREADY_INGESTED
-    ) {
-      const message = `File ID '${fileContainer.fileId}' has already been ingested`
-
-      logger.error(
-        err,
-        `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${ALREADY_INGESTED}`
-      )
-
-      throw Boom.badRequest(message)
+    /** @type {FormFileUploadStatus} */
+    const dataToSave = {
+      fileId: fileContainer.fileId,
+      filename: fileContainer.filename,
+      contentType: fileContainer.contentType,
+      s3Key: fileContainer.s3Key,
+      s3Bucket: fileContainer.s3Bucket,
+      retrievalKey: hashed,
+      retrievalKeyIsCaseSensitive
     }
 
-    throw err
+    try {
+      await repository.create(dataToSave)
+    } catch (err) {
+      if (
+        err instanceof MongoServerError &&
+        err.errorResponse.code === ALREADY_INGESTED
+      ) {
+        const message = `File ID '${fileContainer.fileId}' has already been ingested`
+
+        logger.error(
+          err,
+          `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${ALREADY_INGESTED}`
+        )
+
+        throw Boom.badRequest(message)
+      }
+
+      throw err
+    }
   }
 }
 

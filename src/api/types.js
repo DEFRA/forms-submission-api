@@ -72,7 +72,7 @@
  * @typedef {object} UploadPayload
  * @property {('initiated'|'pending'|'ready')} uploadStatus - Have all scans completed, can be initiated, pending or ready
  * @property {{retrievalKey: string}} metadata - Extra data and identified set by the requesting service in the /initialize call. Returned exactly as they were presented
- * @property {Record<string, FileUploadStatus>} form - An object representing each field in the multipart request. Text fields are preserved exactly as they were sent, file fields contain details about the file.
+ * @property {{file: FileUploadStatus | FileUploadStatus[]}} form - An object representing each field in the multipart request. CDP returns file as a single object for one file, or an array for multiple files.
  * @property {number} numberOfRejectedFiles - Total number of files that have been rejected by the uploader
  */
 
