@@ -82,6 +82,7 @@ describe('save-and-exit-repository', () => {
       mockCollection.findOne
         .mockReturnValueOnce({
           ...submissionDocument,
+          magicLinkGroupId: 'some-group',
           consumed: true
         })
         .mockReturnValueOnce({

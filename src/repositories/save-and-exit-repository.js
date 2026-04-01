@@ -43,7 +43,7 @@ export async function getSaveAndExitRecord(id) {
       `Read save and exit record (${timer.elapsed}ms)`
     )
 
-    if (result?.consumed) {
+    if (result?.consumed && result.magicLinkGroupId) {
       // Look for a non-comsumed link of the same group
       // This allows a user to use an old email link but still always point them at the latest save-and-exit record
       const linkResult = await coll.findOne({
