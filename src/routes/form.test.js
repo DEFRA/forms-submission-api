@@ -182,6 +182,7 @@ describe('Forms route', () => {
       jest.mocked(getSavedLinkDetails).mockImplementationOnce(() => {
         const boomError = Boom.resourceGone('consumed magic link')
         boomError.output.payload = {
+          ...boomError.output.payload,
           latestId: 'latest-link-id'
         }
         throw boomError
