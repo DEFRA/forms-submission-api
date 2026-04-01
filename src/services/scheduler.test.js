@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, jest, test } from '@jest/globals'
 import cron from 'node-cron'
 
 import { config } from '~/src/config/index.js'
+import { processExpiringSaveAndExitRecords } from '~/src/services/expiring-save-and-exit.js'
 import {
   getSchedulerService,
   initialiseEmailExpiringSoonScheduler
@@ -41,6 +42,7 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
 }))
 
 jest.mock('~/src/services/notify.js')
+jest.mock('~/src/services/expiring-save-and-exit.js')
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 jest.mock('~/src/services/forms-service.js')
 
@@ -66,6 +68,11 @@ describe('SchedulerService', () => {
       }
       if (key === 'emailUsersExpiringSoonSavedForLaterLink.cronSchedule') {
         return '0 9-20 * * *'
+      }
+      if (
+        key === 'emailUsersExpiringSoonSavedForLaterLink.expiryWindowInHours'
+      ) {
+        return 24
       }
       return undefined
     })
@@ -246,6 +253,34 @@ describe('SchedulerService', () => {
 
       const taskData = scheduler.tasks.get('immediate-error')
       expect(taskData).toBeDefined()
+    })
+
+    test('should skip execution when task is already running (overlap prevention)', async () => {
+      const scheduler = getSchedulerService()
+      /** @type {((value: unknown) => void) | undefined} */
+      let resolveTask
+      const taskFunction = jest.fn().mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveTask = resolve
+          })
+      )
+      scheduler.scheduleTask('overlap-task', '* * * * *', taskFunction)
+
+      const taskData = scheduler.tasks.get('overlap-task')
+
+      // Start the first execution (will hang until resolved)
+      const firstRun = taskData.taskFunction()
+
+      // Attempt a second execution while the first is still running
+      await taskData.taskFunction()
+
+      // Task function should only have been called once (second call was skipped)
+      expect(taskFunction).toHaveBeenCalledTimes(1)
+
+      // Resolve the first run
+      resolveTask?.(undefined)
+      await firstRun
     })
   })
 
@@ -440,6 +475,32 @@ describe('SchedulerService', () => {
       expect(() =>
         initialiseEmailExpiringSoonScheduler('test-runtime-id')
       ).toThrow('Failed to initialize email expiring soon scheduler')
+    })
+
+    test('should call processExpiringSaveAndExitRecords when task is triggered', async () => {
+      jest
+        .mocked(processExpiringSaveAndExitRecords)
+        .mockResolvedValueOnce({ processed: 0, failed: 0 })
+
+      initialiseEmailExpiringSoonScheduler('test-runtime-id')
+
+      const scheduler = getSchedulerService()
+      await scheduler.triggerTask(
+        'email-users-expiring-soon-saved-for-later-link'
+      )
+
+      expect(processExpiringSaveAndExitRecords).toHaveBeenCalledWith(
+        'test-runtime-id',
+        24
+      )
+    })
+
+    test('should read expiryWindowInHours from config', () => {
+      initialiseEmailExpiringSoonScheduler('test-runtime-id')
+
+      expect(config.get).toHaveBeenCalledWith(
+        'emailUsersExpiringSoonSavedForLaterLink.expiryWindowInHours'
+      )
     })
   })
 })
