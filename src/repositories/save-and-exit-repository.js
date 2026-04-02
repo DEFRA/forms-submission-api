@@ -35,8 +35,7 @@ export async function getSaveAndExitRecord(id) {
   try {
     const timer = createTimer()
     const result = await coll.findOne({
-      magicLinkId: id,
-      consumed: { $ne: true }
+      magicLinkId: id
     })
 
     logger.info(
@@ -49,6 +48,50 @@ export async function getSaveAndExitRecord(id) {
     logger.error(
       { err, event },
       `Failed to read save and exit record - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * Find the latest (active) link in a group of save-and-exit records
+ * @param {string} groupId - group id of save-and-exit record
+ * @returns { Promise<WithId<SaveAndExitDocument> | null> }
+ */
+export async function getLatestSaveAndExitByGroup(groupId) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'read-latest-record-by-group',
+    reference: groupId
+  }
+  logger.info({ event }, 'Reading latest save and exit record')
+
+  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const timer = createTimer()
+    const result = await coll
+      .find({
+        magicLinkGroupId: groupId,
+        consumed: { $ne: true }
+      })
+      .sort({
+        createdAt: -1
+      })
+      .toArray()
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Read latest save and exit record (${timer.elapsed}ms)`
+    )
+
+    return result.length ? result[0] : null
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to read latest save and exit record - ${getErrorMessage(err)}`
     )
     throw err
   }

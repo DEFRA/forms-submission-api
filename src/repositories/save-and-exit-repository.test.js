@@ -8,6 +8,7 @@ import {
   createSaveAndExitRecord,
   deleteSaveAndExitGroup,
   findExpiringRecords,
+  getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   lockRecordForExpiryEmail,
@@ -70,7 +71,7 @@ describe('save-and-exit-repository', () => {
   })
 
   describe('getSaveAndExitRecord', () => {
-    it('should get save and exit record', async () => {
+    it('should get save and exit record if not comsumed', async () => {
       mockCollection.findOne.mockReturnValueOnce(submissionDocument)
       const submissionRecord = await getSaveAndExitRecord(
         STUB_SAVE_AND_EXIT_RECORD_ID
@@ -84,6 +85,38 @@ describe('save-and-exit-repository', () => {
       })
       await expect(
         getSaveAndExitRecord(STUB_SAVE_AND_EXIT_RECORD_ID)
+      ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('getLatestSaveAndExitByGroup', () => {
+    it('should get latest save and exit record by group', async () => {
+      const document1WithGroup = {
+        ...submissionDocument,
+        magicLinkId: 'id1',
+        magicLinkGroupId: 'magic-group-id'
+      }
+      const document2WithGroup = {
+        ...submissionDocument,
+        magicLinkId: 'id2',
+        magicLinkGroupId: 'magic-group-id'
+      }
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { toArray: () => [document2WithGroup, document1WithGroup] }
+        })
+      })
+      const submissionRecord =
+        await getLatestSaveAndExitByGroup('magic-group-id')
+      expect(submissionRecord).toEqual(document2WithGroup)
+    })
+
+    it('should handle get latest save and exit record failures', async () => {
+      mockCollection.find.mockImplementation(() => {
+        throw new Error('an error')
+      })
+      await expect(
+        getLatestSaveAndExitByGroup(STUB_SAVE_AND_EXIT_RECORD_ID)
       ).rejects.toThrow(new Error('an error'))
     })
   })
