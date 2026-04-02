@@ -52,7 +52,7 @@ async function getFormTitle(record, formTitleCache) {
           duration: timer.elapsed
         }
       },
-      `save-and-exit: Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
+      `[SAER] Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
     )
     return title
   } catch (err) {
@@ -65,7 +65,7 @@ async function getFormTitle(record, formTitleCache) {
           reference: record.magicLinkId
         }
       },
-      `save-and-exit: Failed to fetch form title for ${record.form.id}, using fallback`
+      `[SAER] Failed to fetch form title for ${record.form.id}, using fallback`
     )
     return 'your form'
   }
@@ -92,8 +92,6 @@ export function constructExpiryReminderEmailContent(document, formTitle) {
 Your progress with ${formTitle} expires in ${hoursRemainingText}.
 
 [Continue with your form](${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId})
-
-^ The link will only work once. If you want to save your progress again after resuming your form, you will need to repeat the save process to generate a new link.
 
 The link is valid for ${hoursRemainingText}. After that time, your saved information will be deleted.
 `
@@ -133,7 +131,7 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
             reference: record.magicLinkId
           }
         },
-        `save-and-exit: Skipping ${record.magicLinkId} - failed to obtain lock`
+        `[SAER] Skipping ${record.magicLinkId} - failed to obtain lock`
       )
       return 'skipped'
     }
@@ -147,7 +145,7 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
             reference: record.magicLinkId
           }
         },
-        `save-and-exit: Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
+        `[SAER] Lock verification failed for ${record.magicLinkId} - lock ID mismatch`
       )
       return 'skipped'
     }
@@ -170,7 +168,7 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
           duration: timer.elapsed
         }
       },
-      `save-and-exit: Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
+      `[SAER] Sent expiry reminder email for ${record.magicLinkId} (${timer.elapsed}ms)`
     )
 
     await markExpiryEmailSent(record.magicLinkId, runtimeId)
@@ -186,7 +184,7 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
           reference: record.magicLinkId
         }
       },
-      `save-and-exit: Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
+      `[SAER] Failed to process expiring record ${record.magicLinkId}: ${getErrorMessage(err)}`
     )
     return 'failed'
   }
@@ -202,7 +200,7 @@ export async function processExpiringSaveAndExitRecords(
   runtimeId,
   expiryWindowInHours
 ) {
-  logger.info('Starting to process expiring save-and-exit records')
+  logger.info('[SAER] Starting to process expiring save-and-exit records')
 
   const batchLimit = 100
 
@@ -227,20 +225,20 @@ export async function processExpiringSaveAndExitRecords(
     } catch (err) {
       logger.error(
         err,
-        `Failed to process expiring save-and-exit records: ${getErrorMessage(err)}`
+        `[SAER] Failed to process expiring save-and-exit records: ${getErrorMessage(err)}`
       )
       throw err
     }
 
     if (expiringRecords.length === 0) {
       if (processedCount === 0 && failedCount === 0) {
-        logger.info('No expiring save-and-exit records found')
+        logger.info('[SAER] No expiring save-and-exit records found')
       }
       break
     }
 
     logger.info(
-      `Processing ${expiringRecords.length} expiring save-and-exit records`
+      `[SAER] Batch starting to process ${expiringRecords.length} expiring save-and-exit records`
     )
 
     for (const record of expiringRecords) {
@@ -261,7 +259,7 @@ export async function processExpiringSaveAndExitRecords(
   }
 
   logger.info(
-    `save-and-exit: Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
+    `[SAER] Completed processing expiring records. Processed: ${processedCount}, Failed: ${failedCount}`
   )
 
   return { processed: processedCount, failed: failedCount }

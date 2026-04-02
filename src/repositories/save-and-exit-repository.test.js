@@ -213,9 +213,11 @@ describe('save-and-exit-repository', () => {
         { ...submissionDocument, magicLinkId: 'expiring-1' },
         { ...submissionDocument, magicLinkId: 'expiring-2' }
       ]
-      mockCollection.find.mockReturnValueOnce({
+      const mockCursor = {
+        withReadPreference: jest.fn().mockReturnThis(),
         toArray: jest.fn().mockResolvedValueOnce(expiringRecords)
-      })
+      }
+      mockCollection.find.mockReturnValueOnce(mockCursor)
 
       const result = await findExpiringRecords(36)
 
@@ -228,6 +230,7 @@ describe('save-and-exit-repository', () => {
 
     it('should handle failures', async () => {
       mockCollection.find.mockReturnValueOnce({
+        withReadPreference: jest.fn().mockReturnThis(),
         toArray: jest.fn().mockRejectedValueOnce(new Error('Failed'))
       })
       await expect(findExpiringRecords(36)).rejects.toThrow(new Error('Failed'))

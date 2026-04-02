@@ -105,6 +105,10 @@ All times are in UTC.
 
 The default schedule (`0 9-20 * * *`) is designed to only send emails during daytime hours in the UK, avoiding waking someone up with a notification in the middle of the night.
 
+## Logging
+
+All log messages related to the save and exit expiry reminder feature are prefixed with `[SAER]` (Save And Exit Reminder). This makes it straightforward to filter logs for this feature in log aggregation tools. For example, to find all expiry reminder activity, search for `[SAER]`.
+
 ## MongoDB document properties
 
 The following properties on the save-and-exit document are used by this feature. They sit alongside the existing fields (`magicLinkId`, `form`, `email`, `security`, `state`, `invalidPasswordAttempts`, `createdAt`, `expireAt`, `consumed`).

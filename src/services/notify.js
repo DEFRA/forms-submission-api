@@ -1,8 +1,10 @@
 import { token } from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
+import { createLogger } from '~/src/helpers/logging/logger.js'
 import { postJson } from '~/src/services/httpService.js'
 
+const logger = createLogger()
 const notifyAPIKey = config.get('notifyAPIKey')
 
 const INT_36 = 36
@@ -62,15 +64,34 @@ export async function sendNotification(args) {
       postJson
     )
 
-  return postJsonByType(new URL(NOTIFY_ENDPOINT), {
-    payload: {
-      template_id: templateId,
-      email_address: emailAddress,
-      personalisation,
-      email_reply_to_id: emailReplyToId
-    },
-    headers: {
-      Authorization: 'Bearer ' + createToken(serviceId, apiKeyId)
+  const maxRetries = 3
+  let lastError
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await postJsonByType(new URL(NOTIFY_ENDPOINT), {
+        payload: {
+          template_id: templateId,
+          email_address: emailAddress,
+          personalisation,
+          email_reply_to_id: emailReplyToId
+        },
+        headers: {
+          Authorization: 'Bearer ' + createToken(serviceId, apiKeyId)
+        }
+      })
+    } catch (error) {
+      lastError = error
+
+      if (attempt < maxRetries) {
+        const delayMs = 1000 * Math.pow(2, attempt)
+        logger.warn(
+          `Notify request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms`
+        )
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+      }
     }
-  })
+  }
+
+  throw lastError
 }
