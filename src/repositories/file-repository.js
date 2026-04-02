@@ -62,7 +62,7 @@ export async function getByFileId(fileId) {
 
 /**
  * Updates the S3 Keys for a given set of files
- * @param {{ fileId: string; s3Bucket: string; oldS3Key: string; newS3Key: string; }[]} updateFiles
+ * @param {{ fileId: string; s3Bucket: string; oldS3Key: string | undefined; newS3Key: string; }[]} updateFiles
  * @param {ClientSession} session
  */
 export async function updateS3Keys(updateFiles, session) {
