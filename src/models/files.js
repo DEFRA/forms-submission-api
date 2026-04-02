@@ -5,9 +5,17 @@ const fileUploadStatusSchema = Joi.object()
     fileId: Joi.string().required(),
     filename: Joi.string().required(),
     contentType: Joi.string().optional(),
-    fileStatus: Joi.string().valid('complete').required(),
-    s3Key: Joi.string().required(),
-    s3Bucket: Joi.string().required(),
+    fileStatus: Joi.string().required(),
+    s3Key: Joi.string().when('fileStatus', {
+      is: 'complete',
+      then: Joi.required(),
+      otherwise: Joi.optional()
+    }),
+    s3Bucket: Joi.string().when('fileStatus', {
+      is: 'complete',
+      then: Joi.required(),
+      otherwise: Joi.optional()
+    }),
     hasError: Joi.boolean().optional(),
     errorMessage: Joi.string().optional()
   })
