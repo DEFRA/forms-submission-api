@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Cache dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: npm-install-cache
         with:
           enableCrossOsArchive: true
@@ -31,14 +31,14 @@ jobs:
           path: node_modules
 
       - name: Cache build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           enableCrossOsArchive: true
           key: npm-build-${{ runner.os }}-${{ github.sha }}
           path: .server
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
@@ -85,10 +85,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Restore dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: restore-deps
         with:
           enableCrossOsArchive: true
@@ -99,14 +99,14 @@ jobs:
 
       - name: Cache task
         if: ${{ matrix.task.cache }}
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           enableCrossOsArchive: true
           key: ${{ matrix.task.name }}-${{ runner.os }}-${{ github.sha }}
           path: ${{ matrix.task.cache }}
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
@@ -134,10 +134,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Restore dependencies
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: restore-deps-tasks
         with:
           enableCrossOsArchive: true
@@ -147,7 +147,7 @@ jobs:
             npm-install-${{ runner.os }}-
 
       - name: Restore build
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         id: restore-build
         with:
           enableCrossOsArchive: true
@@ -157,7 +157,7 @@ jobs:
             npm-build-${{ runner.os }}-
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .nvmrc
 
@@ -171,7 +171,7 @@ jobs:
 
       - name: Cache task
         if: ${{ matrix.task.cache }}
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           enableCrossOsArchive: true
           key: ${{ matrix.task.name }}-${{ runner.os }}-${{ github.sha }}
@@ -182,7 +182,7 @@ jobs:
 
       - name: Save test coverage
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.task.description }}
           path: coverage
@@ -196,12 +196,12 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Restore unit test coverage
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           enableCrossOsArchive: true
           key: test-unit-${{ runner.os }}-${{ github.sha }}
@@ -210,7 +210,7 @@ jobs:
             test-unit-${{ runner.os }}-
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
