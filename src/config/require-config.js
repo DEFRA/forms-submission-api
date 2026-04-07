@@ -5,7 +5,7 @@
  * @returns {NonNullable<T>}
  */
 export function requireConfig(value, key) {
-  if (value === null || value === undefined || value === '') {
+  if (value == null || value === '') {
     throw new Error(`Missing required config: ${key}`)
   }
 
