@@ -8,6 +8,7 @@ import argon2 from 'argon2'
 import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
+import { requireConfig } from '~/src/config/require-config.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import {
   formatPaymentAmount,
@@ -50,10 +51,23 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  */
 
 const logger = createLogger()
-
-const designerUrl = config.get('designerUrl')
-const notifyTemplateId = config.get('notifyTemplateId')
-const notifyReplyToId = config.get('notifyReplyToId')
+/**
+ *
+ * @returns Record<string,string>
+ */
+function getSubmissionDownloadEmailConfig() {
+  return {
+    designerUrl: requireConfig(config.get('designerUrl'), 'designerUrl'),
+    templateId: requireConfig(
+      config.get('notifyTemplateId'),
+      'notifyTemplateId'
+    ),
+    emailReplyToId: requireConfig(
+      config.get('notifyReplyToId'),
+      'notifyReplyToId'
+    )
+  }
+}
 
 const SUBMISSION_STATUS_HEADER = 'Status'
 const SUBMISSION_STATUS_HEADER_TEXT = 'Live or draft'
@@ -782,6 +796,9 @@ async function sendSubmissionsFileEmail(
  * @param {string} formTitle - the form title
  */
 export function constructEmailContent(emailAddress, fileId, formTitle) {
+  const { designerUrl, templateId, emailReplyToId } =
+    getSubmissionDownloadEmailConfig()
+
   const emailSubject = `File is ready to download - ${formTitle}`
 
   const emailBody = `The file you requested for '${formTitle}' is ready to download.
@@ -795,12 +812,12 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
   return {
     emailAddress,
-    templateId: notifyTemplateId,
+    templateId,
     personalisation: {
       subject: emailSubject,
       body: emailBody
     },
-    emailReplyToId: notifyReplyToId
+    emailReplyToId
   }
 }
 
