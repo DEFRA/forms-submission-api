@@ -4,6 +4,7 @@ import 'dotenv/config'
 import convict from 'convict'
 
 const isProduction = process.env.NODE_ENV === 'production'
+const isTest = process.env.NODE_ENV === 'test'
 const POSITIVE_NUMBER_VALIDATOR = 'positive-number'
 
 convict.addFormat({
@@ -13,7 +14,13 @@ convict.addFormat({
       throw new TypeError('must be a positive number')
     }
   },
-  coerce: Number
+  coerce: (value) => {
+    const coercedValue = Number(value)
+    if (Number.isNaN(coercedValue)) {
+      throw new TypeError('must be a positive number')
+    }
+    return coercedValue
+  }
 })
 
 export const config = convict({
@@ -61,19 +68,19 @@ export const config = convict({
   isProduction: {
     doc: 'If this application running in the production environment',
     format: Boolean,
-    default: process.env.NODE_ENV === 'production'
+    default: isProduction
   },
   /** @type {SchemaObj<boolean>} */
   isDevelopment: {
     doc: 'If this application running in the development environment',
     format: Boolean,
-    default: process.env.NODE_ENV !== 'production'
+    default: !isProduction && !isTest
   },
   /** @type {SchemaObj<boolean>} */
   isTest: {
     doc: 'If this application running in the test environment',
     format: Boolean,
-    default: process.env.NODE_ENV === 'test'
+    default: isTest
   },
   log: {
     /** @type {SchemaObj<boolean>} */
