@@ -16,9 +16,6 @@ convict.addFormat({
   },
   coerce: (value) => {
     const coercedValue = Number(value)
-    if (Number.isNaN(coercedValue)) {
-      throw new TypeError('must be a positive number')
-    }
     return coercedValue
   }
 })
