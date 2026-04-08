@@ -50,7 +50,7 @@ export function receiveDlqMessages(dlq) {
   const command = new ReceiveMessageCommand({
     QueueUrl: queueUrl,
     MaxNumberOfMessages: 10,
-    VisibilityTimeout: 1,
+    VisibilityTimeout: 0,
     WaitTimeSeconds: 0
   })
   return sqsClient.send(command)
