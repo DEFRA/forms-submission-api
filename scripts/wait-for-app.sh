@@ -6,7 +6,7 @@ sleep 15
 count=0
 max_attempts=36
 
-until curl --fail http://localhost:3001/health; do
+until curl --fail http://localhost:3002/health; do
   echo "Still waiting... (attempt $((count+1))/$max_attempts)"
 
   # Every 10 attempts, show container logs to help debug
