@@ -261,7 +261,7 @@ npm run migrate:up
 npm run migrate:down
 
 # Create a new migration
-npx migrate-mongo create <migration-name> -f migrate-mongo-config.cjs
+npx migrate-mongo create <migration-name> -f migrate-mongo-config.js
 ```
 
 **Important**: When running migrations manually, ensure your `.env` file contains the correct `MONGO_URI` and `MONGO_DATABASE` values that match your local MongoDB instance.

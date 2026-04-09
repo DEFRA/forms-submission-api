@@ -33,7 +33,10 @@ USER node
 
 COPY --from=development /home/node/package*.json ./
 COPY --from=development /home/node/.server ./.server/
-COPY --from=development /home/node/migrate-mongo-config.cjs ./
+COPY --from=development /home/node/migrate-mongo-config.js ./
+# config/index.js and secure-context.js are dependencies for migrate-mongo-config.js
+COPY --from=development /home/node/src/secure-context.js ./src/secure-context.js
+COPY --from=development /home/node/src/config/index.js ./src/config/index.js
 COPY --from=development /home/node/migrations ./migrations/
 COPY --from=development /home/node/scripts ./scripts/
 

@@ -1,15 +1,17 @@
-/* eslint-disable */
-// In this file you can configure migrate-mongo
-require('dotenv/config')
+import 'dotenv/config'
+
+import { config as appConfig } from './src/config/index.js'
+import { prepareSecureContext } from './src/secure-context.js'
+
+// Prepare secure context for MongoDB TLS connections
+if (appConfig.get('isProduction')) {
+  prepareSecureContext(console.log) // eslint-disable-line no-console
+}
 
 const config = {
   mongodb: {
-    // Use environment variables to match the app's configuration
-    url: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/',
-
-    // Use the same database name as the app
-    databaseName: process.env.MONGO_DATABASE || 'forms-submission-api',
-
+    url: appConfig.get('mongo.uri'),
+    databaseName: appConfig.get('mongo.databaseName'),
     options: {
       //   connectTimeoutMS: 3600000, // increase connection timeout to 1 hour
       //   socketTimeoutMS: 3600000, // increase socket timeout to 1 hour
@@ -29,14 +31,14 @@ const config = {
   lockTtl: 0,
 
   // The file extension to create migrations and search for in migration dir
-  migrationFileExtension: '.cjs',
+  migrationFileExtension: '.js',
 
   // Enable the algorithm to create a checksum of the file contents and use that in the comparison to determine
   // if the file should be run.  Requires that scripts are coded to be run multiple times.
   useFileHash: false,
 
   // Don't change this, unless you know what you're doing
-  moduleSystem: 'commonjs'
+  moduleSystem: 'esm'
 }
 
-module.exports = config
+export default config
