@@ -55,7 +55,8 @@ export const authAdmin = {
       Scopes.UserCreate,
       Scopes.UserDelete,
       Scopes.UserEdit,
-      Scopes.FormsFeedback
+      Scopes.FormsFeedback,
+      Scopes.FormsFeedbackAllForms
     ]
   }
 }
