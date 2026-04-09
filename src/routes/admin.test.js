@@ -166,7 +166,7 @@ describe('Admin route', () => {
       )
     })
 
-    test('Testing POST /feedback/{formId} route is successful with optional missing params', async () => {
+    test('Testing POST /feedback route is successful', async () => {
       jest.mocked(generateSubmissionsFile).mockResolvedValue({
         fileId: 'b93a5f08-e044-46f6-baec-0e5a5d8eaa53'
       })
@@ -174,7 +174,7 @@ describe('Admin route', () => {
       const response = await server.inject({
         method: 'POST',
         url: '/feedback',
-        auth: authAdmin
+        auth: authSuperadmin
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
@@ -208,7 +208,7 @@ describe('Admin route', () => {
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
 
-    test('Testing POST /feedback/{formId} route fails if user missing and optional missing param', async () => {
+    test('Testing POST /feedback route fails if user missing', async () => {
       const badAuth = structuredClone(authAdmin)
       // @ts-expect-error - forceably construct bad user object
       badAuth.credentials.user = undefined

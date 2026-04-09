@@ -102,19 +102,43 @@ export default [
    */
   ({
     method: 'POST',
-    path: '/feedback/{formId?}',
+    path: '/feedback',
     async handler(request) {
-      const { auth, params } = request
+      const { auth } = request
+
+      if (!auth.credentials.user) {
+        throw new Error('Missing user credential')
+      }
+      await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
+
+      return {
+        message: 'Generate feedback submissions file success'
+      }
+    },
+    options: {
+      tags: ['api'],
+      auth: {
+        scope: [`+${Scopes.FormsFeedbackAllForms}`]
+      },
+      response: {
+        status: {
+          200: generateFeedbackSubmissionsFileResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
+   * @satisfies {ServerRoute<GenerateFeedbackSubmissionsFile>}
+   */
+  ({
+    method: 'POST',
+    path: '/feedback/{formId}',
+    async handler(request) {
+      const { params } = request
       const { formId } = params
 
-      if (formId) {
-        await generateFeedbackSubmissionsFileForForm(formId)
-      } else {
-        if (!auth.credentials.user) {
-          throw new Error('Missing user credential')
-        }
-        await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
-      }
+      await generateFeedbackSubmissionsFileForForm(formId)
 
       return {
         message: 'Generate feedback submissions file success'
@@ -128,7 +152,7 @@ export default [
       validate: {
         params: Joi.object()
           .keys({
-            formId: idSchema.optional()
+            formId: idSchema.required()
           })
           .label('generateFeedbackSubmissionsFileParams')
       },

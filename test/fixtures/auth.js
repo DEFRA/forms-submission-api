@@ -24,6 +24,7 @@ export const authSuperadmin = {
       Scopes.UserDelete,
       Scopes.UserEdit,
       Scopes.FormsFeedback,
+      Scopes.FormsFeedbackAllForms,
       Scopes.FormsBackup,
       Scopes.ResetSaveAndExit,
       Scopes.DeadLetterQueues
@@ -54,7 +55,8 @@ export const authAdmin = {
       Scopes.UserCreate,
       Scopes.UserDelete,
       Scopes.UserEdit,
-      Scopes.FormsFeedback
+      Scopes.FormsFeedback,
+      Scopes.FormsFeedbackAllForms
     ]
   }
 }
