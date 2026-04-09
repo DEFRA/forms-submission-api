@@ -191,7 +191,7 @@ When running on the main branch, HTML reports are generated:
 
 #### Common Issues:
 
-1. **Port conflicts**: The tests use ports 3001, 5556, and 27018. Make sure these are available.
+1. **Port conflicts**: The tests use ports 3002 (API), 5556, and 27018. Make sure these are available.
 
 2. **Docker resources**: The integration tests require sufficient Docker resources. Increase Docker memory if needed.
 
@@ -303,7 +303,7 @@ docker build --no-cache --tag forms-submission-api .
 Run:
 
 ```bash
-docker run -e GITHUB_API_TOKEN -p 3001:3001 forms-submission-api
+docker run -e GITHUB_API_TOKEN -p 3002:3002 forms-submission-api
 ```
 
 ## Swagger
