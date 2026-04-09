@@ -1,9 +1,16 @@
 #!/bin/bash
 
 echo "Waiting for LocalStack to be ready..."
+count=0
+max_attempts=30
 until curl -s http://localhost:4566/health > /dev/null; do
   echo "LocalStack not ready yet, waiting..."
   sleep 2
+  count=$((count+1))
+  if [ $count -ge $max_attempts ]; then
+    echo "LocalStack failed to start within 1 minute"
+    exit 1
+  fi
 done
 
 echo "LocalStack is ready. Creating S3 bucket..."
