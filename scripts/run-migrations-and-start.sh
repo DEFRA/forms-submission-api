@@ -5,8 +5,8 @@ set -e
 
 echo "Running database migrations..."
 
-# Run migrations with the config file (.cjs extension required for ES module projects)
-npx migrate-mongo up -f migrate-mongo-config.cjs
+# Run migrations with the config file
+npx migrate-mongo up -f migrate-mongo-config.js
 
 echo "Migrations complete. Starting application..."
 
