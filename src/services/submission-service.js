@@ -186,8 +186,7 @@ export async function getFormModelFromDb(formId, versionNumber, formStatus) {
     : await getFormDefinition(formId, formStatus)
 
   return new FormModel(replaceCustomControllers(formDefinition), {
-    basePath: '',
-    versionNumber
+    basePath: ''
   })
 }
 
