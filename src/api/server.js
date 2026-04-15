@@ -86,7 +86,9 @@ export async function createServer() {
   ])
 
   if (isProduction) {
-    prepareSecureContext(server)
+    prepareSecureContext((message) => {
+      server.logger.info(message)
+    })
   }
 
   await prepareDb(server.logger)

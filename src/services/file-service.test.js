@@ -413,6 +413,91 @@ describe('Files service', () => {
       )
     })
 
+    it('should skip rejected files and only ingest complete files', async () => {
+      /** @type {FileUploadStatus} */
+      const rejectedFile = {
+        fileId: '789012',
+        filename: 'virus.exe',
+        contentType: 'application/octet-stream',
+        fileStatus: 'rejected',
+        hasError: true,
+        errorMessage: 'File contains a virus'
+      }
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: [successfulFile, rejectedFile]
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 1,
+        uploadStatus: 'ready'
+      }
+
+      jest.mocked(repository.create).mockResolvedValue()
+      jest.mocked(hash).mockResolvedValueOnce('dummy')
+
+      const dbSpy = jest.spyOn(repository, 'create')
+
+      await ingestFile(uploadPayload)
+
+      // Only the complete file should be ingested
+      expect(dbSpy).toHaveBeenCalledTimes(1)
+      expect(dbSpy.mock.calls[0][0]).toMatchObject({
+        fileId: '123456',
+        filename: 'dummy.txt',
+        s3Key: 'dummy.txt',
+        s3Bucket: 'dummy',
+        retrievalKey: 'dummy'
+      })
+    })
+
+    it('should return early without hashing when all files are rejected', async () => {
+      /** @type {FileUploadStatus} */
+      const rejectedFile1 = {
+        fileId: '111111',
+        filename: 'virus1.exe',
+        contentType: 'application/octet-stream',
+        fileStatus: 'rejected',
+        hasError: true,
+        errorMessage: 'File contains a virus'
+      }
+
+      /** @type {FileUploadStatus} */
+      const rejectedFile2 = {
+        fileId: '222222',
+        filename: 'virus2.exe',
+        contentType: 'application/octet-stream',
+        fileStatus: 'rejected',
+        hasError: true,
+        errorMessage: 'File type not allowed'
+      }
+
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: [rejectedFile1, rejectedFile2]
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 2,
+        uploadStatus: 'ready'
+      }
+
+      await ingestFile(uploadPayload)
+
+      // No hashing or DB writes should occur
+      expect(hash).not.toHaveBeenCalled()
+      expect(repository.create).not.toHaveBeenCalled()
+    })
+
     it('should handle ingestion with empty strings as valid values', async () => {
       /**
        * @type {UploadPayload}
@@ -801,7 +886,7 @@ describe('Files service', () => {
       })
     })
 
-    it('should not allow a previously extended file to be extended again', async () => {
+    it('should allow a previously extended file to be extended again', async () => {
       /** @type {FormFileUploadStatus} */
       const dummyData = {
         ...successfulFile,
@@ -812,20 +897,25 @@ describe('Files service', () => {
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
 
-      await expect(
-        persistFiles(
-          [
-            {
-              fileId: dummyData.fileId,
-              initiatedRetrievalKey: dummyData.retrievalKey
-            }
-          ],
-          dummyData.retrievalKey
-        )
-      ).rejects.toThrow(
-        Boom.badRequest(
-          `File ID ${dummyData.fileId} has already been persisted`
-        )
+      jest.mocked(hash).mockResolvedValueOnce('caseSensitiveHash')
+      jest.mocked(verify).mockResolvedValueOnce(true)
+
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
+        dummyData.retrievalKey
+      )
+
+      expect(hash).toHaveBeenCalledWith(dummyData.retrievalKey.toLowerCase())
+      expect(repository.updateRetrievalKeys).toHaveBeenCalledWith(
+        [dummyData.fileId],
+        'caseSensitiveHash',
+        false,
+        expect.any(Object)
       )
     })
 

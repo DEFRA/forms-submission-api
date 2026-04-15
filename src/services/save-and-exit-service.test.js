@@ -3,6 +3,7 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
+  getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   markSaveAndExitRecordAsConsumed,
@@ -93,6 +94,36 @@ describe('save-and-exit service', () => {
       jest.mocked(getSaveAndExitRecord).mockResolvedValue(undefined)
       await expect(getSavedLinkDetails('12345')).rejects.toThrow(
         'Invalid magic link'
+      )
+    })
+
+    test('should throw if link consumed)', async () => {
+      jest.mocked(getSaveAndExitRecord).mockResolvedValue({
+        // @ts-expect-error - partial record value
+        form: {
+          id: '1234'
+        },
+        security: {
+          question: SecurityQuestionsEnum.MemorablePlace,
+          answer: ''
+        },
+        consumed: true,
+        magicLinkGroupId: 'group-id'
+      })
+      jest.mocked(getLatestSaveAndExitByGroup).mockResolvedValue({
+        // @ts-expect-error - partial record value
+        form: {
+          id: '1234'
+        },
+        security: {
+          question: SecurityQuestionsEnum.MemorablePlace,
+          answer: ''
+        },
+        consumed: false,
+        magicLinkGroupId: 'group-id'
+      })
+      await expect(getSavedLinkDetails('12345')).rejects.toThrow(
+        'Magic link has already been consumed'
       )
     })
 

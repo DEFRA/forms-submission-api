@@ -69,7 +69,7 @@ describe('event', () => {
       await receiveDlqMessages('form-submissions')
       expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
         QueueUrl: expect.any(String),
-        VisibilityTimeout: 1,
+        VisibilityTimeout: 0,
         WaitTimeSeconds: 0
       })
     })
@@ -83,7 +83,7 @@ describe('event', () => {
       await receiveDlqMessages('save-and-exit')
       expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
         QueueUrl: expect.any(String),
-        VisibilityTimeout: 1,
+        VisibilityTimeout: 0,
         WaitTimeSeconds: 0
       })
     })

@@ -12,7 +12,7 @@ services:
       interval: 5s
       timeout: 30s
       start_period: 10s
-      retries: 30
+      retries: 12
     environment:
       MONGO_INITDB_DATABASE: forms-submission-api-test
     networks:
@@ -80,8 +80,8 @@ services:
         ]
       interval: 10s
       timeout: 10s
-      retries: 18
-      start_period: 90s
+      retries: 12
+      start_period: 60s
 
   app_test:
     build:
@@ -89,10 +89,10 @@ services:
       target: production
     container_name: forms-submission-api-app-test
     ports:
-      - '3001:3001'
+      - '3002:3002'
     environment:
       MONGO_URI: mongodb://mongo_test:27017/forms-submission-api-test?replicaSet=rs0&directConnection=true
-      PORT: 3001
+      PORT: 3002
       NODE_ENV: production
       OIDC_JWKS_URI: 'http://oidc:80/.well-known/openid-configuration/jwks'
       OIDC_VERIFY_AUD: 'newman-test-client'
@@ -131,7 +131,7 @@ services:
       NEWMAN_CLIENT_SECRET: 'newman-mock-secret'
       NEWMAN_SCOPE: 'openid profile email newman-test-client'
       NEWMAN_TEST_EMAIL: 'test.email@defra.gov.uk'
-      API_URL: 'http://app_test:3001'
+      API_URL: 'http://app_test:3002'
     volumes:
       - ./test/integration/postman:/etc/newman
       - ./newman-reports:/etc/newman/reports

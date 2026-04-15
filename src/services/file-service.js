@@ -41,11 +41,27 @@ export async function ingestFile(uploadPayload) {
   // both to an array via .single(), but handle both for safety.
   const files = Array.isArray(rawFile) ? rawFile : [rawFile]
 
+  const completeFiles = files.filter((f) => f.fileStatus === 'complete')
+  const rejectedFiles = files.filter((f) => f.fileStatus !== 'complete')
+
+  for (const rejected of rejectedFiles) {
+    logger.info(
+      `[ingestFile] Skipping file ${rejected.fileId} (${rejected.filename}) - status: ${rejected.fileStatus} - error: ${rejected.errorMessage ?? 'none'}`
+    )
+  }
+
+  if (!completeFiles.length) {
+    logger.info(
+      `[ingestFile] No complete files to ingest out of ${files.length} file(s)`
+    )
+    return
+  }
+
   // Force new files to use a case insensitive password match
   const retrievalKeyIsCaseSensitive = false
   const hashed = await argon2.hash(retrievalKey.toLowerCase())
 
-  for (const fileContainer of files) {
+  for (const fileContainer of completeFiles) {
     await assertFileExists(
       fileContainer,
       Boom.badRequest('File does not exist in S3'),
@@ -158,7 +174,7 @@ export async function persistFiles(files, persistedRetrievalKey) {
   const session = mongoClient.startSession()
 
   /**
-   * @type {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string; newS3Key: string; }>[]}
+   * @type {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string | undefined; newS3Key: string; }>[]}
    */
   let updateFiles = []
 
@@ -216,7 +232,7 @@ export async function persistFiles(files, persistedRetrievalKey) {
 
 /**
  * Deletes old files in staging based on the provided keys.
- * @param {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string; newS3Key: string; }>[]} keys - an array of files to handle
+ * @param {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string | undefined; newS3Key: string; }>[]} keys - an array of files to handle
  * @param {('oldS3Key'|'newS3Key')} lookupKey - the key to use to look up the S3 key
  * @param {S3Client} client - S3 client
  */
@@ -225,6 +241,7 @@ async function deleteOldFiles(keys, lookupKey, client) {
   const filteredKeys = settledKeys
     .filter((result) => result.status === 'fulfilled')
     .map((result) => result.value)
+    .filter((value) => value.oldS3Key !== undefined) // Filter out any undefined results (files that didn't need copying)
 
   // AWS do have the DeleteObjects command instead which would be preferable. However, S3 keys
   // are stored on a per-document basis not a global and so we can't batch these up in case of any
@@ -255,7 +272,16 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
   }
 
   if (fileStatus.s3Key.startsWith(loadedPrefix)) {
-    throw Boom.badRequest(`File ID ${fileId} has already been persisted`)
+    const msg = `File ${fileId} is already in the loaded directory, no need to copy`
+
+    logger.info(`[copyS3File] ${msg}`)
+
+    return {
+      fileId,
+      s3Bucket: fileStatus.s3Bucket,
+      oldS3Key: undefined, // Marker to indicate no copy was needed
+      newS3Key: fileStatus.s3Key
+    }
   }
 
   const oldS3Key = fileStatus.s3Key

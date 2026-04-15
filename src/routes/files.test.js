@@ -101,6 +101,39 @@ describe('Files route', () => {
       })
     })
 
+    test('Testing POST /file route returns OK200 with a mix of complete and rejected files', async () => {
+      jest.mocked(ingestFile).mockResolvedValue()
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/file',
+        payload: {
+          uploadStatus: 'ready',
+          metadata: {
+            retrievalKey: 'test'
+          },
+          form: {
+            file: [
+              successfulFile,
+              {
+                fileId: '789012',
+                filename: 'virus.exe',
+                fileStatus: 'rejected',
+                hasError: true,
+                errorMessage: 'File contains a virus'
+              }
+            ]
+          },
+          numberOfRejectedFiles: 1
+        }
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        message: 'Ingestion completed'
+      })
+    })
+
     test('Testing GET /file/{uploadId} route returns explicit retrievalKeyIsCaseSensitive value', async () => {
       jest.mocked(checkFileStatus).mockResolvedValue({
         retrievalKeyIsCaseSensitive: true,
@@ -211,7 +244,9 @@ describe('Files route', () => {
   })
 
   describe('Error responses', () => {
-    test('Testing POST /file route fails if file is rejected', async () => {
+    test('Testing POST /file route handles a rejected file gracefully', async () => {
+      jest.mocked(ingestFile).mockResolvedValue()
+
       const response = await server.inject({
         method: 'POST',
         url: `/file`,
@@ -223,7 +258,8 @@ describe('Files route', () => {
           form: {
             'ignored-key': 'value',
             file: {
-              ...successfulFile,
+              fileId: '123456',
+              filename: 'bad-file.exe',
               hasError: true,
               errorMessage: 'File type not allowed',
               fileStatus: 'rejected'
@@ -235,7 +271,7 @@ describe('Files route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        message: 'Ingestion failed'
+        message: 'Ingestion completed'
       })
     })
 
