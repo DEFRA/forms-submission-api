@@ -1,6 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
+import { requireConfig } from '~/src/config/require-config.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import {
@@ -14,11 +15,25 @@ import { sendNotification } from '~/src/services/notify.js'
 
 const logger = createLogger()
 
-const notifyTemplateId = config.get('notifyTemplateId')
-const notifyReplyToId = config.get('notifyReplyToId')
 const minimumHoursRemaining = config.get(
   'emailUsersExpiringSoonSavedForLaterLink.minimumHoursRemaining'
 )
+/**
+ *
+ * @returns Record<string,string>
+ */
+function getNotifyEmailConfig() {
+  return {
+    templateId: requireConfig(
+      config.get('notifyTemplateId'),
+      'notifyTemplateId'
+    ),
+    emailReplyToId: requireConfig(
+      config.get('notifyReplyToId'),
+      'notifyReplyToId'
+    )
+  }
+}
 
 /**
  * Retrieves form title from document or fetches it from the forms service
@@ -78,6 +93,8 @@ async function getFormTitle(record, formTitleCache) {
  * @returns {SendNotificationArgs}
  */
 export function constructExpiryReminderEmailContent(document, formTitle) {
+  const { templateId, emailReplyToId } = getNotifyEmailConfig()
+
   // Calculate hours remaining until expiry (rounded down)
   const now = new Date()
   const timeRemainingMs = document.expireAt.getTime() - now.getTime()
@@ -98,12 +115,12 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
 
   return {
     emailAddress: document.email,
-    templateId: notifyTemplateId,
+    templateId,
     personalisation: {
       subject: emailSubject,
       body: emailBody
     },
-    emailReplyToId: notifyReplyToId
+    emailReplyToId
   }
 }
 

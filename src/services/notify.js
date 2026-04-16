@@ -1,27 +1,36 @@
 import { token } from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
+import { requireConfig } from '~/src/config/require-config.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { postJson } from '~/src/services/httpService.js'
 
 const logger = createLogger()
-const notifyAPIKey = config.get('notifyAPIKey')
 
 const INT_36 = 36
 const INT_37 = 37
 const INT_73 = 73
 
-// Extract the two uuids from the notifyApiKey
-// See https://github.com/alphagov/notifications-node-client/blob/main/client/api_client.js#L17
-// Needed until `https://github.com/alphagov/notifications-node-client/pull/200` is published
-const apiKeyId = notifyAPIKey.substring(
-  notifyAPIKey.length - INT_36,
-  notifyAPIKey.length
-)
-const serviceId = notifyAPIKey.substring(
-  notifyAPIKey.length - INT_73,
-  notifyAPIKey.length - INT_37
-)
+/**
+ * @returns {{ apiKeyId: string, serviceId: string }}
+ */
+function getNotifyCredentials() {
+  const notifyAPIKey = requireConfig(config.get('notifyAPIKey'), 'notifyAPIKey')
+
+  // Extract the two uuids from the notifyApiKey
+  // See https://github.com/alphagov/notifications-node-client/blob/main/client/api_client.js#L17
+  // Needed until `https://github.com/alphagov/notifications-node-client/pull/200` is published
+  const apiKeyId = notifyAPIKey.substring(
+    notifyAPIKey.length - INT_36,
+    notifyAPIKey.length
+  )
+  const serviceId = notifyAPIKey.substring(
+    notifyAPIKey.length - INT_73,
+    notifyAPIKey.length - INT_37
+  )
+
+  return { apiKeyId, serviceId }
+}
 
 /**
  * @typedef {object} NotifyPersonalisation
@@ -58,6 +67,7 @@ function createToken(iss, secret) {
  */
 export async function sendNotification(args) {
   const { templateId, emailAddress, personalisation, emailReplyToId } = args
+  const { serviceId, apiKeyId } = getNotifyCredentials()
 
   const postJsonByType =
     /** @type {typeof postJson<{ template_id: string, email_address: string, personalisation: NotifyPersonalisation }>} */ (

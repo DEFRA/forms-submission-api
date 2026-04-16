@@ -3,6 +3,7 @@ import argon2 from 'argon2'
 import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
+import { requireConfig } from '~/src/config/require-config.js'
 import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { createLogger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
@@ -14,8 +15,22 @@ const logger = createLogger()
 
 const queueUrl = config.get('saveAndExitQueueUrl')
 const expiryInDays = config.get('saveAndExitExpiryInDays')
-const notifyTemplateId = config.get('notifyTemplateId')
-const notifyReplyToId = config.get('notifyReplyToId')
+/**
+ *
+ * @returns Record<string,string>
+ */
+function getNotifyEmailConfig() {
+  return {
+    templateId: requireConfig(
+      config.get('notifyTemplateId'),
+      'notifyTemplateId'
+    ),
+    emailReplyToId: requireConfig(
+      config.get('notifyReplyToId'),
+      'notifyReplyToId'
+    )
+  }
+}
 
 /**
  * @param {Message} message
@@ -94,6 +109,8 @@ export function mapSaveAndExitDataToDocument(message) {
  * @returns {SendNotificationArgs}
  */
 export function constructEmailContent(document, formTitle) {
+  const { templateId, emailReplyToId } = getNotifyEmailConfig()
+
   const emailSubject = 'Form progress saved'
 
   const emailBody = `# Form progress saved
@@ -108,12 +125,12 @@ export function constructEmailContent(document, formTitle) {
 
   return {
     emailAddress: document.email,
-    templateId: notifyTemplateId,
+    templateId,
     personalisation: {
       subject: emailSubject,
       body: emailBody
     },
-    emailReplyToId: notifyReplyToId
+    emailReplyToId
   }
 }
 
