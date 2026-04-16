@@ -333,7 +333,7 @@ export async function findExpiringRecords(
   minimumHoursRemaining = 2,
   limit
 ) {
-  logger.info('Finding expiring save-and-exit records')
+  logger.info('[SAER] Finding expiring save-and-exit records')
 
   const saveAndExitCollection = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
@@ -354,16 +354,21 @@ export async function findExpiringRecords(
     // - Have at least Y hours remaining before expiry.
     // - Haven't already been fully processed.
     // - Aren't currently being processed by another instance (locked within the last hour).
-    let cursor = saveAndExitCollection.find({
-      consumed: { $ne: true },
-      expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
-      'notify.expireEmailSentTimestamp': null,
-      $or: [
-        { 'notify.expireLockId': null },
-        { 'notify.expireLockTimestamp': null },
-        { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
-      ]
-    })
+    // NOTE: We are not returning records that are locked by this instance already
+    // to prevent the constant reprocessing of failed records, which could prevent
+    // the processing of records that may actually work.
+    let cursor = saveAndExitCollection
+      .find({
+        consumed: { $ne: true },
+        expireAt: { $lte: expiryThreshold, $gt: minimumExpiryTime },
+        'notify.expireEmailSentTimestamp': null,
+        $or: [
+          { 'notify.expireLockId': null },
+          { 'notify.expireLockTimestamp': null },
+          { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
+        ]
+      })
+      .withReadPreference('primary')
 
     if (limit) {
       cursor = cursor.limit(limit)
@@ -373,14 +378,14 @@ export async function findExpiringRecords(
     const results = await cursor.toArray()
 
     logger.info(
-      `Found ${results.length} expiring save-and-exit records (${timer.elapsed}ms)`
+      `[SAER] Found ${results.length} expiring save-and-exit records (${timer.elapsed}ms)`
     )
 
     return results
   } catch (err) {
     logger.error(
       err,
-      `Failed to find expiring save-and-exit records - ${getErrorMessage(err)}`
+      `[SAER] Failed to find expiring save-and-exit records - ${getErrorMessage(err)}`
     )
     throw err
   }
@@ -405,7 +410,7 @@ export async function lockRecordForExpiryEmail(
   }
   logger.info(
     { event },
-    `save-and-exit: Locking record ${magicLinkId} for expiry email`
+    `[SAER] Locking record ${magicLinkId} for expiry email`
   )
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
@@ -434,7 +439,7 @@ export async function lockRecordForExpiryEmail(
     if (result) {
       logger.info(
         { event: { ...event, duration: timer.elapsed } },
-        `save-and-exit: Successfully locked record ${magicLinkId} (${timer.elapsed}ms)`
+        `[SAER] Successfully locked record ${magicLinkId} (${timer.elapsed}ms)`
       )
     } else {
       logger.info(
@@ -445,7 +450,7 @@ export async function lockRecordForExpiryEmail(
             duration: timer.elapsed
           }
         },
-        `save-and-exit: Failed to lock record ${magicLinkId} - already locked or processed (${timer.elapsed}ms)`
+        `[SAER] Failed to lock record ${magicLinkId} - already locked or processed (${timer.elapsed}ms)`
       )
     }
 
@@ -453,7 +458,7 @@ export async function lockRecordForExpiryEmail(
   } catch (err) {
     logger.error(
       { err, event },
-      `save-and-exit: Failed to lock record ${magicLinkId} - ${getErrorMessage(err)}`
+      `[SAER] Failed to lock record ${magicLinkId} - ${getErrorMessage(err)}`
     )
     throw err
   }
@@ -471,10 +476,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
     action: 'mark-email-sent',
     reference: magicLinkId
   }
-  logger.info(
-    { event },
-    `save-and-exit: Marking expiry email sent for ${magicLinkId}`
-  )
+  logger.info({ event }, `[SAER] Marking expiry email sent for ${magicLinkId}`)
 
   const coll = /** @type {Collection<SaveAndExitDocument>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
@@ -499,7 +501,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
     if (result) {
       logger.info(
         { event: { ...event, duration: timer.elapsed } },
-        `save-and-exit: Marked expiry email sent for ${magicLinkId} (${timer.elapsed}ms)`
+        `[SAER] Marked expiry email sent for ${magicLinkId} (${timer.elapsed}ms)`
       )
     } else {
       logger.warn(
@@ -510,7 +512,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
             duration: timer.elapsed
           }
         },
-        `save-and-exit: Failed to mark expiry email sent for ${magicLinkId} - lock mismatch (${timer.elapsed}ms)`
+        `[SAER] Failed to mark expiry email sent for ${magicLinkId} - lock mismatch (${timer.elapsed}ms)`
       )
     }
 
@@ -518,7 +520,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
   } catch (err) {
     logger.error(
       { err, event },
-      `save-and-exit: Failed to mark expiry email sent for ${magicLinkId} - ${getErrorMessage(err)}`
+      `[SAER] Failed to mark expiry email sent for ${magicLinkId} - ${getErrorMessage(err)}`
     )
     throw err
   }

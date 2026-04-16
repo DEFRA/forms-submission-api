@@ -43,7 +43,18 @@ class SchedulerService {
         return false
       }
 
+      // Prevents overlapping execution when the runImmediately argument is set to true.
+      let isTaskRunning = false
+
       const executeScheduledTask = async () => {
+        if (isTaskRunning) {
+          logger.info(
+            `[SchedulerService] Task '${name}' is already running, skipping`
+          )
+          return
+        }
+
+        isTaskRunning = true
         try {
           await taskFunction()
         } catch (err) {
@@ -51,6 +62,8 @@ class SchedulerService {
             err,
             `[SchedulerService] Task '${name}' failed: ${getErrorMessage(err)}`
           )
+        } finally {
+          isTaskRunning = false
         }
       }
 
@@ -205,7 +218,7 @@ export function initialiseEmailExpiringSoonScheduler(runtimeId) {
     async () => {
       await processExpiringSaveAndExitRecords(runtimeId, expiryWindowInHours)
     },
-    true
+    false
   )
 
   if (!success) {
