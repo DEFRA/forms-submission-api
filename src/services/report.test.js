@@ -61,7 +61,9 @@ describe('report-timeline', () => {
         // @ts-expect-error - resolves to an async iterator like FindCursor<FormMetadataDocument>
         .mockReturnValueOnce(mockAsyncIterator)
 
-      const metrics = await generateReportTimeline(new Date(2025, 4, 7))
+      const metrics = await generateReportTimeline(
+        new Date('2025-05-06T23:00:00.000Z')
+      )
 
       expect(metrics).toEqual({
         timelineDraft: [
