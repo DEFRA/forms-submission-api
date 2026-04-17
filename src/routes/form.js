@@ -9,6 +9,7 @@ import {
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
+import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
@@ -107,11 +108,35 @@ export default [
         }
       }
     }
+  }),
+
+  /**
+   * @type {ServerRoute<GetReportTimelineRequest>}
+   */
+  ({
+    method: 'GET',
+    path: '/report/timeline',
+    handler(request) {
+      const { date } = request.query
+
+      return generateReportTimeline(date)
+    },
+    options: {
+      tags: ['api'],
+      auth: false,
+      validate: {
+        query: Joi.object()
+          .keys({
+            date: Joi.date().required()
+          })
+          .label('getReportTimelineQuery')
+      }
+    }
   })
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, ValidateSaveAndExit } from '~/src/api/types.js'
  */

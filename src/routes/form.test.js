@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
+import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSavedLinkDetails,
   validateSavedLinkCredentials
@@ -15,6 +16,7 @@ jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
 jest.mock('~/src/services/submission-service.js')
+jest.mock('~/src/services/report.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
   createLogger: () => ({
     error: jest.fn(),
@@ -250,6 +252,25 @@ describe('Forms route', () => {
           id: '12345'
         },
         invalidPasswordAttempts: 0
+      })
+    })
+  })
+
+  describe('report', () => {
+    test('Testing GET /report/timeline route returns data', async () => {
+      jest.mocked(generateReportTimeline).mockResolvedValueOnce({
+        timelineDraft: [],
+        timelineLive: []
+      })
+      const response = await server.inject({
+        method: 'GET',
+        url: '/report/timeline?date=2025-05-04'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        timelineDraft: [],
+        timelineLive: []
       })
     })
   })
