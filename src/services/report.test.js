@@ -62,7 +62,7 @@ describe('report-timeline', () => {
         .mockReturnValueOnce(mockAsyncIterator)
 
       const metrics = await generateReportTimeline(
-        new Date('2025-05-06T23:00:00.000Z')
+        new Date('2025-05-07T00:00:00.000Z')
       )
 
       expect(metrics).toEqual({
@@ -73,7 +73,7 @@ describe('report-timeline', () => {
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 2,
-            createdAt: new Date('2025-05-06T23:00:00.000Z')
+            createdAt: new Date('2025-05-07T00:00:00.000Z')
           },
           {
             type: 'timeline-metric',
@@ -81,7 +81,7 @@ describe('report-timeline', () => {
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 4,
-            createdAt: new Date('2025-05-06T23:00:00.000Z')
+            createdAt: new Date('2025-05-07T00:00:00.000Z')
           },
           {
             type: 'timeline-metric',
@@ -89,7 +89,7 @@ describe('report-timeline', () => {
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 5,
-            createdAt: new Date('2025-05-06T23:00:00.000Z')
+            createdAt: new Date('2025-05-07T00:00:00.000Z')
           }
         ],
         timelineLive: [
@@ -99,7 +99,7 @@ describe('report-timeline', () => {
             formStatus: 'live',
             metricName: 'Submissions',
             metricValue: 1,
-            createdAt: new Date('2025-05-06T23:00:00.000Z')
+            createdAt: new Date('2025-05-07T00:00:00.000Z')
           }
         ]
       })
