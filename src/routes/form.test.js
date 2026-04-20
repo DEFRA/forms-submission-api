@@ -259,8 +259,7 @@ describe('Forms route', () => {
   describe('report', () => {
     test('Testing GET /report/timeline route returns data', async () => {
       jest.mocked(generateReportTimeline).mockResolvedValueOnce({
-        timelineDraft: [],
-        timelineLive: []
+        timeline: []
       })
       const response = await server.inject({
         method: 'GET',
@@ -269,8 +268,7 @@ describe('Forms route', () => {
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
-        timelineDraft: [],
-        timelineLive: []
+        timeline: []
       })
     })
   })
