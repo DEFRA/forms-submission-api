@@ -66,7 +66,7 @@ describe('report-timeline', () => {
       )
 
       expect(metrics).toEqual({
-        timelineDraft: [
+        timeline: [
           {
             type: 'timeline-metric',
             formId: '449a699bcc9946a6a6d925de',
@@ -90,9 +90,7 @@ describe('report-timeline', () => {
             metricName: 'Submissions',
             metricValue: 5,
             createdAt: new Date('2025-05-07T00:00:00.000Z')
-          }
-        ],
-        timelineLive: [
+          },
           {
             type: 'timeline-metric',
             formId: '9fb48bd350a64e908c9ea92e',

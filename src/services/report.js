@@ -40,12 +40,11 @@ export async function generateReportTimeline(date) {
       }
     }
 
-    const timelineMetricsDraft = []
-    const timelineMetricsLive = []
+    const timelineMetrics = []
 
     if (timelineMapDraft.size) {
       for (const [formId, count] of timelineMapDraft) {
-        timelineMetricsDraft.push(
+        timelineMetrics.push(
           /** @type {FormTimelineMetric} */ ({
             type: FormMetricType.TimelineMetric,
             formId,
@@ -60,7 +59,7 @@ export async function generateReportTimeline(date) {
 
     if (timelineMapLive.size) {
       for (const [formId, count] of timelineMapLive) {
-        timelineMetricsLive.push(
+        timelineMetrics.push(
           /** @type {FormTimelineMetric} */ ({
             type: FormMetricType.TimelineMetric,
             formId,
@@ -76,8 +75,7 @@ export async function generateReportTimeline(date) {
     logger.info(`Generated timeline report for date ${date.toString()}`)
 
     return {
-      timelineDraft: timelineMetricsDraft,
-      timelineLive: timelineMetricsLive
+      timeline: timelineMetrics
     }
   } catch (err) {
     logger.error(
