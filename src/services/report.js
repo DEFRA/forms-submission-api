@@ -11,10 +11,10 @@ const logger = createLogger()
  */
 export function incrementFormCount(map, formId) {
   const current = map.get(formId)
-  if (current !== undefined) {
-    map.set(formId, current + 1)
-  } else {
+  if (current === undefined) {
     map.set(formId, 1)
+  } else {
+    map.set(formId, current + 1)
   }
 }
 
