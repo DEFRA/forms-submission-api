@@ -224,7 +224,7 @@ export function addCellToRow(row, columnName, columnValue, options) {
  * Coerce the value from text if the component is a
  * DatePartsField, MonthYearField or NumberField
  * @param {string | undefined} asText - the value as text
- * @param {Component} component - the form component
+ * @param {{ type: ComponentType }} component - the form component
  * @returns {CellValue} the spreadsheet cell value
  */
 export function coerceDataValue(asText, component) {
@@ -247,7 +247,7 @@ export function coerceDataValue(asText, component) {
  * Extracts the component value from the provided data and coerces to the appropriate type
  * @param {Record<string, any>} data - the answers data
  * @param {string} key - the component key (name)
- * @param {Component} component - the form component
+ * @param {Field} component - the form component
  * @returns {CellValue}
  */
 export function getValue(data, key, component) {
@@ -260,7 +260,7 @@ export function getValue(data, key, component) {
 /**
  * Adds component and column header to the maps
  * @param {SpreadsheetContext} context - the context for spreadsheet generation
- * @param {Component} component - the form component
+ * @param {Field} component - the form component
  * @param {string} [key] - the header key
  * @param {string} [value] - the header value
  */
@@ -377,12 +377,14 @@ export async function addFirstCellsToRow(
  * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
  */
 function addFormComponentCellsToRow(formModel, row, context, record, options) {
-  formModel?.componentMap.forEach((component, key) => {
-    if (!component.isFormComponent) {
+  formModel?.componentMap.forEach((comp, key) => {
+    if (!comp.isFormComponent) {
       return
     }
 
-    if (hasRepeater(component.page.pageDef)) {
+    const component = /** @type {Field} */ (comp)
+
+    if (component.page && hasRepeater(component.page.pageDef)) {
       const repeaterName = component.page.pageDef.repeat.options.name
       const hasRepeaterData = repeaterName in record.data.repeaters
       const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
@@ -503,11 +505,11 @@ export async function generateSubmissionsFile(
   const { components, headers, rows } = caches
   const context = { caches, options }
 
-  /** @type {string} */
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
+    const recordFormId = record.data.main.formId
     const formNameFromId = await lookupFormNameById(
       context,
-      record.data.main.formId ?? record.meta.formId
+      typeof recordFormId === 'string' ? recordFormId : record.meta.formId
     )
     if (!formNameFromId) {
       // Exclude feedback submissions where the form no longer exists
@@ -628,7 +630,10 @@ function sortHeaders(components, headers) {
       const repeaterComponentA = components.get(nameA)
       const repeaterComponentB = components.get(nameB)
 
-      if (repeaterComponentA.page === repeaterComponentB.page) {
+      if (
+        repeaterComponentA?.page &&
+        repeaterComponentA.page === repeaterComponentB?.page
+      ) {
         return Number(partsA[1]) - Number(partsB[1])
       }
     }
@@ -825,6 +830,6 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
  * @import { UserCredentials } from '@hapi/hapi'
  * @import { FormMetadata, FormStatus } from '@defra/forms-model'
  * @import { WithId } from 'mongodb'
- * @import { Component } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
+ * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
