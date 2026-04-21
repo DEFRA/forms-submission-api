@@ -13,7 +13,6 @@ import {
   generateFormSubmissionsFileResponseSchema,
   magicLinkSchema,
   messageIdSchema,
-  receiptHandleSchema,
   resetSaveAndExitLinkResponseSchema
 } from '~/src/models/form.js'
 import { resetSaveAndExitLink } from '~/src/services/save-and-exit-service.js'
@@ -226,11 +225,10 @@ export default [
     method: 'DELETE',
     path: '/admin/deadletter/{dlq}/{messageId}',
     async handler(request, h) {
-      const { params, payload } = request
+      const { params } = request
       const { dlq, messageId } = params
-      const { receiptHandle } = payload
       logger.info(`Deleting DLQ message ${messageId} on ${dlq}`)
-      await deleteDlqMessage(dlq, receiptHandle)
+      await deleteDlqMessage(dlq, messageId)
       logger.info(`Deleted DLQ message ${messageId} on ${dlq}`)
       return h.response({ message: 'success' }).code(OK_RESPONSE)
     },
@@ -245,12 +243,7 @@ export default [
             dlq: dqlSchema.required(),
             messageId: messageIdSchema.required()
           })
-          .label('deadLetterDeleteMessageParams'),
-        payload: Joi.object()
-          .keys({
-            receiptHandle: receiptHandleSchema.required()
-          })
-          .label('deadLetterDeleteMessagePayload')
+          .label('deadLetterDeleteMessageParams')
       }
     }
   })
