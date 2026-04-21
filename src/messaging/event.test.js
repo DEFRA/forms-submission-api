@@ -15,8 +15,6 @@ import {
   redriveDlqMessages
 } from '~/src/messaging/event.js'
 
-jest.mock('~/src/helpers/logging/logger.js')
-
 describe('event', () => {
   const snsMock = mockClient(SQSClient)
   const queueUrl = 'http://example.com'
@@ -125,19 +123,35 @@ describe('event', () => {
 
   describe('deleteDlqMessage', () => {
     it('should delete event message', async () => {
-      /**
-       * @type {DeleteMessageCommandOutput}
-       */
-      const deleteResult = {
-        $metadata: {}
+      const receivedMessage = {
+        Messages: [messageStub, messageStub, messageStub]
       }
 
-      snsMock.on(DeleteMessageCommand).resolves(deleteResult)
-      await deleteDlqMessage('save-and-exit', messageStub.ReceiptHandle)
+      snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
+      await deleteDlqMessage('save-and-exit', messageStub.MessageId)
+      expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
+        QueueUrl: expect.any(String),
+        MaxNumberOfMessages: 10,
+        VisibilityTimeout: 2,
+        WaitTimeSeconds: 0
+      })
       expect(snsMock).toHaveReceivedCommandWith(DeleteMessageCommand, {
         QueueUrl: expect.any(String),
         ReceiptHandle: receiptHandle
       })
+    })
+
+    it('should throw if message not found', async () => {
+      const receivedMessage = {
+        Messages: []
+      }
+
+      snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
+      await expect(() =>
+        deleteDlqMessage('save-and-exit', messageStub.MessageId)
+      ).rejects.toThrow(
+        'Message with id 31cb6fff-8317-412e-8488-308d099034c4 not found in submissions-api (save-and-exit) DLQ'
+      )
     })
   })
 })

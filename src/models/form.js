@@ -75,5 +75,3 @@ export const getSubmissionByReferenceResponseSchema = Joi.object()
 export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
 
 export const messageIdSchema = Joi.string()
-
-export const receiptHandleSchema = Joi.string()

@@ -258,10 +258,7 @@ describe('Admin route', () => {
       const response = await server.inject({
         method: 'DELETE',
         url: '/admin/deadletter/save-and-exit/message-id',
-        auth: authSuperadmin,
-        payload: {
-          receiptHandle: 'receipt-handle'
-        }
+        auth: authSuperadmin
       })
 
       expect(response.statusCode).toEqual(okStatusCode)
@@ -269,7 +266,7 @@ describe('Admin route', () => {
       expect(response.result).toEqual({ message: 'success' })
       expect(deleteDlqMessage).toHaveBeenCalledWith(
         'save-and-exit',
-        'receipt-handle'
+        'message-id'
       )
     })
 
@@ -277,10 +274,7 @@ describe('Admin route', () => {
       const response = await server.inject({
         method: 'DELETE',
         url: '/admin/deadletter/form-submissions/message-id',
-        auth: authSuperadmin,
-        payload: {
-          receiptHandle: 'receipt-handle'
-        }
+        auth: authSuperadmin
       })
 
       expect(response.statusCode).toEqual(okStatusCode)
@@ -288,7 +282,7 @@ describe('Admin route', () => {
       expect(response.result).toEqual({ message: 'success' })
       expect(deleteDlqMessage).toHaveBeenCalledWith(
         'form-submissions',
-        'receipt-handle'
+        'message-id'
       )
     })
   })
