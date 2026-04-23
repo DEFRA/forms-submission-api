@@ -27,10 +27,10 @@ describe('report-timeline', () => {
       jest.useRealTimers()
     })
 
-    const form1Id = '449a699bcc9946a6a6d925de'
-    const form2Id = '0dae1c832b8e4a89963a7825'
-    const form3Id = '9fb48bd350a64e908c9ea92e'
-    const form4Id = '9fb48bd350a64e908c9ea92e'
+    const form1Id = 'form-id-1'
+    const form2Id = 'form-id-2'
+    const form3Id = 'form-id-3'
+    const form4Id = 'form-id-4'
 
     it('should gather metrics for all forms, for a specific date', async () => {
       const allSubmissions = [
@@ -69,7 +69,7 @@ describe('report-timeline', () => {
         timeline: [
           {
             type: 'timeline-metric',
-            formId: '449a699bcc9946a6a6d925de',
+            formId: 'form-id-1',
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 2,
@@ -77,7 +77,7 @@ describe('report-timeline', () => {
           },
           {
             type: 'timeline-metric',
-            formId: '0dae1c832b8e4a89963a7825',
+            formId: 'form-id-2',
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 4,
@@ -85,7 +85,7 @@ describe('report-timeline', () => {
           },
           {
             type: 'timeline-metric',
-            formId: '9fb48bd350a64e908c9ea92e',
+            formId: 'form-id-4',
             formStatus: 'draft',
             metricName: 'Submissions',
             metricValue: 5,
@@ -93,7 +93,7 @@ describe('report-timeline', () => {
           },
           {
             type: 'timeline-metric',
-            formId: '9fb48bd350a64e908c9ea92e',
+            formId: 'form-id-3',
             formStatus: 'live',
             metricName: 'Submissions',
             metricValue: 1,

@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 import {
   formSubmitResponseSchema,
+  generateReportTimelineResponseSchema,
   getSavedLinkGoneSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
@@ -130,6 +131,11 @@ export default [
             date: Joi.date().required()
           })
           .label('getReportTimelineQuery')
+      },
+      response: {
+        status: {
+          200: generateReportTimelineResponseSchema
+        }
       }
     }
   })

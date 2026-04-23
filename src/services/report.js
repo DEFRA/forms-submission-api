@@ -9,13 +9,29 @@ const logger = createLogger()
  * @param {Map<string, number>} map
  * @param {string} formId
  */
-export function incrementFormCount(map, formId) {
-  const current = map.get(formId)
-  if (current === undefined) {
-    map.set(formId, 1)
-  } else {
-    map.set(formId, current + 1)
-  }
+function incrementFormCount(map, formId) {
+  const current = map.get(formId) ?? 0
+  map.set(formId, current + 1)
+}
+
+/**
+ * @param {any[]} timelineMetrics
+ * @param {string} formId
+ * @param {FormStatus} formStatus
+ * @param {number} count
+ * @param {Date} date
+ */
+function pushTimelineMetric(timelineMetrics, formId, formStatus, count, date) {
+  timelineMetrics.push(
+    /** @type {FormTimelineMetric} */ ({
+      type: FormMetricType.TimelineMetric,
+      formId,
+      formStatus,
+      metricName: 'Submissions',
+      metricValue: count,
+      createdAt: date
+    })
+  )
 }
 
 /**
@@ -23,7 +39,9 @@ export function incrementFormCount(map, formId) {
  * @param {Date} date - date on which to gather the metrics for
  */
 export async function generateReportTimeline(date) {
-  logger.info(`Generating timeline report for date ${date.toString()}`)
+  logger.info(
+    `[report] Generating timeline report for date ${date.toUTCString()}`
+  )
 
   try {
     const submissionsCursor = getSubmissionRecordsForDate(date)
@@ -40,39 +58,35 @@ export async function generateReportTimeline(date) {
       }
     }
 
-    const timelineMetrics = []
+    const timelineMetrics = /** @type {FormTimelineMetric[]} */ ([])
 
     if (timelineMapDraft.size) {
       for (const [formId, count] of timelineMapDraft) {
-        timelineMetrics.push(
-          /** @type {FormTimelineMetric} */ ({
-            type: FormMetricType.TimelineMetric,
-            formId,
-            formStatus: FormStatus.Draft,
-            metricName: 'Submissions',
-            metricValue: count,
-            createdAt: date
-          })
+        pushTimelineMetric(
+          timelineMetrics,
+          formId,
+          FormStatus.Draft,
+          count,
+          date
         )
       }
     }
 
     if (timelineMapLive.size) {
       for (const [formId, count] of timelineMapLive) {
-        timelineMetrics.push(
-          /** @type {FormTimelineMetric} */ ({
-            type: FormMetricType.TimelineMetric,
-            formId,
-            formStatus: FormStatus.Live,
-            metricName: 'Submissions',
-            metricValue: count,
-            createdAt: date
-          })
+        pushTimelineMetric(
+          timelineMetrics,
+          formId,
+          FormStatus.Live,
+          count,
+          date
         )
       }
     }
 
-    logger.info(`Generated timeline report for date ${date.toString()}`)
+    logger.info(
+      `[report] Generated timeline report for date ${date.toString()}`
+    )
 
     return {
       timeline: timelineMetrics
