@@ -37,6 +37,43 @@ export function getSubmissionRecords(formId, filter) {
 }
 
 /**
+ * Gets all submission records for a single day
+ * @param {Date} date - the specified day
+ * @returns { FindCursor<WithId<FormSubmissionDocument>> }
+ */
+export function getSubmissionRecordsForDate(date) {
+  logger.info(`Reading submission records for date ${date.toISOString()}`)
+
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  const withoutTime = date.toISOString().substring(0, 10)
+  const startOfDay = `${withoutTime}T00:00:00.000Z`
+  const endOfDay = `${withoutTime}T23:59:59.999Z`
+  try {
+    const result = coll
+      .find({
+        'meta.timestamp': {
+          $gte: new Date(startOfDay),
+          $lte: new Date(endOfDay)
+        }
+      })
+      .sort('meta.timestamp', 'desc')
+
+    logger.info(`Read submission records for date ${date.toISOString()}`)
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to read submission records for date ${date.toISOString()} - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Creates a form submission record
  * @param {FormSubmissionDocument} document
  * @param {ClientSession} session
