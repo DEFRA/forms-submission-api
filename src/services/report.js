@@ -51,10 +51,13 @@ export async function generateReportTimeline(date) {
 
     for await (const submission of submissionsCursor) {
       const status = submission.meta.status
+      const isPreview = submission.meta.isPreview
       if (status === FormStatus.Draft) {
         incrementFormCount(timelineMapDraft, submission.meta.formId)
       } else {
-        incrementFormCount(timelineMapLive, submission.meta.formId)
+        if (!isPreview) {
+          incrementFormCount(timelineMapLive, submission.meta.formId)
+        }
       }
     }
 
