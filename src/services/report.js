@@ -8,8 +8,12 @@ const logger = createLogger()
 /**
  * @param {Map<string, number>} map
  * @param {string} formId
+ * @param {boolean} [ignore] - ignore live previews
  */
-function incrementFormCount(map, formId) {
+function incrementFormCount(map, formId, ignore = false) {
+  if (ignore) {
+    return
+  }
   const current = map.get(formId) ?? 0
   map.set(formId, current + 1)
 }
@@ -51,10 +55,16 @@ export async function generateReportTimeline(date) {
 
     for await (const submission of submissionsCursor) {
       const status = submission.meta.status
+      const isPreview = submission.meta.isPreview
       if (status === FormStatus.Draft) {
         incrementFormCount(timelineMapDraft, submission.meta.formId)
       } else {
-        incrementFormCount(timelineMapLive, submission.meta.formId)
+        const isLivePreview = isPreview
+        incrementFormCount(
+          timelineMapLive,
+          submission.meta.formId,
+          isLivePreview
+        )
       }
     }
 
