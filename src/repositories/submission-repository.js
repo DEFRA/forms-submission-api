@@ -1,9 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
-
-const logger = createLogger()
 
 /**
  * Gets submission records based on formId

@@ -18,11 +18,11 @@ jest.mock('~/src/tasks/receive-submission-messages.js')
 jest.mock('~/src/services/submission-service.js')
 jest.mock('~/src/services/report.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+  logger: {
     error: jest.fn(),
     info: jest.fn(),
     debug: jest.fn()
-  })
+  }
 }))
 
 describe('Forms route', () => {

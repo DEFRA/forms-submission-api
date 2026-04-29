@@ -1,9 +1,7 @@
 import { FormMetricType, FormStatus, getErrorMessage } from '@defra/forms-model'
 
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { getSubmissionRecordsForDate } from '~/src/repositories/submission-repository.js'
-
-const logger = createLogger()
 
 /**
  * @param {Map<string, number>} map

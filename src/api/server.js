@@ -7,7 +7,7 @@ import { ProxyAgent } from 'proxy-agent'
 
 import { config } from '~/src/config/index.js'
 import { failAction } from '~/src/helpers/fail-action.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { requestTracing } from '~/src/helpers/request-tracing.js'
 import { prepareDb } from '~/src/mongo.js'
 import { auth } from '~/src/plugins/auth/index.js'
@@ -20,8 +20,6 @@ import { swagger } from '~/src/plugins/swagger.js'
 import { prepareSecureContext } from '~/src/secure-context.js'
 import { runTask as runSaveAndExitTask } from '~/src/tasks/receive-save-and-exit-messages.js'
 import { runTask as runSubmissionTask } from '~/src/tasks/receive-submission-messages.js'
-
-const logger = createLogger()
 
 const isProduction = config.get('isProduction')
 

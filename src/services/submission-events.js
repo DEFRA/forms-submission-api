@@ -4,13 +4,11 @@ import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
 import { addMonths } from '~/src/helpers/date-helper.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
 import { cleanUpSaveAndExit } from '~/src/services/save-and-exit-service.js'
-
-const logger = createLogger()
 
 const queueUrl = config.get('submissionQueueUrl')
 

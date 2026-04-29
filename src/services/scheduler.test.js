@@ -33,12 +33,12 @@ jest.mock('~/src/config/index.js', () => ({
 }))
 
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+  logger: {
     debug: jest.fn(),
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn()
-  })
+  }
 }))
 
 jest.mock('~/src/services/notify.js')

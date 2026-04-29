@@ -2,7 +2,7 @@ import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
 
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
   getLatestSaveAndExitByGroup,
@@ -10,8 +10,6 @@ import {
   incrementInvalidPasswordAttempts,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
-
-const logger = createLogger()
 
 const INVALID_MAGIC_LINK = 'Invalid magic link'
 const CONSUMED_MAGIC_LINK = 'Magic link has already been consumed'
