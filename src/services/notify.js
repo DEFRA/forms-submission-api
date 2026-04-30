@@ -2,10 +2,8 @@ import { token } from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { postJson } from '~/src/services/httpService.js'
-
-const logger = createLogger()
 
 const INT_36 = 36
 const INT_37 = 37

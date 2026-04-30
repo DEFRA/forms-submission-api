@@ -2,7 +2,7 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import {
   findExpiringRecords,
@@ -12,8 +12,6 @@ import {
 } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
-
-const logger = createLogger()
 
 const minimumHoursRemaining = config.get(
   'emailUsersExpiringSoonSavedForLaterLink.minimumHoursRemaining'

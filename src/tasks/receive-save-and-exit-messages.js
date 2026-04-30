@@ -1,7 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import {
   receiveMessageTimeout,
   receiveMessages
@@ -9,7 +9,6 @@ import {
 import { processSaveAndExitEvents } from '~/src/services/save-and-exit-events.js'
 
 const queueUrl = config.get('saveAndExitQueueUrl')
-const logger = createLogger()
 
 /**
  * @returns {Promise<void>}

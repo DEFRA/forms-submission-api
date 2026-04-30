@@ -1,7 +1,5 @@
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { FILES_COLLECTION_NAME, db } from '~/src/mongo.js'
-
-const logger = createLogger()
 
 /**
  * Adds a file status to the database

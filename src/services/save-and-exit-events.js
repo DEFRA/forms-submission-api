@@ -5,13 +5,11 @@ import Joi from 'joi'
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
 import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { sendNotification } from '~/src/services/notify.js'
-
-const logger = createLogger()
 
 const queueUrl = config.get('saveAndExitQueueUrl')
 const expiryInDays = config.get('saveAndExitExpiryInDays')

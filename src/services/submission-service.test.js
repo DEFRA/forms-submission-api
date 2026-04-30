@@ -33,11 +33,11 @@ jest.mock('~/src/services/forms-service.js')
 jest.mock('~/src/services/service-helpers.js')
 jest.mock('~/src/services/notify.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+  logger: {
     error: jest.fn(),
     info: jest.fn(),
     debug: jest.fn()
-  })
+  }
 }))
 
 describe('Submission service', () => {

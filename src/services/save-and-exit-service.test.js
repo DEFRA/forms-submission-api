@@ -18,11 +18,11 @@ import {
 
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+  logger: {
     error: jest.fn(),
     info: jest.fn(),
     debug: jest.fn()
-  })
+  }
 }))
 
 describe('save-and-exit service', () => {
