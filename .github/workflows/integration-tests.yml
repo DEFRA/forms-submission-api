@@ -12,10 +12,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Cache node modules
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
@@ -23,7 +23,7 @@ jobs:
           ${{ runner.os }}-node-
 
     - name: Cache Docker images
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: /tmp/docker-save
         key: ${{ runner.os }}-docker-${{ hashFiles('docker-compose.integration-test.yml') }}
@@ -43,7 +43,7 @@ jobs:
           echo "No cached Docker images found"
         fi
     - name: Set up Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: '22'
         cache: 'npm'
@@ -83,7 +83,7 @@ jobs:
         done
 
     - name: Upload Test Report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
       with:
         name: integration-test-report
