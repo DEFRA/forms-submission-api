@@ -1,4 +1,3 @@
-import { Scopes } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import Joi from 'joi'
 
@@ -29,7 +28,10 @@ export default [
     options: {
       tags: ['api'],
       auth: {
-        scope: [`+${Scopes.FormRead}`]
+        access: {
+          entity: 'user',
+          scope: false
+        }
       },
       validate: {
         params: Joi.object()
