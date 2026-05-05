@@ -61,11 +61,8 @@
 
 /**
  * @typedef {{ Params: { referenceNumber: string }}} GetSubmissionByReference
- * @typedef {{ Params: { dlq: string }}} DeadLetterQueueRequest
- */
-
-/**
- * @typedef {{ Params: { dlq: string, messageId: string }}} DeadLetterQueueAndHandleRequest
+ * @typedef {{ Params: { dlq: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueRequest
+ * @typedef {{ Params: { dlq: string, messageId: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueMessageRequest
  */
 
 /**
