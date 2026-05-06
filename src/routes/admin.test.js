@@ -3,8 +3,10 @@ import { StatusCodes } from 'http-status-codes'
 import { createServer } from '~/src/api/server.js'
 import {
   deleteDlqMessage,
+  getDlqMessage,
   receiveDlqMessages,
-  redriveDlqMessages
+  redriveDlqMessages,
+  resubmitDlqMessage
 } from '~/src/messaging/event.js'
 import { resetSaveAndExitLink } from '~/src/services/save-and-exit-service.js'
 import {
@@ -239,6 +241,20 @@ describe('Admin route', () => {
       expect(response.result).toEqual({ messages: [{ MessageId: 'message1' }] })
     })
 
+    test('/admin/dead-letter/view/message-id route returns 200', async () => {
+      jest.mocked(getDlqMessage).mockResolvedValue({ MessageId: 'message1' })
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/admin/deadletter/save-and-exit/view/message1',
+        auth: authSuperadmin
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: { MessageId: 'message1' } })
+    })
+
     test('POST /admin/dead-letter/save-and-exit/redrive route returns 200', async () => {
       const response = await server.inject({
         method: 'POST',
@@ -250,6 +266,22 @@ describe('Admin route', () => {
       expect(response.headers['content-type']).toContain(jsonContentType)
       expect(response.result).toEqual({ message: 'success' })
       expect(redriveDlqMessages).toHaveBeenCalled()
+    })
+
+    test('POST /admin/dead-letter/save-and-exit/resubmit route returns 200', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/admin/deadletter/save-and-exit/resubmit/12345',
+        auth: authSuperadmin,
+        payload: {
+          messageJson: {}
+        }
+      })
+
+      expect(response.statusCode).toEqual(okStatusCode)
+      expect(response.headers['content-type']).toContain(jsonContentType)
+      expect(response.result).toEqual({ message: 'success' })
+      expect(resubmitDlqMessage).toHaveBeenCalled()
     })
   })
 
@@ -266,7 +298,9 @@ describe('Admin route', () => {
       expect(response.result).toEqual({ message: 'success' })
       expect(deleteDlqMessage).toHaveBeenCalledWith(
         'save-and-exit',
-        'message-id'
+        'message-id',
+        undefined,
+        undefined
       )
     })
 
@@ -282,7 +316,9 @@ describe('Admin route', () => {
       expect(response.result).toEqual({ message: 'success' })
       expect(deleteDlqMessage).toHaveBeenCalledWith(
         'form-submissions',
-        'message-id'
+        'message-id',
+        undefined,
+        undefined
       )
     })
   })
