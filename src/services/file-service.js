@@ -13,7 +13,7 @@ import contentDisposition from 'content-disposition'
 import { MongoServerError } from 'mongodb'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import { client as mongoClient } from '~/src/mongo.js'
 import * as repository from '~/src/repositories/file-repository.js'
@@ -23,7 +23,6 @@ import {
 } from '~/src/services/service-helpers.js'
 import { getS3Client } from '~/src/services/utils.js'
 
-const logger = createLogger()
 const loadedPrefix = config.get('loadedPrefix')
 
 const ALREADY_INGESTED = 11000

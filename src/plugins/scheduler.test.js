@@ -3,11 +3,11 @@ const mockWarnFn = jest.fn()
 const mockInfoFn = jest.fn()
 
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn().mockReturnValue({
+  logger: {
     error: mockErrorFn,
     warn: mockWarnFn,
     info: mockInfoFn
-  })
+  }
 }))
 
 const mockInitialiseEmailExpiringSoonScheduler = jest.fn()

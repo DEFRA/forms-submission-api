@@ -8,7 +8,8 @@ import {
 import {
   createSubmissionRecord,
   getSubmissionRecordByReference,
-  getSubmissionRecords
+  getSubmissionRecords,
+  getSubmissionRecordsForDate
 } from '~/src/repositories/submission-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -123,6 +124,33 @@ describe('submission repository', () => {
       await expect(
         getSubmissionRecordByReference(STUB_SUBMISSION_REF)
       ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('getSubmissionRecordsForDate', () => {
+    it('should get submission records cursor', () => {
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => {
+          return { next: () => submissionDocument }
+        })
+      })
+      const date = new Date('2026-02-15')
+      const submissionRecord = getSubmissionRecordsForDate(date)
+      expect(submissionRecord.next()).toEqual(submissionDocument)
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        'meta.timestamp': {
+          $gte: new Date('2026-02-15T00:00:00.000Z'),
+          $lte: new Date('2026-02-15T23:59:59.999Z')
+        }
+      })
+    })
+
+    it('should log and throw when error', () => {
+      mockCollection.find.mockImplementationOnce(() => {
+        throw new Error('db error')
+      })
+      const date = new Date()
+      expect(() => getSubmissionRecordsForDate(date)).toThrow('db error')
     })
   })
 })

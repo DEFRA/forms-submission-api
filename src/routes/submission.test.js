@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes'
 import { createServer } from '~/src/api/server.js'
 import { STUB_SUBMISSION_REF } from '~/src/repositories/__stubs__/submission.js'
 import { getSubmissionRecordByReference } from '~/src/repositories/submission-repository.js'
-import { authAdmin } from '~/test/fixtures/auth.js'
+import { authAD, authAdmin } from '~/test/fixtures/auth.js'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
 
@@ -50,6 +50,22 @@ describe('Submission routes', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.NOT_FOUND)
+    })
+
+    test('Testing GET /submission/{referenceNumber} route is successful with AD-only auth', async () => {
+      const expectedRecord = formSubmissions.at(0)
+      jest
+        .mocked(getSubmissionRecordByReference)
+        // @ts-expect-error - test data is not fully compliant with FormSubmissionDocument type
+        .mockResolvedValue(expectedRecord)
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/submission/${STUB_SUBMISSION_REF}`,
+        auth: authAD
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
     })
   })
 })

@@ -1,7 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import {
   receiveMessageTimeout,
   receiveMessages
@@ -9,8 +9,6 @@ import {
 import { processSubmissionMessages } from '~/src/services/submission-events.js'
 
 const queueUrl = config.get('submissionQueueUrl')
-
-const logger = createLogger()
 
 /**
  * @returns {Promise<void>}

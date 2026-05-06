@@ -5,11 +5,10 @@ import Boom from '@hapi/boom'
 
 import { config } from '~/src/config/index.js'
 import { addDays } from '~/src/helpers/date-helper.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
 
-const logger = createLogger()
 const expiryInDays = config.get('saveAndExitExpiryInDays')
 
 export const saveAndExitLabel = 'save-and-exit'

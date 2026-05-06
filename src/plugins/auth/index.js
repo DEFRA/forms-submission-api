@@ -2,7 +2,7 @@ import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
 
 const oidcJwksUri = config.get('oidcJwksUri')
@@ -29,8 +29,6 @@ const cognitoClientIds = Object.fromEntries(
     new Set(keys)
   ])
 )
-
-const logger = createLogger()
 
 /**
  * @satisfies {ServerRegisterPluginObject<void>}

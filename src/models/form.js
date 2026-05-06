@@ -69,6 +69,17 @@ export const getSubmissionByReferenceResponseSchema = Joi.object()
   .concat(formAdapterSubmissionMessagePayloadSchema)
   .label('getSubmissionByReferenceResponseSchema')
 
+export const generateReportTimelineResponseSchema = Joi.object({
+  timeline: Joi.array().items({
+    type: Joi.string().required(),
+    formId: Joi.string().required(),
+    formStatus: Joi.string().required(),
+    metricName: Joi.string().required(),
+    metricValue: Joi.number().required(),
+    createdAt: Joi.date().required()
+  })
+}).label('generateReportTimelineResponse')
+
 /**
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

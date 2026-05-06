@@ -14,11 +14,11 @@ jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
 jest.mock('~/src/tasks/receive-submission-messages.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: () => ({
+  logger: {
     error: jest.fn(),
     info: jest.fn(),
     debug: jest.fn()
-  })
+  }
 }))
 
 describe('Files route', () => {

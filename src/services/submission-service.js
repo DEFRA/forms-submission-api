@@ -9,7 +9,7 @@ import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import {
   formatPaymentAmount,
   formatPaymentDate
@@ -50,7 +50,6 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  * @property {SpreadsheetOptions} [options] - options for the spreadsheet generation
  */
 
-const logger = createLogger()
 /**
  *
  * @returns Record<string,string>

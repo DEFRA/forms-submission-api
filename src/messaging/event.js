@@ -5,15 +5,13 @@ import {
 } from '@aws-sdk/client-sqs'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { sqsClient } from '~/src/tasks/sqs.js'
 
 export const receiveMessageTimeout = config.get('receiveMessageTimeout')
 
 const maxNumberOfMessages = config.get('maxNumberOfMessages')
 const visibilityTimeout = config.get('visibilityTimeout')
-
-const logger = createLogger()
 
 /**
  * @param {string} dlqName

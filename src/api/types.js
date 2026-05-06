@@ -77,6 +77,10 @@
  */
 
 /**
+ * @typedef {{ Query: { date: Date }}} GetReportTimelineRequest
+ */
+
+/**
  * @import { SaveAndExitRecord } from '@defra/forms-model'
  * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request } from '@hapi/hapi'

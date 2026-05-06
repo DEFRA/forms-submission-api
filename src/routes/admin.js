@@ -1,7 +1,7 @@
 import { Scopes, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteDlqMessage,
   receiveDlqMessages,
@@ -23,8 +23,6 @@ import {
 } from '~/src/services/submission-service.js'
 
 const OK_RESPONSE = 200
-
-const logger = createLogger()
 
 export default [
   /**

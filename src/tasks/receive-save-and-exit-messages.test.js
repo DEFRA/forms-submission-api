@@ -12,13 +12,11 @@ jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/services/save-and-exit-events.js')
 
 jest.mock('~/src/helpers/logging/logger.js', () => ({
-  createLogger: jest.fn().mockImplementation(() => {
-    return {
-      info: jest.fn(),
-      error: jest.fn(),
-      debug: jest.fn()
-    }
-  })
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
+  }
 }))
 
 describe('receive-messages', () => {

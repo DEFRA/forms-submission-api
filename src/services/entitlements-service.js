@@ -1,12 +1,11 @@
 import Boom from '@hapi/boom'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { getJson } from '~/src/services/httpService.js'
 
 const entitlementUrl = config.get('entitlementUrl')
 const entitlementsEndpoint = new URL('/', entitlementUrl)
-const logger = createLogger()
 
 /**
  * Fetches user scopes from the entitlements API

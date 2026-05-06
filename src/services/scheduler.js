@@ -2,10 +2,8 @@ import { getErrorMessage } from '@defra/forms-model'
 import cron from 'node-cron'
 
 import { config } from '~/src/config/index.js'
-import { createLogger } from '~/src/helpers/logging/logger.js'
+import { logger } from '~/src/helpers/logging/logger.js'
 import { processExpiringSaveAndExitRecords } from '~/src/services/expiring-save-and-exit.js'
-
-const logger = createLogger()
 
 /**
  * Scheduler service for managing periodic tasks

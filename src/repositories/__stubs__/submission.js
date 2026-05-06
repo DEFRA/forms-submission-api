@@ -8,6 +8,28 @@ export const STUB_SUBMISSION_REF = '365-DFR-C67'
 export const STUB_SUBMISSION_RECORD_ID = '68d284ef5fa1a0fb2ede066a'
 
 /**
+ * @param {string} formId
+ * @param {FormStatus} formStatus
+ * @param {Date} timestamp
+ * @returns {WithId<FormSubmissionDocument>}
+ */
+export function buildCustomisedSubmissionDocument(
+  formId,
+  formStatus,
+  timestamp
+) {
+  const doc = /** @type {WithId<FormSubmissionDocument>} */ ({
+    ...buildFormAdapterSubmissionMessagePayloadStub(),
+    recordCreatedAt: new Date(),
+    expireAt: addDays(new Date(), 28)
+  })
+  doc.meta.formId = formId
+  doc.meta.timestamp = timestamp
+  doc.meta.status = formStatus
+  return doc
+}
+
+/**
  * @returns {WithId<FormSubmissionDocument>}
  */
 export function buildDbDocument() {
