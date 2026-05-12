@@ -1,3 +1,4 @@
+import { FormStatus as FormsEnginePluginFormStatus } from '@defra/forms-engine-plugin/types'
 import { FormMetricType, FormStatus, getErrorMessage } from '@defra/forms-model'
 
 import { logger } from '~/src/helpers/logging/logger.js'
@@ -54,7 +55,7 @@ export async function generateReportTimeline(date) {
     for await (const submission of submissionsCursor) {
       const status = submission.meta.status
       const isPreview = submission.meta.isPreview
-      if (status === FormStatus.Draft) {
+      if (status === FormsEnginePluginFormStatus.Draft) {
         incrementFormCount(timelineMapDraft, submission.meta.formId)
       } else {
         const isLivePreview = isPreview
