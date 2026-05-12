@@ -1,3 +1,4 @@
+import { createTimer } from '~/src/helpers/timer.js'
 import {
   fileAccessPayloadSchema,
   fileAccessResponseSchema,
@@ -105,10 +106,14 @@ export default [
     async handler(request) {
       const { payload, auth } = request
       const { fileId, retrievalKey } = payload
+      const appCredentials =
+        /** @type {{ client_id?: string } | undefined } */ (
+          auth.credentials.app
+        )
 
       // Validate retrievalKey authorization for Cognito clients
-      if (auth.credentials.app?.client_id) {
-        validateRetrievalKey(auth.credentials.app.client_id, retrievalKey)
+      if (appCredentials?.client_id) {
+        validateRetrievalKey(appCredentials.client_id, retrievalKey)
       }
 
       const presignedLink = await getPresignedLink(fileId, retrievalKey)
@@ -142,8 +147,22 @@ export default [
     async handler(request) {
       const { payload } = request
       const { files, persistedRetrievalKey } = payload
+      const persistTimer = createTimer()
+
+      request.logger.info(
+        { fileCount: files.length },
+        '[filesPersistRoute:perf] Starting /files/persist request'
+      )
 
       await persistFiles(files, persistedRetrievalKey)
+
+      request.logger.info(
+        {
+          fileCount: files.length,
+          durationMs: persistTimer.elapsed
+        },
+        '[filesPersistRoute:perf] Completed /files/persist request'
+      )
 
       return {
         message: 'Files persisted'

@@ -15,6 +15,7 @@ import { MongoServerError } from 'mongodb'
 import { config } from '~/src/config/index.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
+import { createTimer } from '~/src/helpers/timer.js'
 import { client as mongoClient } from '~/src/mongo.js'
 import * as repository from '~/src/repositories/file-repository.js'
 import {
@@ -26,6 +27,41 @@ import { getS3Client } from '~/src/services/utils.js'
 const loadedPrefix = config.get('loadedPrefix')
 
 const ALREADY_INGESTED = 11000
+
+/**
+ * Summarises a set of duration values.
+ * @param {number[]} values
+ */
+function summariseDurationValues(values) {
+  const totalMs = values.reduce((sum, value) => sum + value, 0)
+
+  return {
+    totalMs,
+    averageMs: values.length ? Math.round(totalMs / values.length) : 0,
+    maxMs: values.length ? Math.max(...values) : 0
+  }
+}
+
+/**
+ * Summarises per-file timings for persistFiles.
+ * @param {PersistFileResult[]} fileResults
+ */
+function summariseFileTimings(fileResults) {
+  return {
+    lookupMs: summariseDurationValues(
+      fileResults.map((result) => result.timings.lookupMs)
+    ),
+    verifyMs: summariseDurationValues(
+      fileResults.map((result) => result.timings.verifyMs)
+    ),
+    copyMs: summariseDurationValues(
+      fileResults.map((result) => result.timings.copyMs)
+    ),
+    totalMs: summariseDurationValues(
+      fileResults.map((result) => result.timings.totalMs)
+    )
+  }
+}
 
 /**
  * Accepts file status into the forms-submission-api
@@ -171,38 +207,85 @@ export async function getPresignedLink(fileId, retrievalKey) {
 export async function persistFiles(files, persistedRetrievalKey) {
   const client = getS3Client()
   const session = mongoClient.startSession()
+  const perfLogger = logger.child({
+    operation: 'persistFiles',
+    fileCount: files.length
+  })
+  const totalTimer = createTimer()
 
   /**
-   * @type {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string | undefined; newS3Key: string; }>[]}
+   * @type {Promise<PersistFileResult>[]}
    */
   let updateFiles = []
+  /** @type {PersistFileResult[]} */
+  let copiedFiles = []
+
+  perfLogger.info('[persistFiles:perf] Starting persist flow')
 
   try {
+    const preTransactionTimer = createTimer()
+
     updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
-      copyS3File(fileId, initiatedRetrievalKey, client)
+      copyS3File(fileId, initiatedRetrievalKey, client, perfLogger)
     )
 
-    const res = await Promise.all(updateFiles)
+    copiedFiles = await Promise.all(updateFiles)
 
+    const skippedCopyCount = copiedFiles.filter(
+      ({ oldS3Key }) => oldS3Key === undefined
+    ).length
+    const copiedCount = copiedFiles.length - skippedCopyCount
+
+    perfLogger.info(
+      {
+        durationMs: preTransactionTimer.elapsed,
+        copiedCount,
+        skippedCopyCount,
+        perFileTimingSummary: summariseFileTimings(copiedFiles)
+      },
+      '[persistFiles:perf] Pre-transaction verification and copy phase completed'
+    )
+
+    const transactionTimer = createTimer()
     await session.withTransaction(async () => {
       logger.info(`Persisting ${files.length} files`)
 
-      await repository.updateS3Keys(res, session)
+      const updateS3KeysTimer = createTimer()
+      await repository.updateS3Keys(copiedFiles, session)
+      perfLogger.info(
+        { durationMs: updateS3KeysTimer.elapsed },
+        '[persistFiles:perf] updateS3Keys completed'
+      )
 
       // Once we know the files have copied successfully, we can update the database
+      const hashTimer = createTimer()
       const persistedRetrievalKeyHashed = await argon2.hash(
         persistedRetrievalKey.toLowerCase()
+      )
+      perfLogger.info(
+        { durationMs: hashTimer.elapsed },
+        '[persistFiles:perf] persisted retrieval key hash completed'
       )
 
       // Force new persists to be password case-insensitive
       const retrievalKeyIsCaseSensitive = false
+      const updateRetrievalKeysTimer = createTimer()
       await repository.updateRetrievalKeys(
         files.map(({ fileId }) => fileId),
         persistedRetrievalKeyHashed,
         retrievalKeyIsCaseSensitive,
         session
       )
+      perfLogger.info(
+        { durationMs: updateRetrievalKeysTimer.elapsed },
+        '[persistFiles:perf] updateRetrievalKeys completed'
+      )
     })
+
+    perfLogger.info(
+      { durationMs: transactionTimer.elapsed },
+      '[persistFiles:perf] Transaction phase completed'
+    )
 
     logger.info(`Finished persisting ${files.length} files`)
   } catch (err) {
@@ -213,7 +296,15 @@ export async function persistFiles(files, persistedRetrievalKey) {
     )
 
     // no point persisting part of a batch. clean it up.
+    const rollbackCleanupTimer = createTimer()
     await deleteOldFiles(updateFiles, 'newS3Key', client)
+    perfLogger.info(
+      {
+        durationMs: rollbackCleanupTimer.elapsed,
+        attemptedFileCount: files.length
+      },
+      '[persistFiles:perf] Rollback cleanup of newly copied files completed'
+    )
 
     throw err
   } finally {
@@ -225,13 +316,28 @@ export async function persistFiles(files, persistedRetrievalKey) {
     // Only delete the old files once the pointer update has succeeded. Handle this outside of the DB session as we don't
     // want a failure here to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
     // anyway, so this ultimately is just a cost issue not a functional one.
+    const deleteOriginalFilesTimer = createTimer()
     await deleteOldFiles(updateFiles, 'oldS3Key', client)
+    perfLogger.info(
+      {
+        durationMs: deleteOriginalFilesTimer.elapsed,
+        deletedFileCount: copiedFiles.filter(
+          ({ oldS3Key }) => oldS3Key !== undefined
+        ).length
+      },
+      '[persistFiles:perf] Original file cleanup completed'
+    )
   }
+
+  perfLogger.info(
+    { durationMs: totalTimer.elapsed },
+    '[persistFiles:perf] Persist flow completed'
+  )
 }
 
 /**
  * Deletes old files in staging based on the provided keys.
- * @param {Promise<{ fileId: string, s3Bucket: string; oldS3Key: string | undefined; newS3Key: string; }>[]} keys - an array of files to handle
+ * @param {Promise<PersistFileResult>[] } keys - an array of files to handle
  * @param {('oldS3Key'|'newS3Key')} lookupKey - the key to use to look up the S3 key
  * @param {S3Client} client - S3 client
  */
@@ -262,9 +368,25 @@ async function deleteOldFiles(keys, lookupKey, client) {
  * @param {string} fileId
  * @param {string} initiatedRetrievalKey - retrieval key when initiated
  * @param {S3Client} client - S3 client
+ * @param {Logger} [perfLogger] - optional logger for timing diagnostics
  */
-async function copyS3File(fileId, initiatedRetrievalKey, client) {
-  const fileStatus = await getAndVerify(fileId, initiatedRetrievalKey)
+async function copyS3File(fileId, initiatedRetrievalKey, client, perfLogger) {
+  const fileLogger = perfLogger?.child({ fileId })
+  const totalTimer = createTimer()
+  /** @type {PersistFileTimings} */
+  const timings = {
+    lookupMs: 0,
+    verifyMs: 0,
+    copyMs: 0,
+    totalMs: 0
+  }
+
+  const fileStatus = await getAndVerify(
+    fileId,
+    initiatedRetrievalKey,
+    timings,
+    fileLogger
+  )
 
   if (!fileStatus.s3Key || !fileStatus.s3Bucket) {
     throw Boom.internal(`S3 key/bucket is missing for file ID ${fileId}`)
@@ -274,18 +396,28 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     const msg = `File ${fileId} is already in the loaded directory, no need to copy`
 
     logger.info(`[copyS3File] ${msg}`)
+    timings.totalMs = totalTimer.elapsed
+    fileLogger?.debug(
+      {
+        timings,
+        skippedCopy: true
+      },
+      '[persistFiles:perf] File already loaded; skipped S3 copy'
+    )
 
     return {
       fileId,
       s3Bucket: fileStatus.s3Bucket,
       oldS3Key: undefined, // Marker to indicate no copy was needed
-      newS3Key: fileStatus.s3Key
+      newS3Key: fileStatus.s3Key,
+      timings
     }
   }
 
   const oldS3Key = fileStatus.s3Key
   const filename = oldS3Key.split('/').at(-1)
   const newS3Key = `${loadedPrefix}/${filename}`
+  const copyTimer = createTimer()
 
   try {
     await client.send(
@@ -295,7 +427,10 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
         CopySource: `${fileStatus.s3Bucket}/${oldS3Key}`
       })
     )
+    timings.copyMs = copyTimer.elapsed
   } catch (err) {
+    timings.copyMs = copyTimer.elapsed
+
     if (err instanceof NoSuchKey) {
       throw Boom.resourceGone(`File ${fileId} no longer exists`)
     }
@@ -310,11 +445,21 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
     throw err
   }
 
+  timings.totalMs = totalTimer.elapsed
+  fileLogger?.debug(
+    {
+      timings,
+      skippedCopy: false
+    },
+    '[persistFiles:perf] File verification and S3 copy completed'
+  )
+
   return {
     fileId,
     s3Bucket: fileStatus.s3Bucket,
     oldS3Key,
-    newS3Key
+    newS3Key,
+    timings
   }
 }
 
@@ -322,17 +467,41 @@ async function copyS3File(fileId, initiatedRetrievalKey, client) {
  * Retrieves a file status from the database, verifying the retrieval key before returning.
  * @param {string} fileId
  * @param {string} retrievalKey
+ * @param {PersistFileTimings} [timings]
+ * @param {Logger} [perfLogger]
  */
-async function getAndVerify(fileId, retrievalKey) {
+async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
+  const lookupTimer = createTimer()
   const fileStatus = await repository.getByFileId(fileId)
+  const lookupMs = lookupTimer.elapsed
+
+  if (timings) {
+    timings.lookupMs = lookupMs
+  }
+
+  perfLogger?.debug(
+    { durationMs: lookupMs },
+    '[persistFiles:perf] Mongo file lookup completed'
+  )
 
   if (!fileStatus) {
     throw Boom.notFound('File not found')
   }
 
+  const verifyTimer = createTimer()
   const retrievalKeyCorrect = await argon2.verify(
     fileStatus.retrievalKey,
     retrievalKey
+  )
+  const verifyMs = verifyTimer.elapsed
+
+  if (timings) {
+    timings.verifyMs = verifyMs
+  }
+
+  perfLogger?.debug(
+    { durationMs: verifyMs },
+    '[persistFiles:perf] Retrieval key verification completed'
   )
 
   if (!retrievalKeyCorrect) {
@@ -412,5 +581,8 @@ export async function submit(submitPayload) {
 /**
  * @import { SubmitPayload } from '@defra/forms-model'
  * @import { S3Client } from '@aws-sdk/client-s3'
+ * @import { Logger } from 'pino'
  * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @typedef {{ lookupMs: number, verifyMs: number, copyMs: number, totalMs: number }} PersistFileTimings
+ * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | undefined, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
  */
