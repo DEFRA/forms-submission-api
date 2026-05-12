@@ -30,6 +30,33 @@ if (!persistRoute) {
   throw new Error('Expected /files/persist route to exist')
 }
 
+const persistRouteHandler =
+  /** @type {(request: import('@hapi/hapi').Request<{ Payload: PersistedRetrievalPayload }>) => Promise<unknown>} */ (
+    persistRoute.handler
+  )
+
+/**
+ * Creates a typed request object for directly invoking the /files/persist handler.
+ * @param {PersistedRetrievalPayload} payload
+ */
+function createPersistRouteRequest(payload) {
+  const logger = {
+    info: jest.fn(),
+    warn: jest.fn()
+  }
+
+  return {
+    logger,
+    request:
+      /** @type {import('@hapi/hapi').Request<{ Payload: PersistedRetrievalPayload }>} */ (
+        /** @type {unknown} */ ({
+          payload,
+          logger
+        })
+      )
+  }
+}
+
 describe('Files route', () => {
   /** @type {Server} */
   let server
@@ -254,28 +281,20 @@ describe('Files route', () => {
 
   describe('Error responses', () => {
     test('Testing /files/persist handler logs failure details when persistFiles throws an Error', async () => {
-      const logger = {
-        info: jest.fn(),
-        warn: jest.fn()
-      }
       const error = new Error('Persist failed')
+      const { logger, request } = createPersistRouteRequest({
+        files: [
+          {
+            fileId: '1234',
+            initiatedRetrievalKey: '1234'
+          }
+        ],
+        persistedRetrievalKey: '5678'
+      })
 
       jest.mocked(persistFiles).mockRejectedValueOnce(error)
 
-      await expect(
-        persistRoute.handler({
-          payload: {
-            files: [
-              {
-                fileId: '1234',
-                initiatedRetrievalKey: '1234'
-              }
-            ],
-            persistedRetrievalKey: '5678'
-          },
-          logger
-        })
-      ).rejects.toThrow(error)
+      await expect(persistRouteHandler(request)).rejects.toThrow(error)
 
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -289,27 +308,19 @@ describe('Files route', () => {
     })
 
     test('Testing /files/persist handler logs Unknown error when persistFiles throws a non-Error value', async () => {
-      const logger = {
-        info: jest.fn(),
-        warn: jest.fn()
-      }
+      const { logger, request } = createPersistRouteRequest({
+        files: [
+          {
+            fileId: '1234',
+            initiatedRetrievalKey: '1234'
+          }
+        ],
+        persistedRetrievalKey: '5678'
+      })
 
       jest.mocked(persistFiles).mockRejectedValueOnce('boom')
 
-      await expect(
-        persistRoute.handler({
-          payload: {
-            files: [
-              {
-                fileId: '1234',
-                initiatedRetrievalKey: '1234'
-              }
-            ],
-            persistedRetrievalKey: '5678'
-          },
-          logger
-        })
-      ).rejects.toBe('boom')
+      await expect(persistRouteHandler(request)).rejects.toBe('boom')
 
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -530,5 +541,5 @@ describe('Files route', () => {
 
 /**
  * @import { Server } from '@hapi/hapi'
- * @import { FileUploadStatus } from '~/src/api/types.js'
+ * @import { FileUploadStatus, PersistedRetrievalPayload } from '~/src/api/types.js'
  */

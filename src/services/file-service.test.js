@@ -1313,24 +1313,33 @@ describe('Files service', () => {
 
   describe('file persist flow helpers', () => {
     it('should skip original file cleanup when no updated files exist', async () => {
-      const client = {
+      const clientFns = {
         send: jest.fn()
       }
-      const perfLogger = {
+      const perfLoggerFns = {
         info: jest.fn()
       }
+      const client = /** @type {import('@aws-sdk/client-s3').S3Client} */ (
+        /** @type {unknown} */ (clientFns)
+      )
+      const perfLogger = /** @type {import('pino').Logger} */ (
+        /** @type {unknown} */ (perfLoggerFns)
+      )
 
       await cleanupOriginalFiles([], [], client, perfLogger)
 
-      expect(client.send).not.toHaveBeenCalled()
-      expect(perfLogger.info).not.toHaveBeenCalled()
+      expect(clientFns.send).not.toHaveBeenCalled()
+      expect(perfLoggerFns.info).not.toHaveBeenCalled()
     })
 
     it('should log Unknown error when wrapped persist flow throws a non-Error value', async () => {
-      const perfLogger = {
+      const perfLoggerFns = {
         info: jest.fn(),
         warn: jest.fn()
       }
+      const perfLogger = /** @type {import('pino').Logger} */ (
+        /** @type {unknown} */ (perfLoggerFns)
+      )
       const totalTimer = {
         elapsed: 42
       }
@@ -1340,7 +1349,7 @@ describe('Files service', () => {
         withPersistFlowCompletionLogging(perfLogger, totalTimer, operation)
       ).rejects.toBe('boom')
 
-      expect(perfLogger.warn).toHaveBeenCalledWith(
+      expect(perfLoggerFns.warn).toHaveBeenCalledWith(
         {
           durationMs: 42,
           outcome: 'failure',
@@ -1353,14 +1362,17 @@ describe('Files service', () => {
 
   describe('file persist copy helpers', () => {
     it('should report zero timing summary values when no files need copying', async () => {
-      const perfLogger = {
+      const perfLoggerFns = {
         info: jest.fn()
       }
+      const perfLogger = /** @type {import('pino').Logger} */ (
+        /** @type {unknown} */ (perfLoggerFns)
+      )
 
       const copiedFiles = await completePreTransactionPhase([], perfLogger)
 
       expect(copiedFiles).toEqual([])
-      expect(perfLogger.info).toHaveBeenCalledWith(
+      expect(perfLoggerFns.info).toHaveBeenCalledWith(
         expect.objectContaining({
           copiedCount: 0,
           skippedCopyCount: 0,
@@ -1376,9 +1388,18 @@ describe('Files service', () => {
     })
 
     it('should rethrow non-Error S3 copy failures from copy task creation', async () => {
-      const client = {
+      const clientFns = {
         send: jest.fn().mockRejectedValueOnce('Unexpected S3 failure')
       }
+      const perfLoggerFns = {
+        child: jest.fn()
+      }
+      const client = /** @type {import('@aws-sdk/client-s3').S3Client} */ (
+        /** @type {unknown} */ (clientFns)
+      )
+      const perfLogger = /** @type {import('pino').Logger} */ (
+        /** @type {unknown} */ (perfLoggerFns)
+      )
       const getAndVerify = jest.fn().mockResolvedValue({
         fileId: successfulFile.fileId,
         s3Bucket: successfulFile.s3Bucket,
@@ -1393,7 +1414,7 @@ describe('Files service', () => {
           }
         ],
         client,
-        undefined,
+        perfLogger,
         getAndVerify
       )
 
