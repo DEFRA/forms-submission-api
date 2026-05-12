@@ -1,6 +1,9 @@
+import { FormStatus } from '@defra/forms-engine-plugin/types'
 import { ComponentType } from '@defra/forms-model'
+import Boom from '@hapi/boom'
 import xlsx from 'xlsx'
 
+import { logger } from '~/src/helpers/logging/logger.js'
 import { getSubmissionRecords } from '~/src/repositories/submission-repository.js'
 import {
   getFormDefinition,
@@ -14,6 +17,7 @@ import {
   generateFeedbackSubmissionsFileForAll,
   generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
+  getFormModel,
   getMetadataFromForm,
   lookupFormNameById
 } from '~/src/services/submission-service.js'
@@ -36,7 +40,8 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),
-    debug: jest.fn()
+    debug: jest.fn(),
+    warn: jest.fn()
   }
 }))
 
@@ -492,6 +497,125 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       const res = await lookupFormNameById(mockContext, 'form-id')
       expect(res).toBe('form-name')
       expect(mockSet).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getFormModel', () => {
+    const formId = '688131eeff67f889d52c66cc'
+    const versionNumber = 36
+
+    /** @type {SpreadsheetContext} */
+    let mockContext
+
+    beforeEach(() => {
+      mockContext = {
+        // @ts-expect-error - not all context mocked
+        caches: {
+          models: new Map()
+        },
+        options: {}
+      }
+    })
+
+    test('should return model from cache when versionNumber is cached', async () => {
+      const cachedModel = /** @type {any} */ ({})
+      mockContext.caches.models.set(versionNumber, cachedModel)
+
+      const result = await getFormModel(
+        mockContext,
+        formId,
+        versionNumber,
+        FormStatus.Live
+      )
+
+      expect(result).toBe(cachedModel)
+      expect(getFormDefinitionVersion).not.toHaveBeenCalled()
+    })
+
+    test('should return cached fallback model and warn when nonExistentVersion key is cached', async () => {
+      const nonExistentVersion = -versionNumber
+      const cachedFallback = /** @type {any} */ ({})
+      mockContext.caches.models.set(nonExistentVersion, cachedFallback)
+
+      const result = await getFormModel(
+        mockContext,
+        formId,
+        versionNumber,
+        FormStatus.Live
+      )
+
+      expect(result).toBe(cachedFallback)
+      expect(logger.warn).toHaveBeenCalledWith(
+        `Form version ${versionNumber} was not found for form ID ${formId}. Will use cached latest version instead`
+      )
+      expect(getFormDefinitionVersion).not.toHaveBeenCalled()
+    })
+
+    test('should fetch from DB, cache under versionNumber and return model', async () => {
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersions)
+      )
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockResolvedValueOnce(versions['36'])
+
+      const result = await getFormModel(
+        mockContext,
+        formId,
+        versionNumber,
+        FormStatus.Live
+      )
+
+      expect(getFormDefinitionVersion).toHaveBeenCalledWith(
+        formId,
+        versionNumber
+      )
+      expect(result).toBeDefined()
+      expect(mockContext.caches.models.get(versionNumber)).toBe(result)
+    })
+
+    test('should fall back to latest version on DB 404, cache under nonExistentVersion key and warn', async () => {
+      const nonExistentVersion = -versionNumber
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersions)
+      )
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockRejectedValueOnce(Boom.notFound())
+      jest.mocked(getFormDefinition).mockResolvedValueOnce(versions['36'])
+
+      const result = await getFormModel(
+        mockContext,
+        formId,
+        versionNumber,
+        FormStatus.Live
+      )
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        `Form version ${versionNumber} was not found for form ID ${formId}. Will use latest version instead`
+      )
+      expect(getFormDefinition).toHaveBeenCalledWith(formId, 'live')
+      expect(result).toBeDefined()
+      expect(mockContext.caches.models.get(nonExistentVersion)).toBe(result)
+      expect(mockContext.caches.models.has(versionNumber)).toBe(false)
+    })
+
+    test('should rethrow non-404 Boom errors', async () => {
+      const error = Boom.badRequest('Something went wrong')
+      jest.mocked(getFormDefinitionVersion).mockRejectedValueOnce(error)
+
+      await expect(
+        getFormModel(mockContext, formId, versionNumber, FormStatus.Live)
+      ).rejects.toBe(error)
+    })
+
+    test('should rethrow non-Boom errors', async () => {
+      const error = new Error('Database connection failed')
+      jest.mocked(getFormDefinitionVersion).mockRejectedValueOnce(error)
+
+      await expect(
+        getFormModel(mockContext, formId, versionNumber, FormStatus.Live)
+      ).rejects.toBe(error)
     })
   })
 })
