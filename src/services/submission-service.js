@@ -6,6 +6,7 @@ import {
 } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
+import { StatusCodes } from 'http-status-codes'
 import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
@@ -336,7 +337,7 @@ export async function getFormModel(context, formId, versionNumber, formStatus) {
     try {
       formModel = await getFormModelFromDb(formId, versionNumber, formStatus)
     } catch (err) {
-      if (!Boom.isBoom(err) || err.output.statusCode !== 404) {
+      if (!Boom.isBoom(err, StatusCodes.NOT_FOUND)) {
         throw err
       }
 
