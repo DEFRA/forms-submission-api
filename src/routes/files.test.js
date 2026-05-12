@@ -1,6 +1,7 @@
 import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
+import filesRoutes from '~/src/routes/files.js'
 import {
   checkFileStatus,
   getPresignedLink,
@@ -20,6 +21,14 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
     debug: jest.fn()
   }
 }))
+
+const persistRoute = filesRoutes.find(
+  (route) => route.path === '/files/persist'
+)
+
+if (!persistRoute) {
+  throw new Error('Expected /files/persist route to exist')
+}
 
 describe('Files route', () => {
   /** @type {Server} */
@@ -244,6 +253,75 @@ describe('Files route', () => {
   })
 
   describe('Error responses', () => {
+    test('Testing /files/persist handler logs failure details when persistFiles throws an Error', async () => {
+      const logger = {
+        info: jest.fn(),
+        warn: jest.fn()
+      }
+      const error = new Error('Persist failed')
+
+      jest.mocked(persistFiles).mockRejectedValueOnce(error)
+
+      await expect(
+        persistRoute.handler({
+          payload: {
+            files: [
+              {
+                fileId: '1234',
+                initiatedRetrievalKey: '1234'
+              }
+            ],
+            persistedRetrievalKey: '5678'
+          },
+          logger
+        })
+      ).rejects.toThrow(error)
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileCount: 1,
+          durationMs: expect.any(Number),
+          outcome: 'failure',
+          error: 'Persist failed'
+        }),
+        '[filesPersistRoute:perf] Completed /files/persist request'
+      )
+    })
+
+    test('Testing /files/persist handler logs Unknown error when persistFiles throws a non-Error value', async () => {
+      const logger = {
+        info: jest.fn(),
+        warn: jest.fn()
+      }
+
+      jest.mocked(persistFiles).mockRejectedValueOnce('boom')
+
+      await expect(
+        persistRoute.handler({
+          payload: {
+            files: [
+              {
+                fileId: '1234',
+                initiatedRetrievalKey: '1234'
+              }
+            ],
+            persistedRetrievalKey: '5678'
+          },
+          logger
+        })
+      ).rejects.toBe('boom')
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileCount: 1,
+          durationMs: expect.any(Number),
+          outcome: 'failure',
+          error: 'Unknown error'
+        }),
+        '[filesPersistRoute:perf] Completed /files/persist request'
+      )
+    })
+
     test('Testing POST /file route handles a rejected file gracefully', async () => {
       jest.mocked(ingestFile).mockResolvedValue()
 

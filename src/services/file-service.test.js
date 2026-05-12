@@ -18,6 +18,14 @@ import { pino } from 'pino'
 import { prepareDb } from '~/src/mongo.js'
 import * as repository from '~/src/repositories/file-repository.js'
 import {
+  cleanupOriginalFiles,
+  withPersistFlowCompletionLogging
+} from '~/src/services/file-persist-flow.js'
+import {
+  completePreTransactionPhase,
+  createPersistCopyTasks
+} from '~/src/services/file-persist-s3copy.js'
+import {
   checkFileStatus,
   getPresignedLink,
   ingestFile,
@@ -1010,6 +1018,34 @@ describe('Files service', () => {
       )
     })
 
+    it('should rethrow unexpected S3 copy errors', async () => {
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+      const unexpectedError = new Error('Unexpected S3 failure')
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      s3Mock.on(CopyObjectCommand).rejectsOnce(unexpectedError)
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toThrow(unexpectedError)
+
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
+    })
+
     it('should update both retrievalKey and retrievalKeyIsCaseSensitive fields', async () => {
       /** @type {FormFileUploadStatus} */
       const mockData = {
@@ -1272,6 +1308,96 @@ describe('Files service', () => {
       await expect(submit(submitPayload)).rejects.toThrow(
         Boom.internal('Failed to save repeater files')
       )
+    })
+  })
+
+  describe('file persist flow helpers', () => {
+    it('should skip original file cleanup when no updated files exist', async () => {
+      const client = {
+        send: jest.fn()
+      }
+      const perfLogger = {
+        info: jest.fn()
+      }
+
+      await cleanupOriginalFiles([], [], client, perfLogger)
+
+      expect(client.send).not.toHaveBeenCalled()
+      expect(perfLogger.info).not.toHaveBeenCalled()
+    })
+
+    it('should log Unknown error when wrapped persist flow throws a non-Error value', async () => {
+      const perfLogger = {
+        info: jest.fn(),
+        warn: jest.fn()
+      }
+      const totalTimer = {
+        elapsed: 42
+      }
+      const operation = jest.fn().mockRejectedValueOnce('boom')
+
+      await expect(
+        withPersistFlowCompletionLogging(perfLogger, totalTimer, operation)
+      ).rejects.toBe('boom')
+
+      expect(perfLogger.warn).toHaveBeenCalledWith(
+        {
+          durationMs: 42,
+          outcome: 'failure',
+          error: 'Unknown error'
+        },
+        '[persistFiles:perf] Persist flow completed'
+      )
+    })
+  })
+
+  describe('file persist copy helpers', () => {
+    it('should report zero timing summary values when no files need copying', async () => {
+      const perfLogger = {
+        info: jest.fn()
+      }
+
+      const copiedFiles = await completePreTransactionPhase([], perfLogger)
+
+      expect(copiedFiles).toEqual([])
+      expect(perfLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          copiedCount: 0,
+          skippedCopyCount: 0,
+          perFileTimingSummary: {
+            lookupMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
+            verifyMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
+            copyMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
+            totalMs: { totalMs: 0, averageMs: 0, maxMs: 0 }
+          }
+        }),
+        '[persistFiles:perf] Pre-transaction verification and copy phase completed'
+      )
+    })
+
+    it('should rethrow non-Error S3 copy failures from copy task creation', async () => {
+      const client = {
+        send: jest.fn().mockRejectedValueOnce('Unexpected S3 failure')
+      }
+      const getAndVerify = jest.fn().mockResolvedValue({
+        fileId: successfulFile.fileId,
+        s3Bucket: successfulFile.s3Bucket,
+        s3Key: 'staging/dummy-file-123.txt'
+      })
+
+      const copyTasks = createPersistCopyTasks(
+        [
+          {
+            fileId: successfulFile.fileId,
+            initiatedRetrievalKey: 'test'
+          }
+        ],
+        client,
+        undefined,
+        getAndVerify
+      )
+
+      await expect(Promise.all(copyTasks)).rejects.toBe('Unexpected S3 failure')
     })
   })
 })
