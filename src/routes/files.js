@@ -148,24 +148,35 @@ export default [
       const { payload } = request
       const { files, persistedRetrievalKey } = payload
       const persistTimer = createTimer()
+      /** @type {'success' | 'failure'} */
+      let outcome = 'success'
+      /** @type {string | undefined} */
+      let errorMessage
 
       request.logger.info(
         { fileCount: files.length },
         '[filesPersistRoute:perf] Starting /files/persist request'
       )
 
-      await persistFiles(files, persistedRetrievalKey)
+      try {
+        await persistFiles(files, persistedRetrievalKey)
 
-      request.logger.info(
-        {
-          fileCount: files.length,
-          durationMs: persistTimer.elapsed
-        },
-        '[filesPersistRoute:perf] Completed /files/persist request'
-      )
+        return {
+          message: 'Files persisted'
+        }
+      } catch (err) {
+        outcome = 'failure'
+        errorMessage = err instanceof Error ? err.message : 'Unknown error'
 
-      return {
-        message: 'Files persisted'
+        throw err
+      } finally {
+        logPersistRouteCompletion(
+          request,
+          files.length,
+          persistTimer.elapsed,
+          outcome,
+          errorMessage
+        )
       }
     },
     options: {
@@ -182,6 +193,45 @@ export default [
     }
   })
 ]
+
+/**
+ * Logs completion timing for the /files/persist route.
+ * @param {import('@hapi/hapi').Request<{ Payload: PersistedRetrievalPayload }>} request
+ * @param {number} fileCount
+ * @param {number} durationMs
+ * @param {'success' | 'failure'} outcome
+ * @param {string} [errorMessage]
+ */
+function logPersistRouteCompletion(
+  request,
+  fileCount,
+  durationMs,
+  outcome,
+  errorMessage
+) {
+  const logData = {
+    fileCount,
+    durationMs,
+    outcome
+  }
+
+  if (errorMessage) {
+    request.logger.warn(
+      {
+        ...logData,
+        error: errorMessage
+      },
+      '[filesPersistRoute:perf] Completed /files/persist request'
+    )
+
+    return
+  }
+
+  request.logger.info(
+    logData,
+    '[filesPersistRoute:perf] Completed /files/persist request'
+  )
+}
 
 /**
  * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'

@@ -213,126 +213,300 @@ export async function persistFiles(files, persistedRetrievalKey) {
   })
   const totalTimer = createTimer()
 
-  /**
-   * @type {Promise<PersistFileResult>[]}
-   */
-  let updateFiles = []
-  /** @type {PersistFileResult[]} */
-  let copiedFiles = []
+  return withPersistFlowCompletionLogging(perfLogger, totalTimer, async () => {
+    /** @type {Promise<PersistFileResult>[] } */
+    const updateFiles = createPersistCopyTasks(files, client, perfLogger)
+    /** @type {PersistFileResult[]} */
+    let copiedFiles = []
 
-  perfLogger.info('[persistFiles:perf] Starting persist flow')
+    perfLogger.info('[persistFiles:perf] Starting persist flow')
 
-  try {
-    const preTransactionTimer = createTimer()
-
-    updateFiles = files.map(({ fileId, initiatedRetrievalKey }) =>
-      copyS3File(fileId, initiatedRetrievalKey, client, perfLogger)
-    )
-
-    copiedFiles = await Promise.all(updateFiles)
-
-    const skippedCopyCount = copiedFiles.filter(
-      ({ oldS3Key }) => oldS3Key === undefined
-    ).length
-    const copiedCount = copiedFiles.length - skippedCopyCount
-
-    perfLogger.info(
-      {
-        durationMs: preTransactionTimer.elapsed,
-        copiedCount,
-        skippedCopyCount,
-        perFileTimingSummary: summariseFileTimings(copiedFiles)
-      },
-      '[persistFiles:perf] Pre-transaction verification and copy phase completed'
-    )
-
-    const transactionTimer = createTimer()
-    await session.withTransaction(async () => {
-      logger.info(`Persisting ${files.length} files`)
-
-      const updateS3KeysTimer = createTimer()
-      await repository.updateS3Keys(copiedFiles, session)
-      perfLogger.info(
-        { durationMs: updateS3KeysTimer.elapsed },
-        '[persistFiles:perf] updateS3Keys completed'
+    try {
+      copiedFiles = await completePreTransactionPhase(updateFiles, perfLogger)
+      await runPersistTransaction(
+        files,
+        copiedFiles,
+        persistedRetrievalKey,
+        session,
+        perfLogger
       )
-
-      // Once we know the files have copied successfully, we can update the database
-      const hashTimer = createTimer()
-      const persistedRetrievalKeyHashed = await argon2.hash(
-        persistedRetrievalKey.toLowerCase()
+    } catch (err) {
+      await handlePersistFilesFailure(
+        err,
+        files.length,
+        updateFiles,
+        client,
+        perfLogger
       )
-      perfLogger.info(
-        { durationMs: hashTimer.elapsed },
-        '[persistFiles:perf] persisted retrieval key hash completed'
-      )
+      throw err
+    } finally {
+      await session.endSession()
+    }
 
-      // Force new persists to be password case-insensitive
-      const retrievalKeyIsCaseSensitive = false
-      const updateRetrievalKeysTimer = createTimer()
-      await repository.updateRetrievalKeys(
-        files.map(({ fileId }) => fileId),
-        persistedRetrievalKeyHashed,
-        retrievalKeyIsCaseSensitive,
-        session
-      )
-      perfLogger.info(
-        { durationMs: updateRetrievalKeysTimer.elapsed },
-        '[persistFiles:perf] updateRetrievalKeys completed'
-      )
-    })
-
-    perfLogger.info(
-      { durationMs: transactionTimer.elapsed },
-      '[persistFiles:perf] Transaction phase completed'
-    )
-
-    logger.info(`Finished persisting ${files.length} files`)
-  } catch (err) {
-    const error = err instanceof Error ? err : new Error('Unknown error')
-    logger.error(
-      error,
-      `[persistFiles] Error persisting ${files.length} files - ${error.message}`
-    )
-
-    // no point persisting part of a batch. clean it up.
-    const rollbackCleanupTimer = createTimer()
-    await deleteOldFiles(updateFiles, 'newS3Key', client)
-    perfLogger.info(
-      {
-        durationMs: rollbackCleanupTimer.elapsed,
-        attemptedFileCount: files.length
-      },
-      '[persistFiles:perf] Rollback cleanup of newly copied files completed'
-    )
-
-    throw err
-  } finally {
-    await session.endSession()
-  }
-
-  // Usage example:
-  if (updateFiles.length) {
     // Only delete the old files once the pointer update has succeeded. Handle this outside of the DB session as we don't
     // want a failure here to revert our DB changes. If this fails, files will naturally expire in the original directory after 7 days
     // anyway, so this ultimately is just a cost issue not a functional one.
-    const deleteOriginalFilesTimer = createTimer()
-    await deleteOldFiles(updateFiles, 'oldS3Key', client)
-    perfLogger.info(
-      {
-        durationMs: deleteOriginalFilesTimer.elapsed,
-        deletedFileCount: copiedFiles.filter(
-          ({ oldS3Key }) => oldS3Key !== undefined
-        ).length
-      },
-      '[persistFiles:perf] Original file cleanup completed'
-    )
+    await cleanupOriginalFiles(updateFiles, copiedFiles, client, perfLogger)
+  })
+}
+
+/**
+ * Wraps the persist flow so the final duration is logged on both success and failure.
+ * @param {Logger} perfLogger
+ * @param {{ elapsed: number }} totalTimer
+ * @param {() => Promise<void>} operation
+ */
+async function withPersistFlowCompletionLogging(
+  perfLogger,
+  totalTimer,
+  operation
+) {
+  let outcome = 'success'
+  /** @type {Error | undefined} */
+  let error
+
+  try {
+    await operation()
+  } catch (err) {
+    outcome = 'failure'
+    error = toError(err)
+
+    throw err
+  } finally {
+    const logData = {
+      durationMs: totalTimer.elapsed,
+      outcome
+    }
+
+    if (error) {
+      perfLogger.warn(
+        {
+          ...logData,
+          error: error.message
+        },
+        '[persistFiles:perf] Persist flow completed'
+      )
+    } else {
+      perfLogger.info(logData, '[persistFiles:perf] Persist flow completed')
+    }
   }
+}
+
+/**
+ * Creates all copy tasks for the persist flow.
+ * @param {{fileId: string, initiatedRetrievalKey: string}[]} files
+ * @param {S3Client} client
+ * @param {Logger} perfLogger
+ */
+function createPersistCopyTasks(files, client, perfLogger) {
+  return files.map(({ fileId, initiatedRetrievalKey }) =>
+    copyS3File(fileId, initiatedRetrievalKey, client, perfLogger)
+  )
+}
+
+/**
+ * Runs the pre-transaction verification and copy phase.
+ * @param {Promise<PersistFileResult>[] } updateFiles
+ * @param {Logger} perfLogger
+ */
+async function completePreTransactionPhase(updateFiles, perfLogger) {
+  const preTransactionTimer = createTimer()
+  const copiedFiles = await Promise.all(updateFiles)
+  const skippedCopyCount = copiedFiles.filter(
+    ({ oldS3Key }) => oldS3Key === undefined
+  ).length
 
   perfLogger.info(
-    { durationMs: totalTimer.elapsed },
-    '[persistFiles:perf] Persist flow completed'
+    {
+      durationMs: preTransactionTimer.elapsed,
+      copiedCount: copiedFiles.length - skippedCopyCount,
+      skippedCopyCount,
+      perFileTimingSummary: summariseFileTimings(copiedFiles)
+    },
+    '[persistFiles:perf] Pre-transaction verification and copy phase completed'
   )
+
+  return copiedFiles
+}
+
+/**
+ * Runs the Mongo transaction that persists copied file state.
+ * @param {{fileId: string, initiatedRetrievalKey: string}[]} files
+ * @param {PersistFileResult[]} copiedFiles
+ * @param {string} persistedRetrievalKey
+ * @param {import('mongodb').ClientSession} session
+ * @param {Logger} perfLogger
+ */
+async function runPersistTransaction(
+  files,
+  copiedFiles,
+  persistedRetrievalKey,
+  session,
+  perfLogger
+) {
+  const transactionTimer = createTimer()
+
+  await session.withTransaction(async () => {
+    logger.info(`Persisting ${files.length} files`)
+
+    await updatePersistedS3Keys(copiedFiles, session, perfLogger)
+
+    const persistedRetrievalKeyHashed = await hashPersistedRetrievalKey(
+      persistedRetrievalKey,
+      perfLogger
+    )
+
+    await updatePersistedRetrievalKeys(
+      files,
+      persistedRetrievalKeyHashed,
+      session,
+      perfLogger
+    )
+  })
+
+  perfLogger.info(
+    { durationMs: transactionTimer.elapsed },
+    '[persistFiles:perf] Transaction phase completed'
+  )
+
+  logger.info(`Finished persisting ${files.length} files`)
+}
+
+/**
+ * Updates the stored S3 keys for files that were copied.
+ * @param {PersistFileResult[]} copiedFiles
+ * @param {import('mongodb').ClientSession} session
+ * @param {Logger} perfLogger
+ */
+async function updatePersistedS3Keys(copiedFiles, session, perfLogger) {
+  const updateS3KeysTimer = createTimer()
+
+  await repository.updateS3Keys(copiedFiles, session)
+
+  perfLogger.info(
+    { durationMs: updateS3KeysTimer.elapsed },
+    '[persistFiles:perf] updateS3Keys completed'
+  )
+}
+
+/**
+ * Hashes the retrieval key used for the persisted files.
+ * @param {string} persistedRetrievalKey
+ * @param {Logger} perfLogger
+ */
+async function hashPersistedRetrievalKey(persistedRetrievalKey, perfLogger) {
+  const hashTimer = createTimer()
+  const persistedRetrievalKeyHashed = await argon2.hash(
+    persistedRetrievalKey.toLowerCase()
+  )
+
+  perfLogger.info(
+    { durationMs: hashTimer.elapsed },
+    '[persistFiles:perf] persisted retrieval key hash completed'
+  )
+
+  return persistedRetrievalKeyHashed
+}
+
+/**
+ * Updates the retrieval keys after the files have been copied.
+ * @param {{fileId: string, initiatedRetrievalKey: string}[]} files
+ * @param {string} persistedRetrievalKeyHashed
+ * @param {import('mongodb').ClientSession} session
+ * @param {Logger} perfLogger
+ */
+async function updatePersistedRetrievalKeys(
+  files,
+  persistedRetrievalKeyHashed,
+  session,
+  perfLogger
+) {
+  const updateRetrievalKeysTimer = createTimer()
+  const retrievalKeyIsCaseSensitive = false
+
+  await repository.updateRetrievalKeys(
+    files.map(({ fileId }) => fileId),
+    persistedRetrievalKeyHashed,
+    retrievalKeyIsCaseSensitive,
+    session
+  )
+
+  perfLogger.info(
+    { durationMs: updateRetrievalKeysTimer.elapsed },
+    '[persistFiles:perf] updateRetrievalKeys completed'
+  )
+}
+
+/**
+ * Handles rollback cleanup and error logging when the persist flow fails.
+ * @param {unknown} err
+ * @param {number} fileCount
+ * @param {Promise<PersistFileResult>[] } updateFiles
+ * @param {S3Client} client
+ * @param {Logger} perfLogger
+ */
+async function handlePersistFilesFailure(
+  err,
+  fileCount,
+  updateFiles,
+  client,
+  perfLogger
+) {
+  const error = toError(err)
+
+  logger.error(
+    error,
+    `[persistFiles] Error persisting ${fileCount} files - ${error.message}`
+  )
+
+  // no point persisting part of a batch. clean it up.
+  const rollbackCleanupTimer = createTimer()
+  await deleteOldFiles(updateFiles, 'newS3Key', client)
+  perfLogger.info(
+    {
+      durationMs: rollbackCleanupTimer.elapsed,
+      attemptedFileCount: fileCount
+    },
+    '[persistFiles:perf] Rollback cleanup of newly copied files completed'
+  )
+}
+
+/**
+ * Deletes the original staged files after the DB updates succeed.
+ * @param {Promise<PersistFileResult>[] } updateFiles
+ * @param {PersistFileResult[]} copiedFiles
+ * @param {S3Client} client
+ * @param {Logger} perfLogger
+ */
+async function cleanupOriginalFiles(
+  updateFiles,
+  copiedFiles,
+  client,
+  perfLogger
+) {
+  if (!updateFiles.length) {
+    return
+  }
+
+  const deleteOriginalFilesTimer = createTimer()
+  await deleteOldFiles(updateFiles, 'oldS3Key', client)
+  perfLogger.info(
+    {
+      durationMs: deleteOriginalFilesTimer.elapsed,
+      deletedFileCount: copiedFiles.filter(
+        ({ oldS3Key }) => oldS3Key !== undefined
+      ).length
+    },
+    '[persistFiles:perf] Original file cleanup completed'
+  )
+}
+
+/**
+ * Normalises unknown thrown values into an Error instance.
+ * @param {unknown} err
+ */
+function toError(err) {
+  return err instanceof Error ? err : new Error('Unknown error')
 }
 
 /**
