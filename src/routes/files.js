@@ -1,3 +1,4 @@
+import { createTimer } from '~/src/helpers/timer.js'
 import {
   fileAccessPayloadSchema,
   fileAccessResponseSchema,
@@ -15,6 +16,8 @@ import {
   ingestFile,
   persistFiles
 } from '~/src/services/file-service.js'
+
+const persistFilesRoutePath = '/files/persist'
 
 export default [
   /**
@@ -105,10 +108,14 @@ export default [
     async handler(request) {
       const { payload, auth } = request
       const { fileId, retrievalKey } = payload
+      const appCredentials =
+        /** @type {{ client_id?: string } | undefined } */ (
+          auth.credentials.app
+        )
 
       // Validate retrievalKey authorization for Cognito clients
-      if (auth.credentials.app?.client_id) {
-        validateRetrievalKey(auth.credentials.app.client_id, retrievalKey)
+      if (appCredentials?.client_id) {
+        validateRetrievalKey(appCredentials.client_id, retrievalKey)
       }
 
       const presignedLink = await getPresignedLink(fileId, retrievalKey)
@@ -142,11 +149,47 @@ export default [
     async handler(request) {
       const { payload } = request
       const { files, persistedRetrievalKey } = payload
+      const persistTimer = createTimer()
+      /** @type {'success' | 'failure'} */
+      let outcome = 'success'
+      /** @type {string | undefined} */
+      let errorMessage
 
-      await persistFiles(files, persistedRetrievalKey)
+      request.logger.info(
+        {
+          event: {
+            action: 'files.persist.request',
+            category: 'web',
+            kind: 'event',
+            reference: persistFilesRoutePath,
+            type: 'start'
+          },
+          log: {
+            logger: 'files.persist.route'
+          }
+        },
+        `[filesPersistRoute:perf] Starting ${persistFilesRoutePath} request (fileCount=${files.length})`
+      )
 
-      return {
-        message: 'Files persisted'
+      try {
+        await persistFiles(files, persistedRetrievalKey)
+
+        return {
+          message: 'Files persisted'
+        }
+      } catch (err) {
+        outcome = 'failure'
+        errorMessage = err instanceof Error ? err.message : 'Unknown error'
+
+        throw err
+      } finally {
+        logPersistRouteCompletion(
+          request,
+          files.length,
+          persistTimer.elapsed,
+          outcome,
+          errorMessage
+        )
       }
     },
     options: {
@@ -165,6 +208,52 @@ export default [
 ]
 
 /**
- * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
+ * Logs completion timing for the /files/persist route.
+ * @param {Request<{ Payload: PersistedRetrievalPayload }>} request
+ * @param {number} fileCount
+ * @param {number} durationMs
+ * @param {'success' | 'failure'} outcome
+ * @param {string} [errorMessage]
+ */
+function logPersistRouteCompletion(
+  request,
+  fileCount,
+  durationMs,
+  outcome,
+  errorMessage
+) {
+  const logMethod = errorMessage ? 'warn' : 'info'
+
+  request.logger[logMethod](
+    {
+      event: {
+        action: 'files.persist.request',
+        category: 'web',
+        duration: durationMs,
+        kind: 'event',
+        outcome,
+        ...(errorMessage ? { reason: errorMessage } : {}),
+        reference: persistFilesRoutePath,
+        type: 'end'
+      },
+      log: {
+        logger: 'files.persist.route'
+      },
+      ...(errorMessage
+        ? {
+            error: {
+              message: errorMessage
+            }
+          }
+        : {})
+    },
+    errorMessage
+      ? `[filesPersistRoute:perf] Completed ${persistFilesRoutePath} request (fileCount=${fileCount} error=${errorMessage})`
+      : `[filesPersistRoute:perf] Completed ${persistFilesRoutePath} request (fileCount=${fileCount})`
+  )
+}
+
+/**
+ * @import { ResponseToolkit, ServerRoute , Request} from '@hapi/hapi'
  * @import { FileAccessPayload, FileRetrievalParams, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */
