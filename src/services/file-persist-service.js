@@ -26,8 +26,9 @@ export async function persistFiles(files, persistedRetrievalKey) {
   const client = getS3Client()
   const session = mongoClient.startSession()
   const perfLogger = logger.child({
-    operation: 'persistFiles',
-    fileCount: files.length
+    log: {
+      logger: 'files.persist'
+    }
   })
   const totalTimer = createTimer()
 
@@ -42,7 +43,17 @@ export async function persistFiles(files, persistedRetrievalKey) {
     /** @type {PersistFileResult[]} */
     let copiedFiles = []
 
-    perfLogger.info('[persistFiles:perf] Starting persist flow')
+    perfLogger.info(
+      {
+        event: {
+          action: 'files.persist.flow',
+          category: 'process',
+          kind: 'event',
+          type: 'start'
+        }
+      },
+      `[persistFiles:perf] Starting persist flow (fileCount=${files.length})`
+    )
 
     try {
       copiedFiles = await completePreTransactionPhase(updateFiles, perfLogger)
@@ -87,7 +98,17 @@ export async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
   }
 
   perfLogger?.debug(
-    { durationMs: lookupMs },
+    {
+      event: {
+        action: 'files.persist.mongo_lookup',
+        category: 'database',
+        duration: lookupMs,
+        kind: 'event',
+        outcome: 'success',
+        reference: fileId,
+        type: 'end'
+      }
+    },
     '[persistFiles:perf] Mongo file lookup completed'
   )
 
@@ -107,7 +128,17 @@ export async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
   }
 
   perfLogger?.debug(
-    { durationMs: verifyMs },
+    {
+      event: {
+        action: 'files.persist.retrieval_key_verify',
+        category: 'process',
+        duration: verifyMs,
+        kind: 'event',
+        outcome: 'success',
+        reference: fileId,
+        type: 'end'
+      }
+    },
     '[persistFiles:perf] Retrieval key verification completed'
   )
 

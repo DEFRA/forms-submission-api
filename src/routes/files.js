@@ -154,8 +154,19 @@ export default [
       let errorMessage
 
       request.logger.info(
-        { fileCount: files.length },
-        '[filesPersistRoute:perf] Starting /files/persist request'
+        {
+          event: {
+            action: 'files.persist.request',
+            category: 'web',
+            kind: 'event',
+            reference: '/files/persist',
+            type: 'start'
+          },
+          log: {
+            logger: 'files.persist.route'
+          }
+        },
+        `[filesPersistRoute:perf] Starting /files/persist request (fileCount=${files.length})`
       )
 
       try {
@@ -196,7 +207,7 @@ export default [
 
 /**
  * Logs completion timing for the /files/persist route.
- * @param {import('@hapi/hapi').Request<{ Payload: PersistedRetrievalPayload }>} request
+ * @param {Request<{ Payload: PersistedRetrievalPayload }>} request
  * @param {number} fileCount
  * @param {number} durationMs
  * @param {'success' | 'failure'} outcome
@@ -209,31 +220,38 @@ function logPersistRouteCompletion(
   outcome,
   errorMessage
 ) {
-  const logData = {
-    fileCount,
-    durationMs,
-    outcome
-  }
+  const logMethod = errorMessage ? 'warn' : 'info'
 
-  if (errorMessage) {
-    request.logger.warn(
-      {
-        ...logData,
-        error: errorMessage
+  request.logger[logMethod](
+    {
+      event: {
+        action: 'files.persist.request',
+        category: 'web',
+        duration: durationMs,
+        kind: 'event',
+        outcome,
+        ...(errorMessage ? { reason: errorMessage } : {}),
+        reference: '/files/persist',
+        type: 'end'
       },
-      '[filesPersistRoute:perf] Completed /files/persist request'
-    )
-
-    return
-  }
-
-  request.logger.info(
-    logData,
-    '[filesPersistRoute:perf] Completed /files/persist request'
+      log: {
+        logger: 'files.persist.route'
+      },
+      ...(errorMessage
+        ? {
+            error: {
+              message: errorMessage
+            }
+          }
+        : {})
+    },
+    errorMessage
+      ? `[filesPersistRoute:perf] Completed /files/persist request (fileCount=${fileCount} error=${errorMessage})`
+      : `[filesPersistRoute:perf] Completed /files/persist request (fileCount=${fileCount})`
   )
 }
 
 /**
- * @import { ResponseToolkit, ServerRoute } from '@hapi/hapi'
+ * @import { ResponseToolkit, ServerRoute , Request} from '@hapi/hapi'
  * @import { FileAccessPayload, FileRetrievalParams, PersistedRetrievalPayload, RequestFileCreate } from '~/src/api/types.js'
  */

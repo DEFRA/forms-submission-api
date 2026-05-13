@@ -298,12 +298,23 @@ describe('Files route', () => {
 
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({
-          fileCount: 1,
-          durationMs: expect.any(Number),
-          outcome: 'failure',
-          error: 'Persist failed'
+          error: {
+            message: 'Persist failed'
+          },
+          event: expect.objectContaining({
+            action: 'files.persist.request',
+            category: 'web',
+            duration: expect.any(Number),
+            outcome: 'failure',
+            reason: 'Persist failed',
+            reference: '/files/persist',
+            type: 'end'
+          }),
+          log: {
+            logger: 'files.persist.route'
+          }
         }),
-        '[filesPersistRoute:perf] Completed /files/persist request'
+        '[filesPersistRoute:perf] Completed /files/persist request (fileCount=1 error=Persist failed)'
       )
     })
 
@@ -324,12 +335,23 @@ describe('Files route', () => {
 
       expect(logger.warn).toHaveBeenCalledWith(
         expect.objectContaining({
-          fileCount: 1,
-          durationMs: expect.any(Number),
-          outcome: 'failure',
-          error: 'Unknown error'
+          error: {
+            message: 'Unknown error'
+          },
+          event: expect.objectContaining({
+            action: 'files.persist.request',
+            category: 'web',
+            duration: expect.any(Number),
+            outcome: 'failure',
+            reason: 'Unknown error',
+            reference: '/files/persist',
+            type: 'end'
+          }),
+          log: {
+            logger: 'files.persist.route'
+          }
         }),
-        '[filesPersistRoute:perf] Completed /files/persist request'
+        '[filesPersistRoute:perf] Completed /files/persist request (fileCount=1 error=Unknown error)'
       )
     })
 

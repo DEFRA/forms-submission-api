@@ -1350,11 +1350,19 @@ describe('Files service', () => {
       ).rejects.toBe('boom')
 
       expect(perfLoggerFns.warn).toHaveBeenCalledWith(
-        {
-          durationMs: 42,
-          outcome: 'failure',
-          error: 'Unknown error'
-        },
+        expect.objectContaining({
+          error: {
+            message: 'Unknown error'
+          },
+          event: expect.objectContaining({
+            action: 'files.persist.flow',
+            category: 'process',
+            duration: 42,
+            outcome: 'failure',
+            reason: 'Unknown error',
+            type: 'end'
+          })
+        }),
         '[persistFiles:perf] Persist flow completed'
       )
     })
@@ -1372,18 +1380,71 @@ describe('Files service', () => {
       const copiedFiles = await completePreTransactionPhase([], perfLogger)
 
       expect(copiedFiles).toEqual([])
+      expect(perfLoggerFns.info).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: 'files.persist.pre_transaction',
+            category: 'process',
+            duration: expect.any(Number),
+            kind: 'event',
+            outcome: 'success',
+            type: 'end'
+          })
+        }),
+        '[persistFiles:perf] Pre-transaction verification and copy phase completed (copiedCount=0 fileCount=0 skippedCopyCount=0)'
+      )
       expect(perfLoggerFns.info).toHaveBeenCalledWith(
         expect.objectContaining({
-          copiedCount: 0,
-          skippedCopyCount: 0,
-          perFileTimingSummary: {
-            lookupMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
-            verifyMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
-            copyMs: { totalMs: 0, averageMs: 0, maxMs: 0 },
-            totalMs: { totalMs: 0, averageMs: 0, maxMs: 0 }
-          }
+          event: expect.objectContaining({
+            action: 'files.persist.summary.lookup',
+            category: 'database',
+            duration: 0,
+            kind: 'metric',
+            outcome: 'success',
+            type: 'info'
+          })
         }),
-        '[persistFiles:perf] Pre-transaction verification and copy phase completed'
+        '[persistFiles:perf] Mongo lookup timing summary (averageMs=0 fileCount=0 maxMs=0)'
+      )
+      expect(perfLoggerFns.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: 'files.persist.summary.verify',
+            category: 'process',
+            duration: 0,
+            kind: 'metric',
+            outcome: 'success',
+            type: 'info'
+          })
+        }),
+        '[persistFiles:perf] Retrieval key verification timing summary (averageMs=0 fileCount=0 maxMs=0)'
+      )
+      expect(perfLoggerFns.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: 'files.persist.summary.copy',
+            category: 'file',
+            duration: 0,
+            kind: 'metric',
+            outcome: 'success',
+            type: 'info'
+          })
+        }),
+        '[persistFiles:perf] S3 copy timing summary (averageMs=0 fileCount=0 maxMs=0)'
+      )
+      expect(perfLoggerFns.info).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: expect.objectContaining({
+            action: 'files.persist.summary.file_total',
+            category: 'process',
+            duration: 0,
+            kind: 'metric',
+            outcome: 'success',
+            type: 'info'
+          })
+        }),
+        '[persistFiles:perf] Per-file total timing summary (averageMs=0 fileCount=0 maxMs=0)'
       )
     })
 

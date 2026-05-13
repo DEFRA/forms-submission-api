@@ -40,15 +40,74 @@ export async function completePreTransactionPhase(updateFiles, perfLogger) {
   const skippedCopyCount = copiedFiles.filter(
     ({ oldS3Key }) => oldS3Key === undefined
   ).length
+  const copiedCount = copiedFiles.length - skippedCopyCount
+  const timingSummary = summariseFileTimings(copiedFiles)
 
   perfLogger.info(
     {
-      durationMs: preTransactionTimer.elapsed,
-      copiedCount: copiedFiles.length - skippedCopyCount,
-      skippedCopyCount,
-      perFileTimingSummary: summariseFileTimings(copiedFiles)
+      event: {
+        action: 'files.persist.pre_transaction',
+        category: 'process',
+        duration: preTransactionTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
     },
-    '[persistFiles:perf] Pre-transaction verification and copy phase completed'
+    `[persistFiles:perf] Pre-transaction verification and copy phase completed (copiedCount=${copiedCount} fileCount=${copiedFiles.length} skippedCopyCount=${skippedCopyCount})`
+  )
+
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.summary.lookup',
+        category: 'database',
+        duration: timingSummary.lookupMs.totalMs,
+        kind: 'metric',
+        outcome: 'success',
+        type: 'info'
+      }
+    },
+    `[persistFiles:perf] Mongo lookup timing summary (averageMs=${timingSummary.lookupMs.averageMs} fileCount=${copiedFiles.length} maxMs=${timingSummary.lookupMs.maxMs})`
+  )
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.summary.verify',
+        category: 'process',
+        duration: timingSummary.verifyMs.totalMs,
+        kind: 'metric',
+        outcome: 'success',
+        type: 'info'
+      }
+    },
+    `[persistFiles:perf] Retrieval key verification timing summary (averageMs=${timingSummary.verifyMs.averageMs} fileCount=${copiedFiles.length} maxMs=${timingSummary.verifyMs.maxMs})`
+  )
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.summary.copy',
+        category: 'file',
+        duration: timingSummary.copyMs.totalMs,
+        kind: 'metric',
+        outcome: 'success',
+        type: 'info'
+      }
+    },
+    `[persistFiles:perf] S3 copy timing summary (averageMs=${timingSummary.copyMs.averageMs} fileCount=${copiedFiles.length} maxMs=${timingSummary.copyMs.maxMs})`
+  )
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.summary.file_total',
+        category: 'process',
+        duration: timingSummary.totalMs.totalMs,
+        kind: 'metric',
+        outcome: 'success',
+        type: 'info'
+      }
+    },
+    `[persistFiles:perf] Per-file total timing summary (averageMs=${timingSummary.totalMs.averageMs} fileCount=${copiedFiles.length} maxMs=${timingSummary.totalMs.maxMs})`
   )
 
   return copiedFiles
@@ -129,7 +188,11 @@ async function copyS3File(
   getAndVerify,
   perfLogger
 ) {
-  const fileLogger = perfLogger?.child({ fileId })
+  const fileLogger = perfLogger?.child({
+    log: {
+      logger: 'files.persist.file'
+    }
+  })
   const totalTimer = createTimer()
   const timings = createPersistFileTimings()
   const fileStatus = await getAndVerify(
@@ -208,17 +271,21 @@ function createAlreadyLoadedResult(
   totalTimer,
   fileLogger
 ) {
-  logger.info(
-    `[copyS3File] File ${fileId} is already in the loaded directory, no need to copy`
-  )
-
   timings.totalMs = totalTimer.elapsed
   fileLogger?.debug(
     {
-      timings,
-      skippedCopy: true
+      event: {
+        action: 'files.persist.file',
+        category: 'file',
+        duration: timings.totalMs,
+        kind: 'event',
+        outcome: 'success',
+        reason: 'already_loaded',
+        reference: fileId,
+        type: 'end'
+      }
     },
-    '[persistFiles:perf] File already loaded; skipped S3 copy'
+    `[persistFiles:perf] File already loaded; skipped S3 copy (lookupMs=${timings.lookupMs} skippedCopy=true totalMs=${timings.totalMs} verifyMs=${timings.verifyMs})`
   )
 
   return {
@@ -284,10 +351,17 @@ function createCopiedFileResult(
   timings.totalMs = totalTimer.elapsed
   fileLogger?.debug(
     {
-      timings,
-      skippedCopy: false
+      event: {
+        action: 'files.persist.file',
+        category: 'file',
+        duration: timings.totalMs,
+        kind: 'event',
+        outcome: 'success',
+        reference: fileId,
+        type: 'end'
+      }
     },
-    '[persistFiles:perf] File verification and S3 copy completed'
+    `[persistFiles:perf] File verification and S3 copy completed (copyMs=${timings.copyMs} lookupMs=${timings.lookupMs} skippedCopy=false totalMs=${timings.totalMs} verifyMs=${timings.verifyMs})`
   )
 
   return {
@@ -298,7 +372,6 @@ function createCopiedFileResult(
     timings
   }
 }
-
 /**
  * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { Logger } from 'pino'

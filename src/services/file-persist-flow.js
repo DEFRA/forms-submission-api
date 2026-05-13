@@ -29,21 +29,38 @@ export async function withPersistFlowCompletionLogging(
 
     throw err
   } finally {
-    const logData = {
-      durationMs: totalTimer.elapsed,
-      outcome
-    }
-
     if (error) {
       perfLogger.warn(
         {
-          ...logData,
-          error: error.message
+          event: {
+            action: 'files.persist.flow',
+            category: 'process',
+            duration: totalTimer.elapsed,
+            kind: 'event',
+            outcome,
+            reason: error.message,
+            type: 'end'
+          },
+          error: {
+            message: error.message
+          }
         },
         '[persistFiles:perf] Persist flow completed'
       )
     } else {
-      perfLogger.info(logData, '[persistFiles:perf] Persist flow completed')
+      perfLogger.info(
+        {
+          event: {
+            action: 'files.persist.flow',
+            category: 'process',
+            duration: totalTimer.elapsed,
+            kind: 'event',
+            outcome,
+            type: 'end'
+          }
+        },
+        '[persistFiles:perf] Persist flow completed'
+      )
     }
   }
 }
@@ -84,8 +101,17 @@ export async function runPersistTransaction(
   })
 
   perfLogger.info(
-    { durationMs: transactionTimer.elapsed },
-    '[persistFiles:perf] Transaction phase completed'
+    {
+      event: {
+        action: 'files.persist.transaction',
+        category: 'database',
+        duration: transactionTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
+    },
+    `[persistFiles:perf] Transaction phase completed (fileCount=${files.length})`
   )
 
   logger.info(`Finished persisting ${files.length} files`)
@@ -117,10 +143,17 @@ export async function handlePersistFilesFailure(
   await deleteOldFiles(updateFiles, 'newS3Key', client)
   perfLogger.info(
     {
-      durationMs: rollbackCleanupTimer.elapsed,
-      attemptedFileCount: fileCount
+      event: {
+        action: 'files.persist.cleanup.rollback',
+        category: 'file',
+        duration: rollbackCleanupTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        reason: 'persist_flow_failed',
+        type: 'end'
+      }
     },
-    '[persistFiles:perf] Rollback cleanup of newly copied files completed'
+    `[persistFiles:perf] Rollback cleanup of newly copied files completed (attemptedFileCount=${fileCount})`
   )
 }
 
@@ -145,12 +178,16 @@ export async function cleanupOriginalFiles(
   await deleteOldFiles(updateFiles, 'oldS3Key', client)
   perfLogger.info(
     {
-      durationMs: deleteOriginalFilesTimer.elapsed,
-      deletedFileCount: copiedFiles.filter(
-        ({ oldS3Key }) => oldS3Key !== undefined
-      ).length
+      event: {
+        action: 'files.persist.cleanup.original',
+        category: 'file',
+        duration: deleteOriginalFilesTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
     },
-    '[persistFiles:perf] Original file cleanup completed'
+    `[persistFiles:perf] Original file cleanup completed (deletedFileCount=${copiedFiles.filter(({ oldS3Key }) => oldS3Key !== undefined).length})`
   )
 }
 
@@ -166,7 +203,16 @@ async function updatePersistedS3Keys(copiedFiles, session, perfLogger) {
   await repository.updateS3Keys(copiedFiles, session)
 
   perfLogger.info(
-    { durationMs: updateS3KeysTimer.elapsed },
+    {
+      event: {
+        action: 'files.persist.update_s3_keys',
+        category: 'database',
+        duration: updateS3KeysTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
+    },
     '[persistFiles:perf] updateS3Keys completed'
   )
 }
@@ -183,7 +229,16 @@ async function hashPersistedRetrievalKey(persistedRetrievalKey, perfLogger) {
   )
 
   perfLogger.info(
-    { durationMs: hashTimer.elapsed },
+    {
+      event: {
+        action: 'files.persist.retrieval_key_hash',
+        category: 'process',
+        duration: hashTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
+    },
     '[persistFiles:perf] persisted retrieval key hash completed'
   )
 
@@ -214,7 +269,16 @@ async function updatePersistedRetrievalKeys(
   )
 
   perfLogger.info(
-    { durationMs: updateRetrievalKeysTimer.elapsed },
+    {
+      event: {
+        action: 'files.persist.update_retrieval_keys',
+        category: 'database',
+        duration: updateRetrievalKeysTimer.elapsed,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
+    },
     '[persistFiles:perf] updateRetrievalKeys completed'
   )
 }
