@@ -10,6 +10,7 @@ import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 
 const loadedPrefix = config.get('loadedPrefix')
+const persistFileLogName = 'files.persist.file'
 
 /**
  * Creates all copy tasks for the persist flow.
@@ -38,7 +39,7 @@ export async function completePreTransactionPhase(updateFiles, perfLogger) {
   const preTransactionTimer = createTimer()
   const copiedFiles = await Promise.all(updateFiles)
   const skippedCopyCount = copiedFiles.filter(
-    ({ oldS3Key }) => oldS3Key === undefined
+    ({ oldS3Key }) => oldS3Key === null
   ).length
   const copiedCount = copiedFiles.length - skippedCopyCount
   const timingSummary = summariseFileTimings(copiedFiles)
@@ -124,17 +125,23 @@ export async function deleteOldFiles(keys, lookupKey, client) {
   const filteredKeys = settledKeys
     .filter((result) => result.status === 'fulfilled')
     .map((result) => result.value)
-    .filter((value) => value.oldS3Key !== undefined)
+    .filter((value) => value.oldS3Key !== null)
 
   return Promise.all(
-    filteredKeys.map((obj) =>
-      client.send(
-        new DeleteObjectCommand({
-          Bucket: obj.s3Bucket,
-          Key: obj[lookupKey]
-        })
-      )
-    )
+    filteredKeys.flatMap((obj) => {
+      const key = lookupKey === 'oldS3Key' ? obj.oldS3Key : obj.newS3Key
+
+      return key === null
+        ? []
+        : [
+            client.send(
+              new DeleteObjectCommand({
+                Bucket: obj.s3Bucket,
+                Key: key
+              })
+            )
+          ]
+    })
   )
 }
 
@@ -190,7 +197,7 @@ async function copyS3File(
 ) {
   const fileLogger = perfLogger?.child({
     log: {
-      logger: 'files.persist.file'
+      logger: persistFileLogName
     }
   })
   const totalTimer = createTimer()
@@ -275,7 +282,7 @@ function createAlreadyLoadedResult(
   fileLogger?.debug(
     {
       event: {
-        action: 'files.persist.file',
+        action: persistFileLogName,
         category: 'file',
         duration: timings.totalMs,
         kind: 'event',
@@ -291,7 +298,7 @@ function createAlreadyLoadedResult(
   return {
     fileId,
     s3Bucket: copyTarget.s3Bucket,
-    oldS3Key: undefined,
+    oldS3Key: null,
     newS3Key: copyTarget.oldS3Key,
     timings
   }
@@ -352,7 +359,7 @@ function createCopiedFileResult(
   fileLogger?.debug(
     {
       event: {
-        action: 'files.persist.file',
+        action: persistFileLogName,
         category: 'file',
         duration: timings.totalMs,
         kind: 'event',
@@ -378,7 +385,7 @@ function createCopiedFileResult(
  * @import { FormFileUploadStatus } from '~/src/api/types.js'
  * @typedef {{ fileId: string, initiatedRetrievalKey: string }} PersistFileRequest
  * @typedef {{ lookupMs: number, verifyMs: number, copyMs: number, totalMs: number }} PersistFileTimings
- * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | undefined, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
+ * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | null, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
  * @typedef {{ s3Bucket: string, oldS3Key: string, newS3Key: string, alreadyLoaded: boolean }} PersistCopyTarget
  * @typedef {(fileId: string, retrievalKey: string, timings?: PersistFileTimings, perfLogger?: Logger) => Promise<FormFileUploadStatus>} GetAndVerifyFn
  */

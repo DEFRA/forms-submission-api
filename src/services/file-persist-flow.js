@@ -187,7 +187,7 @@ export async function cleanupOriginalFiles(
         type: 'end'
       }
     },
-    `[persistFiles:perf] Original file cleanup completed (deletedFileCount=${copiedFiles.filter(({ oldS3Key }) => oldS3Key !== undefined).length})`
+    `[persistFiles:perf] Original file cleanup completed (deletedFileCount=${copiedFiles.filter(({ oldS3Key }) => oldS3Key !== null).length})`
   )
 }
 
@@ -296,5 +296,5 @@ function toError(err) {
  * @import { Logger } from 'pino'
  * @typedef {{ fileId: string, initiatedRetrievalKey: string }} PersistFileRequest
  * @typedef {{ lookupMs: number, verifyMs: number, copyMs: number, totalMs: number }} PersistFileTimings
- * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | undefined, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
+ * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | null, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
  */

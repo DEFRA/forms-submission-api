@@ -162,5 +162,5 @@ export async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
  * @import { FormFileUploadStatus } from '~/src/api/types.js'
  * @typedef {{ fileId: string, initiatedRetrievalKey: string }} PersistFileRequest
  * @typedef {{ lookupMs: number, verifyMs: number, copyMs: number, totalMs: number }} PersistFileTimings
- * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | undefined, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
+ * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | null, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
  */

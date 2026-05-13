@@ -17,6 +17,8 @@ import {
   persistFiles
 } from '~/src/services/file-service.js'
 
+const persistFilesRoutePath = '/files/persist'
+
 export default [
   /**
    * @satisfies {ServerRoute}
@@ -159,14 +161,14 @@ export default [
             action: 'files.persist.request',
             category: 'web',
             kind: 'event',
-            reference: '/files/persist',
+            reference: persistFilesRoutePath,
             type: 'start'
           },
           log: {
             logger: 'files.persist.route'
           }
         },
-        `[filesPersistRoute:perf] Starting /files/persist request (fileCount=${files.length})`
+        `[filesPersistRoute:perf] Starting ${persistFilesRoutePath} request (fileCount=${files.length})`
       )
 
       try {
@@ -231,7 +233,7 @@ function logPersistRouteCompletion(
         kind: 'event',
         outcome,
         ...(errorMessage ? { reason: errorMessage } : {}),
-        reference: '/files/persist',
+        reference: persistFilesRoutePath,
         type: 'end'
       },
       log: {
@@ -246,8 +248,8 @@ function logPersistRouteCompletion(
         : {})
     },
     errorMessage
-      ? `[filesPersistRoute:perf] Completed /files/persist request (fileCount=${fileCount} error=${errorMessage})`
-      : `[filesPersistRoute:perf] Completed /files/persist request (fileCount=${fileCount})`
+      ? `[filesPersistRoute:perf] Completed ${persistFilesRoutePath} request (fileCount=${fileCount} error=${errorMessage})`
+      : `[filesPersistRoute:perf] Completed ${persistFilesRoutePath} request (fileCount=${fileCount})`
   )
 }
 
