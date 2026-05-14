@@ -326,6 +326,10 @@ export async function getFormModel(context, formId, versionNumber, formStatus) {
   if (models.has(versionNumber)) {
     return models.get(versionNumber)
   } else if (models.has(nonExistentVersionNumber)) {
+    // This path is a special case where:
+    // - This function has been called previously for this versionNumber and entered the catch block below
+    // - The form version requested does not exist
+    // - We've cached the latest version for this version number using the non-existent version (ie the negative version number)
     // We want to be able to count in logs how many submissions are affected by this issue
     // and this special case allows us to do that.
     logger.warn(
