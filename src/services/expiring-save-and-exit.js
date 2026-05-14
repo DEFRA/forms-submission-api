@@ -34,53 +34,46 @@ function getNotifyEmailConfig() {
 }
 
 /**
- * Retrieves form title from document or fetches it from the forms service
  * @param {WithId<SaveAndExitDocument>} record
- * @param {Map<string, string>} formTitleCache
- * @returns {Promise<string>}
+ * @param {Map<string, FormMetadata | null>} formMetadataCache
+ * @returns {Promise<FormMetadata | null>}
  */
-async function getFormTitle(record, formTitleCache) {
-  // If the document has a title, use it
-  if (record.form.title) {
-    return record.form.title
+async function getFormMetadataForRecord(record, formMetadataCache) {
+  const cached = formMetadataCache.get(record.form.id)
+  if (cached !== undefined) {
+    return cached
   }
 
-  // Check cache first
-  if (formTitleCache.has(record.form.id)) {
-    return /** @type {string} */ (formTitleCache.get(record.form.id))
-  }
-
-  // Fetch from forms service and cache it
   try {
     const timer = createTimer()
     const metadata = await getFormMetadataById(record.form.id)
-    const title = metadata.title
-    formTitleCache.set(record.form.id, title)
+    formMetadataCache.set(record.form.id, metadata)
     logger.info(
       {
         event: {
           category: saveAndExitLabel,
-          action: 'fetch-form-title',
+          action: 'fetch-form-metadata',
           reference: record.magicLinkId,
           duration: timer.elapsed
         }
       },
-      `[SAER] Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
+      `[SAER] Fetched form metadata for ${record.form.id} (${timer.elapsed}ms)`
     )
-    return title
+    return metadata
   } catch (err) {
     logger.warn(
       {
         err,
         event: {
           category: saveAndExitLabel,
-          action: 'fetch-form-title-failed',
+          action: 'fetch-form-metadata-failed',
           reference: record.magicLinkId
         }
       },
-      `[SAER] Failed to fetch form title for ${record.form.id}, using fallback`
+      `[SAER] Failed to fetch form metadata for ${record.form.id} — using fallback title`
     )
-    return 'your form'
+    formMetadataCache.set(record.form.id, null)
+    return null
   }
 }
 
@@ -126,10 +119,10 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
  * Process a single expiring record: lock, send email, mark as sent
  * @param {Awaited<ReturnType<typeof findExpiringRecords>>[number]} record
  * @param {string} runtimeId
- * @param {Map<string, string>} formTitleCache
+ * @param {Map<string, FormMetadata | null>} formMetadataCache
  * @returns {Promise<'processed' | 'skipped' | 'failed'>}
  */
-async function processExpiringRecord(record, runtimeId, formTitleCache) {
+async function processExpiringRecord(record, runtimeId, formMetadataCache) {
   try {
     const lockedRecord = await lockRecordForExpiryEmail(
       record.magicLinkId,
@@ -165,7 +158,35 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
       return 'skipped'
     }
 
-    const formTitle = await getFormTitle(lockedRecord, formTitleCache)
+    const metadata = await getFormMetadataForRecord(
+      lockedRecord,
+      formMetadataCache
+    )
+
+    // Fail-open: if forms-manager is unreachable, metadata is null and we
+    // proceed to send the reminder. The runtime renders the unavailable view
+    // when the user clicks through, so the worst case is a user discovering
+    // the form is offline on click rather than not getting an email. The
+    // alternative (fail-closed) would block legitimate reminders during any
+    // forms-manager hiccup.
+    if (metadata?.offline === true) {
+      logger.info(
+        {
+          event: {
+            category: saveAndExitLabel,
+            action: 'skip-expiry-email-form-offline',
+            reference: record.magicLinkId
+          }
+        },
+        `[SAER] Skipping expiry reminder for ${record.magicLinkId} — form ${lockedRecord.form.id} is offline`
+      )
+      // Lock auto-expires after 1h (matching the default cron interval) so
+      // the next tick re-checks; if the form is back online by then the user
+      // still gets their reminder.
+      return 'skipped'
+    }
+
+    const formTitle = metadata?.title ?? lockedRecord.form.title ?? 'your form'
     const emailContent = constructExpiryReminderEmailContent(
       lockedRecord,
       formTitle
@@ -222,8 +243,9 @@ export async function processExpiringSaveAndExitRecords(
   let processedCount = 0
   let failedCount = 0
 
-  // Local cache for form titles (scoped to this run)
-  const formTitleCache = new Map()
+  // Local cache for form metadata (scoped to this run)
+  /** @type {Map<string, FormMetadata | null>} */
+  const formMetadataCache = new Map()
 
   let hasMore = true
 
@@ -260,7 +282,7 @@ export async function processExpiringSaveAndExitRecords(
       const outcome = await processExpiringRecord(
         record,
         runtimeId,
-        formTitleCache
+        formMetadataCache
       )
 
       if (outcome === 'processed') {
@@ -281,6 +303,7 @@ export async function processExpiringSaveAndExitRecords(
 }
 
 /**
+ * @import { FormMetadata } from '@defra/forms-model'
  * @import { WithId } from 'mongodb'
  * @import { SaveAndExitDocument } from '~/src/api/types.js'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
