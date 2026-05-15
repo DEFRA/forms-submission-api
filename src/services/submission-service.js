@@ -4,7 +4,9 @@ import {
   hasRepeater,
   replaceCustomControllers
 } from '@defra/forms-model'
+import Boom from '@hapi/boom'
 import argon2 from 'argon2'
+import { StatusCodes } from 'http-status-codes'
 import xlsx from 'xlsx'
 
 import { config } from '~/src/config/index.js'
@@ -319,14 +321,41 @@ export async function lookupFormNameById(context, formId) {
  */
 export async function getFormModel(context, formId, versionNumber, formStatus) {
   const { models } = context.caches
+  const nonExistentVersionNumber = -(versionNumber ?? 0)
+
   if (models.has(versionNumber)) {
     return models.get(versionNumber)
-  } else {
-    const formModel = await getFormModelFromDb(
-      formId,
-      versionNumber,
-      formStatus
+  } else if (models.has(nonExistentVersionNumber)) {
+    // This path is a special case where:
+    // - This function has been called previously for this versionNumber and entered the catch block below
+    // - The form version requested does not exist
+    // - We've cached the latest version for this version number using the non-existent version (ie the negative version number)
+    // We want to be able to count in logs how many submissions are affected by this issue
+    // and this special case allows us to do that.
+    logger.warn(
+      `Form version ${versionNumber} was not found for form ID ${formId}. Will use cached latest version instead`
     )
+    return models.get(nonExistentVersionNumber)
+  } else {
+    let formModel
+    try {
+      formModel = await getFormModelFromDb(formId, versionNumber, formStatus)
+    } catch (err) {
+      if (!Boom.isBoom(err, StatusCodes.NOT_FOUND)) {
+        throw err
+      }
+
+      // Normally, this should never happen. However, there has been a bug whereby submissions have
+      // ended up with an incorrect version. This path guards against that.
+      logger.warn(
+        `Form version ${versionNumber} was not found for form ID ${formId}. Will use latest version instead`
+      )
+
+      // Get the latest version and use that in place of the non-existent version, but
+      // cache it in a way that we can identify it as such.
+      formModel = await getFormModelFromDb(formId, undefined, formStatus)
+      versionNumber = nonExistentVersionNumber
+    }
 
     models.set(versionNumber, formModel)
 
