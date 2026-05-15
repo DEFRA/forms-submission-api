@@ -241,6 +241,10 @@ describe('expiring-save-and-exit', () => {
       mockLockRecordForExpiryEmail
         .mockResolvedValueOnce(mockLockedRecord1)
         .mockResolvedValueOnce(mockLockedRecord2)
+      mockGetFormMetadataById.mockResolvedValue({
+        title: 'Form Metadata Title',
+        offline: false
+      })
       mockSendNotification.mockResolvedValue({ success: true })
       mockMarkExpiryEmailSent.mockResolvedValue({})
 
@@ -273,7 +277,11 @@ describe('expiring-save-and-exit', () => {
         'test-link-2',
         mockRuntimeId
       )
-      expect(mockGetFormMetadataById).not.toHaveBeenCalled()
+      // Metadata is now fetched per unique form ID for the offline check
+      // (cache shared across the run).
+      expect(mockGetFormMetadataById).toHaveBeenCalledTimes(2)
+      expect(mockGetFormMetadataById).toHaveBeenCalledWith('form-1')
+      expect(mockGetFormMetadataById).toHaveBeenCalledWith('form-2')
     })
 
     test('should fetch form title from API when not in document', async () => {
@@ -423,6 +431,160 @@ describe('expiring-save-and-exit', () => {
       expect(sendNotification).toHaveBeenCalledTimes(1)
       const emailCall = sendNotification.mock.calls[0][0]
       expect(emailCall.personalisation.body).toContain('your form')
+    })
+
+    test('should not send the email when the form is offline', async () => {
+      const expireAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
+
+      const mockRecords = [
+        {
+          magicLinkId: 'test-link-1',
+          email: 'test1@example.com',
+          expireAt,
+          form: {
+            baseUrl: 'http://localhost:3009',
+            id: 'form-offline',
+            status: 'live',
+            isPreview: false,
+            title: 'An offline form'
+          },
+          version: 1
+        }
+      ]
+
+      const mockLockedRecord = {
+        ...mockRecords[0],
+        notify: {
+          expireLockId: mockRuntimeId,
+          expireLockTimestamp: new Date(),
+          expireEmailSentTimestamp: null
+        }
+      }
+
+      findExpiringRecords.mockResolvedValue(mockRecords)
+      lockRecordForExpiryEmail.mockResolvedValueOnce(mockLockedRecord)
+      mockGetFormMetadataById.mockResolvedValue({
+        title: 'An offline form',
+        offline: true
+      })
+      sendNotification.mockResolvedValue({ success: true })
+
+      const result = await processExpiringSaveAndExitRecords(mockRuntimeId, 36)
+
+      // No email sent and the record is left untouched. The lock auto-expires
+      // by the next cron tick so a back-online form still gets the reminder.
+      expect(result).toEqual({ processed: 0, failed: 0 })
+      expect(mockGetFormMetadataById).toHaveBeenCalledWith('form-offline')
+      expect(sendNotification).not.toHaveBeenCalled()
+      expect(markExpiryEmailSent).not.toHaveBeenCalled()
+    })
+
+    test('should fail-open and send the email when metadata fetch fails (even if the form is actually offline)', async () => {
+      const expireAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
+
+      const mockRecords = [
+        {
+          magicLinkId: 'test-link-1',
+          email: 'test1@example.com',
+          expireAt,
+          form: {
+            baseUrl: 'http://localhost:3009',
+            id: 'form-offline-but-unreachable',
+            status: 'live',
+            isPreview: false,
+            title: 'A form'
+          },
+          version: 1
+        }
+      ]
+
+      const mockLockedRecord = {
+        ...mockRecords[0],
+        notify: {
+          expireLockId: mockRuntimeId,
+          expireLockTimestamp: new Date(),
+          expireEmailSentTimestamp: null
+        }
+      }
+
+      findExpiringRecords.mockResolvedValue(mockRecords)
+      lockRecordForExpiryEmail.mockResolvedValueOnce(mockLockedRecord)
+      // forms-manager is unreachable: we can't verify offline status
+      mockGetFormMetadataById.mockRejectedValue(
+        new Error('connect ECONNREFUSED')
+      )
+      sendNotification.mockResolvedValue({ success: true })
+      markExpiryEmailSent.mockResolvedValue({})
+
+      const result = await processExpiringSaveAndExitRecords(mockRuntimeId, 36)
+
+      // Fail-open: email goes out using the document's stored title. If the
+      // form really is offline, the user sees the unavailable view on click.
+      expect(result).toEqual({ processed: 1, failed: 0 })
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(markExpiryEmailSent).toHaveBeenCalledWith(
+        'test-link-1',
+        mockRuntimeId
+      )
+    })
+
+    test('should send the reminder on the next tick if the form comes back online', async () => {
+      const expireAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
+
+      const mockRecord = {
+        magicLinkId: 'test-link-1',
+        email: 'test1@example.com',
+        expireAt,
+        form: {
+          baseUrl: 'http://localhost:3009',
+          id: 'form-flipped',
+          status: 'live',
+          isPreview: false,
+          title: 'Flipped form'
+        },
+        version: 1
+      }
+
+      const mockLockedRecord = {
+        ...mockRecord,
+        notify: {
+          expireLockId: mockRuntimeId,
+          expireLockTimestamp: new Date(),
+          expireEmailSentTimestamp: null
+        }
+      }
+
+      // Tick 1: form is offline → skipped, no email, no markExpiryEmailSent.
+      findExpiringRecords.mockResolvedValueOnce([mockRecord])
+      lockRecordForExpiryEmail.mockResolvedValueOnce(mockLockedRecord)
+      mockGetFormMetadataById.mockResolvedValueOnce({
+        title: 'Flipped form',
+        offline: true
+      })
+      sendNotification.mockResolvedValue({ success: true })
+      markExpiryEmailSent.mockResolvedValue({})
+
+      const tick1 = await processExpiringSaveAndExitRecords(mockRuntimeId, 36)
+      expect(tick1).toEqual({ processed: 0, failed: 0 })
+      expect(sendNotification).not.toHaveBeenCalled()
+      expect(markExpiryEmailSent).not.toHaveBeenCalled()
+
+      // Tick 2 (1h later, lock auto-expired in findExpiringRecords filter):
+      // form is back online, the same record is re-considered and sent.
+      findExpiringRecords.mockResolvedValueOnce([mockRecord])
+      lockRecordForExpiryEmail.mockResolvedValueOnce(mockLockedRecord)
+      mockGetFormMetadataById.mockResolvedValueOnce({
+        title: 'Flipped form',
+        offline: false
+      })
+
+      const tick2 = await processExpiringSaveAndExitRecords(mockRuntimeId, 36)
+      expect(tick2).toEqual({ processed: 1, failed: 0 })
+      expect(sendNotification).toHaveBeenCalledTimes(1)
+      expect(markExpiryEmailSent).toHaveBeenCalledWith(
+        'test-link-1',
+        mockRuntimeId
+      )
     })
 
     test('should skip records that fail to lock', async () => {
