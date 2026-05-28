@@ -37,6 +37,40 @@ const queueAndMessageIdSchema = Joi.object({
   messageId: Joi.string().required()
 })
 
+/**
+ * Get the user from the auth object
+ * @param {RequestAuth<UserCredentials, AppCredentials, Record<string, unknown>, Record<string, unknown>>} auth - the request auth
+ * @returns {UserCredentials} the user
+ * @throws {Error}
+ */
+function getUser(auth) {
+  if (!auth.credentials.user) {
+    throw new Error('Missing user credential')
+  }
+
+  return auth.credentials.user
+}
+
+/**
+ * Get the user email from user credentials
+ * @param {RequestAuth<UserCredentials, AppCredentials, Record<string, unknown>, Record<string, unknown>>} auth - the request auth
+ * @returns {string} the user email
+ * @throws {Error}
+ */
+function getUserEmail(auth) {
+  const user = getUser(auth)
+  const userEmail =
+    'preferred_username' in user
+      ? /** @type {string} */ (user.preferred_username)
+      : undefined
+
+  if (!userEmail) {
+    throw new Error('User email not found')
+  }
+
+  return userEmail
+}
+
 export default [
   /**
    * @satisfies {ServerRoute<ResetSaveAndExit>}
@@ -116,10 +150,7 @@ export default [
     async handler(request) {
       const { auth } = request
 
-      if (!auth.credentials.user) {
-        throw new Error('Missing user credential')
-      }
-      await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
+      await generateFeedbackSubmissionsFileForAll(getUserEmail(auth))
 
       return {
         message: 'Generate feedback submissions file success'
@@ -145,10 +176,10 @@ export default [
     method: 'POST',
     path: '/feedback/{formId}',
     async handler(request) {
-      const { params } = request
+      const { auth, params } = request
       const { formId } = params
 
-      await generateFeedbackSubmissionsFileForForm(formId)
+      await generateFeedbackSubmissionsFileForForm(formId, getUserEmail(auth))
 
       return {
         message: 'Generate feedback submissions file success'
@@ -326,6 +357,6 @@ export default [
 ]
 
 /**
- * @import { ServerRoute } from '@hapi/hapi'
- * @import { DeadLetterQueueRequest, DeadLetterQueueAndHandleRequest, DeadLetterQueueMessageRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSubmissionByReference, ResetSaveAndExit } from '~/src/api/types.js'
+ * @import { ServerRoute, RequestAuth, UserCredentials, AppCredentials } from '@hapi/hapi'
+ * @import { DeadLetterQueueRequest, DeadLetterQueueMessageRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
  */

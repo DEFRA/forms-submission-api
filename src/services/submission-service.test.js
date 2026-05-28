@@ -275,7 +275,10 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-      const result = await generateFeedbackSubmissionsFileForForm(formId)
+      const result = await generateFeedbackSubmissionsFileForForm(
+        formId,
+        'enrique.chase@defra.gov.uk'
+      )
 
       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
         expect.any(Buffer),
@@ -298,7 +301,7 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
-        emailAddress: 'shared-inbox@defra.gov.uk',
+        emailAddress: 'enrique.chase@defra.gov.uk',
         templateId: 'dummy',
         personalisation: {
           subject: 'File is ready to download - user feedback for Source form',
@@ -350,10 +353,9 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
         .mocked(createSubmissionXlsxFile)
         .mockResolvedValueOnce({ fileId })
 
-      const result = await generateFeedbackSubmissionsFileForAll({
-        // @ts-expect-error - only part of metadta is mocked here
-        preferred_username: 'my-email@address.com'
-      })
+      const result = await generateFeedbackSubmissionsFileForAll(
+        'my-email@address.com'
+      )
 
       expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
         expect.any(Buffer),
@@ -386,13 +388,6 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       })
 
       expect(result).toEqual({ fileId })
-    })
-
-    test('should throw if no user supplied', async () => {
-      await expect(() =>
-        // @ts-expect-error - partial mock of user object
-        generateFeedbackSubmissionsFileForAll({ preferred_username: undefined })
-      ).rejects.toThrow('User email not found')
     })
   })
 

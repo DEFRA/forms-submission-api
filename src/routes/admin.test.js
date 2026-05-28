@@ -164,7 +164,8 @@ describe('Admin route', () => {
         message: 'Generate feedback submissions file success'
       })
       expect(generateFeedbackSubmissionsFileForForm).toHaveBeenCalledWith(
-        '688131eeff67f889d52c66cc'
+        '688131eeff67f889d52c66cc',
+        'enrique.chase@defra.gov.uk'
       )
     })
 
