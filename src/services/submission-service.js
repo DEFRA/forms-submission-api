@@ -100,28 +100,19 @@ const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
- * Fetches the form metadata
+ * Generate a form submission file for a form id
  * @param {string} formId - the form id
  */
-export async function getMetadataFromForm(formId) {
+export async function generateFormSubmissionsFile(formId) {
   const metadata = await getFormMetadataById(formId)
 
   if (!metadata.notificationEmail) {
     throw new Error(`Missing notification email for form id ${formId}`)
   }
 
-  return metadata
-}
-
-/**
- * Generate a form submission file for a form id
- * @param {string} formId - the form id
- */
-export async function generateFormSubmissionsFile(formId) {
-  const metadata = await getMetadataFromForm(formId)
   return generateSubmissionsFile(
     formId,
-    /** @type {string} */ (metadata.notificationEmail),
+    metadata.notificationEmail,
     metadata.title
   )
 }
@@ -156,7 +147,7 @@ export async function generateFeedbackSubmissionsFileForForm(
 ) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
 
-  const metadata = await getMetadataFromForm(formId)
+  const metadata = await getFormMetadataById(formId)
 
   return generateSubmissionsFile(
     CSAT_FORM_ID,

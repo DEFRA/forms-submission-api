@@ -18,7 +18,6 @@ import {
   generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
   getFormModel,
-  getMetadataFromForm,
   lookupFormNameById
 } from '~/src/services/submission-service.js'
 // @ts-expect-error - import json
@@ -389,6 +388,20 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
 
       expect(result).toEqual({ fileId })
     })
+
+    test('should throw if no notification email on metadata', async () => {
+      const formId = 'f4e249f9-6116-4bb6-8b21-8c6e17f074cd'
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+        /** @type {FormMetadata}  */ ({
+          title: 'Example form',
+          notificationEmail: undefined
+        })
+      )
+
+      await expect(() => generateFormSubmissionsFile(formId)).rejects.toThrow(
+        `Missing notification email for form id ${formId}`
+      )
+    })
   })
 
   describe('coerceDataValue', () => {
@@ -420,26 +433,6 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       })
       expect(typeof res).toBe('string')
       expect(res).toEqual(expectedString)
-    })
-  })
-
-  describe('getMetadataFromForm', () => {
-    test('should throw if no email', async () => {
-      // @ts-expect-error - mocked partial record
-      jest.mocked(getFormMetadataById).mockResolvedValueOnce({})
-      await expect(() => getMetadataFromForm('form-id')).rejects.toThrow(
-        'Missing notification email for form id form-id'
-      )
-    })
-
-    test('should get metadata with email populated', async () => {
-      jest
-        .mocked(getFormMetadataById)
-        // @ts-expect-error - mocked partial record
-        .mockResolvedValueOnce({ notificationEmail: 'example@test.com' })
-      expect(await getMetadataFromForm('form-id')).toEqual({
-        notificationEmail: 'example@test.com'
-      })
     })
   })
 
