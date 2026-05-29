@@ -3,7 +3,13 @@ import { authAdmin } from '~/test/fixtures/auth.js'
 
 describe('user-helper', () => {
   test('returns email if preferred_username is missing', () => {
-    expect(getUserEmail(authAdmin)).toBe('enrique.chase@defra.gov.uk')
+    expect(
+      getUserEmail(
+        /** @type {RequestAuth<UserCredentials>} */ (
+          /** @type {unknown} */ (authAdmin)
+        )
+      )
+    ).toBe('enrique.chase@defra.gov.uk')
   })
 
   test('throw if preferred_username is missing', () => {
