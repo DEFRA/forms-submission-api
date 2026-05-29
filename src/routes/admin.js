@@ -2,6 +2,7 @@ import { Scopes, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
 import { logger } from '~/src/helpers/logging/logger.js'
+import { getUserEmail } from '~/src/helpers/user.js'
 import {
   deleteDlqMessage,
   getDlqMessage,
@@ -116,10 +117,7 @@ export default [
     async handler(request) {
       const { auth } = request
 
-      if (!auth.credentials.user) {
-        throw new Error('Missing user credential')
-      }
-      await generateFeedbackSubmissionsFileForAll(auth.credentials.user)
+      await generateFeedbackSubmissionsFileForAll(getUserEmail(auth))
 
       return {
         message: 'Generate feedback submissions file success'
@@ -145,10 +143,10 @@ export default [
     method: 'POST',
     path: '/feedback/{formId}',
     async handler(request) {
-      const { params } = request
+      const { auth, params } = request
       const { formId } = params
 
-      await generateFeedbackSubmissionsFileForForm(formId)
+      await generateFeedbackSubmissionsFileForForm(formId, getUserEmail(auth))
 
       return {
         message: 'Generate feedback submissions file success'
@@ -327,5 +325,5 @@ export default [
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { DeadLetterQueueRequest, DeadLetterQueueAndHandleRequest, DeadLetterQueueMessageRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, GetSubmissionByReference, ResetSaveAndExit } from '~/src/api/types.js'
+ * @import { DeadLetterQueueRequest, DeadLetterQueueMessageRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
  */

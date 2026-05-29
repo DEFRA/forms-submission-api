@@ -13,6 +13,7 @@ export const authSuperadmin = {
       scp: 'forms.user',
       sub: 'hgtL_1p2Me5JkBB6JeB20PyU3YDuP9PjEZwi7m1QGng',
       oid: '86758ba9-92e7-4287-9751-7705e449688e',
+      preferred_username: 'enrique.chase@defra.gov.uk',
       roles: [Roles.Superadmin]
     },
     scope: [
@@ -45,6 +46,7 @@ export const authAdmin = {
       scp: 'forms.user',
       sub: 'hgtL_1p2Me5JkBB6JeB20PyU3YDuP9PjEZwi7m1QGng',
       oid: '86758ba9-92e7-4287-9751-7705e449688e',
+      preferred_username: 'enrique.chase@defra.gov.uk',
       roles: [Roles.Admin]
     },
     scope: [
@@ -74,6 +76,7 @@ export const authAD = {
       scp: '',
       sub: 'hgtL_1p2Me5JkBB6JeB20PyU3YDuP9PjEZwi7m1QGng',
       oid: '86758ba9-92e7-4287-9751-7705e449688e',
+      preferred_username: 'enrique.chase@defra.gov.uk',
       roles: []
     },
     scope: []

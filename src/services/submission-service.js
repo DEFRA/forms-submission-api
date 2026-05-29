@@ -100,52 +100,33 @@ const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
- * Fetches the form metadata
- * @param {string} formId - the form id
- */
-export async function getMetadataFromForm(formId) {
-  const metadata = await getFormMetadataById(formId)
-  if (!metadata.notificationEmail) {
-    throw new Error(`Missing notification email for form id ${formId}`)
-  }
-  return metadata
-}
-
-/**
  * Generate a form submission file for a form id
  * @param {string} formId - the form id
  */
 export async function generateFormSubmissionsFile(formId) {
-  const metadata = await getMetadataFromForm(formId)
-  return generateSubmissionsFile(formId, metadata, metadata.title)
+  const metadata = await getFormMetadataById(formId)
+
+  if (!metadata.notificationEmail) {
+    throw new Error(`Missing notification email for form id ${formId}`)
+  }
+
+  return generateSubmissionsFile(
+    formId,
+    metadata.notificationEmail,
+    metadata.title
+  )
 }
 
 /**
  * Generate a feedback submission file for one or all forms
- * @param {UserCredentials} user - the actioning user
+ * @param {string} emailAddress - the recipient email address
  */
-export async function generateFeedbackSubmissionsFileForAll(user) {
+export async function generateFeedbackSubmissionsFileForAll(emailAddress) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
-  const userEmail =
-    'preferred_username' in user
-      ? /** @type {string} */ (user.preferred_username)
-      : undefined
-
-  if (!userEmail) {
-    throw new Error('User email not found')
-  }
-
-  // Construct partial form metadata
-  // - pass notificationEmail as requesting user's email address
-  // - pass an empty formId to denote 'all forms', so the filter doesn't restrict results to a specific form
-  const metadata = /** @type {FormMetadata} */ ({
-    notificationEmail: userEmail,
-    id: ''
-  })
 
   return generateSubmissionsFile(
     CSAT_FORM_ID,
-    metadata,
+    emailAddress,
     'user feedback (all forms)',
     {
       includeFormName: true,
@@ -158,15 +139,19 @@ export async function generateFeedbackSubmissionsFileForAll(user) {
 /**
  * Generate a feedback submission file for one or all forms
  * @param {string} formId - the form id
+ * @param {string} emailAddress - the recipient email address
  */
-export async function generateFeedbackSubmissionsFileForForm(formId) {
+export async function generateFeedbackSubmissionsFileForForm(
+  formId,
+  emailAddress
+) {
   const removeColumns = new Set(['formId', 'SubmissionRef'])
 
-  const metadata = await getMetadataFromForm(formId)
+  const metadata = await getFormMetadataById(formId)
 
   return generateSubmissionsFile(
     CSAT_FORM_ID,
-    metadata,
+    emailAddress,
     `user feedback for ${metadata.title}`,
     {
       filter: { 'data.main.formId': formId },
@@ -517,13 +502,13 @@ function addPaymentCellsToRow(row, caches, record, options) {
 /**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
- * @param {FormMetadata} metadata - metadata of the form
+ * @param {string} emailAddress - the recipient email address
  * @param {string} emailTitle - title text used in email content
  * @param { SpreadsheetOptions | undefined } [options] - add a filter and/or additionalColumns
  */
 export async function generateSubmissionsFile(
   formId,
-  metadata,
+  emailAddress,
   emailTitle,
   options
 ) {
@@ -569,15 +554,11 @@ export async function generateSubmissionsFile(
     options
   )
 
-  const { notificationEmail } = /** @type {{ notificationEmail: string }} */ (
-    metadata
-  )
-
   // Save the Excel workbook to S3
-  const fileId = await saveFileToS3(workbook, formId, notificationEmail)
+  const fileId = await saveFileToS3(workbook, formId, emailAddress)
 
   // Finally send the submission file download email
-  await sendSubmissionsFileEmail(formId, emailTitle, notificationEmail, fileId)
+  await sendSubmissionsFileEmail(formId, emailTitle, emailAddress, fileId)
 
   logger.info(`Generated and sent submissions file for form ${formId}`)
 
@@ -803,18 +784,13 @@ async function saveFileToS3(workbook, formId, notificationEmail) {
  * Send the submission download email via Notify
  * @param {string} formId - the form id
  * @param {string} title - the form title
- * @param {string} notificationEmail - the form notification email
+ * @param {string} emailAddress - the recipient email address
  * @param {string} fileId - the generated file id
  */
-async function sendSubmissionsFileEmail(
-  formId,
-  title,
-  notificationEmail,
-  fileId
-) {
+async function sendSubmissionsFileEmail(formId, title, emailAddress, fileId) {
   logger.info(`Sending the submission download email for form ${formId}`)
 
-  const emailContent = constructEmailContent(notificationEmail, fileId, title)
+  const emailContent = constructEmailContent(emailAddress, fileId, title)
 
   await sendNotification(emailContent)
 
