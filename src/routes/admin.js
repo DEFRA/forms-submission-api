@@ -2,6 +2,7 @@ import { Scopes, idSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
 import { logger } from '~/src/helpers/logging/logger.js'
+import { getUserEmail } from '~/src/helpers/user.js'
 import {
   deleteDlqMessage,
   getDlqMessage,
@@ -36,40 +37,6 @@ const queueAndMessageIdSchema = Joi.object({
   dlq: dqlSchema.required(),
   messageId: Joi.string().required()
 })
-
-/**
- * Get the user from the auth object
- * @param {RequestAuth<UserCredentials, AppCredentials, Record<string, unknown>, Record<string, unknown>>} auth - the request auth
- * @returns {UserCredentials} the user
- * @throws {Error}
- */
-function getUser(auth) {
-  if (!auth.credentials.user) {
-    throw new Error('Missing user credential')
-  }
-
-  return auth.credentials.user
-}
-
-/**
- * Get the user email from user credentials
- * @param {RequestAuth<UserCredentials, AppCredentials, Record<string, unknown>, Record<string, unknown>>} auth - the request auth
- * @returns {string} the user email
- * @throws {Error}
- */
-function getUserEmail(auth) {
-  const user = getUser(auth)
-  const userEmail =
-    'preferred_username' in user
-      ? /** @type {string} */ (user.preferred_username)
-      : undefined
-
-  if (!userEmail) {
-    throw new Error('User email not found')
-  }
-
-  return userEmail
-}
 
 export default [
   /**
@@ -357,6 +324,6 @@ export default [
 ]
 
 /**
- * @import { ServerRoute, RequestAuth, UserCredentials, AppCredentials } from '@hapi/hapi'
+ * @import { ServerRoute } from '@hapi/hapi'
  * @import { DeadLetterQueueRequest, DeadLetterQueueMessageRequest, GenerateFeedbackSubmissionsFile, GenerateFormSubmissionsFile, ResetSaveAndExit } from '~/src/api/types.js'
  */
