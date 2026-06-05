@@ -54,7 +54,7 @@
     "@hapi/vision": "^7.0.3",
     "@types/content-disposition": "^0.5.9",
     "argon2": "^0.44.0",
-    "content-disposition": "^0.5.4",
+    "content-disposition": "^2.0.1",
     "convict": "^6.2.5",
     "csv-stringify": "^6.7.0",
     "date-fns": "^4.4.0",

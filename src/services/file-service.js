@@ -6,7 +6,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import Boom from '@hapi/boom'
 import argon2 from 'argon2'
-import contentDisposition from 'content-disposition'
+import { create as contentDisposition } from 'content-disposition'
 import { MongoServerError } from 'mongodb'
 
 import { logger } from '~/src/helpers/logging/logger.js'
