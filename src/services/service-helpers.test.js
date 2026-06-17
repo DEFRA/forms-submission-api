@@ -26,7 +26,7 @@ describe('Service Helpers', () => {
     jest.mocked(createCsv).mockImplementation((input) => {
       if (input.length === 0) return Promise.resolve('')
       return Promise.resolve(
-        input.map((row) => row.join(',')).join('\n') + '\n'
+        input.map((row) => /** @type {any} */ (row).join(',')).join('\n') + '\n'
       )
     })
     /** @type {any} */

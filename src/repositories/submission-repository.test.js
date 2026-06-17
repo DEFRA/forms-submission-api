@@ -61,7 +61,9 @@ describe('submission repository', () => {
   const submissionRecordInput = structuredClone(buildDbDocument())
 
   beforeEach(() => {
-    jest.mocked(db.collection).mockReturnValue(mockCollection)
+    jest
+      .mocked(db.collection)
+      .mockReturnValue(/** @type {any} */ (mockCollection))
   })
 
   describe('getSubmissionRecords', () => {
