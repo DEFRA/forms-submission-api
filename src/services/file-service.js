@@ -183,7 +183,8 @@ export async function checkFileStatus(fileId) {
  * @param {SubmitPayload} submitPayload
  */
 export async function submit(submitPayload) {
-  const { sessionId, retrievalKey, main, repeaters } = submitPayload
+  const { sessionId, retrievalKey, main, repeaters, referenceNumber } =
+    submitPayload
   const retrievalKeyIsCaseSensitive = isRetrievalKeyCaseSensitive(retrievalKey)
   const hashedRetrievalKey = await argon2.hash(retrievalKey)
 
@@ -191,7 +192,8 @@ export async function submit(submitPayload) {
     const mainFileId = await createMainCsvFile(
       main,
       hashedRetrievalKey,
-      retrievalKeyIsCaseSensitive
+      retrievalKeyIsCaseSensitive,
+      referenceNumber
     )
     const repeaterFileIds = await processRepeaterFiles(
       repeaters,
