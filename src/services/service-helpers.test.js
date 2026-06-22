@@ -49,19 +49,24 @@ describe('Service Helpers', () => {
     ]
 
     it('should create main CSV file successfully', async () => {
-      const result = await createMainCsvFile(mockMain, 'hashed-key', true)
+      const result = await createMainCsvFile(
+        mockMain,
+        'hashed-key',
+        true,
+        'ref-num'
+      )
 
       expect(typeof result).toBe('string')
       expect(result).toMatch(/^[a-f0-9-]{36}$/) // UUID format
 
       expect(createCsv).toHaveBeenCalledWith([
-        ['Field 1', 'Field 2'],
-        ['value1', 'value2']
+        ['Reference number', 'Field 1', 'Field 2'],
+        ['ref-num', 'value1', 'value2']
       ])
 
       expect(createS3File).toHaveBeenCalledWith(
         expect.stringContaining('loaded/'),
-        'Field 1,Field 2\nvalue1,value2\n',
+        'Reference number,Field 1,Field 2\nref-num,value1,value2\n',
         'text/csv',
         expect.any(Object)
       )
@@ -82,7 +87,7 @@ describe('Service Helpers', () => {
       jest.mocked(createS3File).mockRejectedValue(s3Error)
 
       await expect(
-        createMainCsvFile(mockMain, 'hashed-key', true)
+        createMainCsvFile(mockMain, 'hashed-key', true, 'ref-num')
       ).rejects.toThrow('S3 upload failed')
 
       expect(repository.create).not.toHaveBeenCalled()
@@ -93,12 +98,12 @@ describe('Service Helpers', () => {
       jest.mocked(repository.create).mockRejectedValue(dbError)
 
       await expect(
-        createMainCsvFile(mockMain, 'hashed-key', true)
+        createMainCsvFile(mockMain, 'hashed-key', true, 'ref-num')
       ).rejects.toThrow('Database error')
     })
 
     it('should handle empty main data', async () => {
-      const result = await createMainCsvFile([], 'hashed-key', false)
+      const result = await createMainCsvFile([], 'hashed-key', false, undefined)
 
       expect(createCsv).toHaveBeenCalledWith([[], []])
       expect(result).toMatch(/^[a-f0-9-]{36}$/)

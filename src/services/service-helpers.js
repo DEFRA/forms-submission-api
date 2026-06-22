@@ -14,7 +14,7 @@ const loadedPrefix = config.get('loadedPrefix')
  * @param {{name: string, title: string, value: string}[]} main - Main form data
  * @param {string} hashedRetrievalKey - Hashed retrieval key
  * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
- * @param {string} referenceNumber - Reference number of form submission
+ * @param { string | undefined } referenceNumber - Reference number of form submission
  * @returns {Promise<string>} File ID
  */
 export async function createMainCsvFile(
