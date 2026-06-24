@@ -25,8 +25,6 @@ import {
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 
-const designerUrl = config.get('designerUrl')
-
 /**
  * @typedef {object} SpreadsheetOptions
  * @property {object} [filter] - query filter
@@ -60,7 +58,7 @@ const designerUrl = config.get('designerUrl')
  */
 function getSubmissionDownloadEmailConfig() {
   return {
-    designerUrl: requireConfig(designerUrl, 'designerUrl'),
+    designerUrl: requireConfig(config.get('designerUrl'), 'designerUrl'),
     templateId: requireConfig(
       config.get('notifyTemplateId'),
       'notifyTemplateId'
@@ -392,6 +390,8 @@ export async function addFirstCellsToRow(
  * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
  */
 function addFormComponentCellsToRow(formModel, row, context, record, options) {
+  const designerUrl = config.get('designerUrl')
+
   formModel?.componentMap.forEach((comp, key) => {
     if (!comp.isFormComponent) {
       return
