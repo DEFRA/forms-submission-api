@@ -416,9 +416,7 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
           addHeader(context, component, componentKey, componentValue)
 
           // Add map review link
-          const link = features
-            ? `${designerUrl}/submission/${record.meta.referenceNumber}/map-review/${component.page.id}/${component.id}`
-            : ''
+          const link = generateMapReviewLink(features, component)
           addCellToRow(row, `${componentKey} link`, link, options)
           addHeader(
             context,
@@ -449,9 +447,7 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
       addHeader(context, component)
 
       // Add map review link
-      const link = features
-        ? `${designerUrl}/submission/${record.meta.referenceNumber}/map-review/${component.page?.id}/${component.id}`
-        : ''
+      const link = generateMapReviewLink(features, component)
       addCellToRow(row, `${component.name} link`, link, options)
       addHeader(
         context,
@@ -466,6 +462,17 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
       addHeader(context, component)
     }
   })
+
+  /**
+   *
+   * @param {RichFormValue | null} features
+   * @param {Field} component
+   */
+  function generateMapReviewLink(features, component) {
+    return features
+      ? `${designerUrl}/submission/${record.meta.referenceNumber}/map-review/${component.page?.id}/${component.id}`
+      : ''
+  }
 }
 
 /**
@@ -866,9 +873,9 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { UserCredentials } from '@hapi/hapi'
- * @import { FormMetadata, FormStatus } from '@defra/forms-model'
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { WithId } from 'mongodb'
+ * @import { RichFormValue } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
