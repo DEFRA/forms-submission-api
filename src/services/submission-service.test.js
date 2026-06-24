@@ -26,11 +26,13 @@ import { formFeedbackVersions } from '~/test/fixtures/forms-feedback-versions.js
 import { formPaymentVersions } from '~/test/fixtures/forms-payment-versions.js'
 // @ts-expect-error - import json
 import formSubmissionsWithGeo from '~/test/fixtures/forms-submissions-with-geo.json'
+// @ts-expect-error - import json
 import formSubmissionsWithPayments from '~/test/fixtures/forms-submissions-with-payments.json'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
 // @ts-expect-error - import json
 import formVersionsWithGeo from '~/test/fixtures/forms-versions-with-geo.json'
+// @ts-expect-error - import json
 import formVersions from '~/test/fixtures/forms-versions.json'
 
 jest.mock('~/src/repositories/submission-repository.js')
