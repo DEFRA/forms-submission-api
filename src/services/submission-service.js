@@ -390,6 +390,8 @@ export async function addFirstCellsToRow(
  * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
  */
 function addFormComponentCellsToRow(formModel, row, context, record, options) {
+  const designerUrl = config.get('designerUrl')
+
   formModel?.componentMap.forEach((comp, key) => {
     if (!comp.isFormComponent) {
       return
@@ -403,12 +405,31 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
       const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
       for (let index = 0; index < items.length; index++) {
-        const value = getValue(items[index], key, component)
         const componentKey = `${component.name} ${index + 1}`
         const componentValue = `${component.label} ${index + 1}`
 
-        addCellToRow(row, componentKey, value, options)
-        addHeader(context, component, componentKey, componentValue)
+        if (component.type === ComponentType.GeospatialField) {
+          const features = items[index][component.name]
+          const value = JSON.stringify(features)
+
+          addCellToRow(row, componentKey, value, options)
+          addHeader(context, component, componentKey, componentValue)
+
+          // Add map review link
+          const link = generateMapReviewLink(features, component)
+          addCellToRow(row, `${componentKey} link`, link, options)
+          addHeader(
+            context,
+            component,
+            `${componentKey} link`,
+            `${componentValue} link`
+          )
+        } else {
+          const value = getValue(items[index], key, component)
+
+          addCellToRow(row, componentKey, value, options)
+          addHeader(context, component, componentKey, componentValue)
+        }
       }
     } else if (component.type === ComponentType.FileUploadField) {
       const files = record.data.files[component.name]
@@ -420,10 +441,20 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
       addHeader(context, component)
     } else if (component.type === ComponentType.GeospatialField) {
       const features = record.data.main[component.name]
-      const value = JSON.stringify(features)
+      const value = features ? JSON.stringify(features) : ''
 
       addCellToRow(row, component.name, value, options)
       addHeader(context, component)
+
+      // Add map review link
+      const link = generateMapReviewLink(features, component)
+      addCellToRow(row, `${component.name} link`, link, options)
+      addHeader(
+        context,
+        component,
+        `${component.name} link`,
+        `${component.label} link`
+      )
     } else {
       const value = getValue(record.data.main, key, component)
 
@@ -431,6 +462,17 @@ function addFormComponentCellsToRow(formModel, row, context, record, options) {
       addHeader(context, component)
     }
   })
+
+  /**
+   *
+   * @param {RichFormValue | null} features
+   * @param {Field} component
+   */
+  function generateMapReviewLink(features, component) {
+    return features
+      ? `${designerUrl}/submission/${record.meta.referenceNumber}/map-review/${component.page?.id}/${component.id}`
+      : ''
+  }
 }
 
 /**
@@ -831,9 +873,9 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { UserCredentials } from '@hapi/hapi'
- * @import { FormMetadata, FormStatus } from '@defra/forms-model'
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { WithId } from 'mongodb'
+ * @import { RichFormValue } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

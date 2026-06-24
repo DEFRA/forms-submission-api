@@ -1,0 +1,74 @@
+{
+  "1": {
+    "name": "Geospatial",
+    "engine": "V2",
+    "schema": 2,
+    "startPage": "/summary",
+    "pages": [
+      {
+        "title": "",
+        "path": "/optional-site-features",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Optional site features",
+            "name": "WNEXPf",
+            "shortDescription": "Optional features",
+            "hint": "",
+            "options": {
+              "required": false
+            },
+            "schema": {
+              "min": 2
+            },
+            "id": "464b78d3-797e-47a7-97aa-43ac37fb9ff6"
+          }
+        ],
+        "next": [],
+        "id": "2296641a-80e9-4927-bf95-39c265500647"
+      },
+      {
+        "title": "",
+        "path": "/multisite",
+        "components": [
+          {
+            "type": "GeospatialField",
+            "title": "Multisite",
+            "name": "SGAwuk",
+            "shortDescription": "Multisite",
+            "hint": "",
+            "options": {
+              "required": false,
+              "geometryTypes": ["point", "line", "shape"]
+            },
+            "schema": {},
+            "id": "03f409c8-878e-482f-9250-d211d3435540"
+          }
+        ],
+        "next": [],
+        "id": "0a206ea7-24c9-4af5-b4ef-f3b79edc1c82",
+        "controller": "RepeatPageController",
+        "repeat": {
+          "options": {
+            "name": "GNNwcg",
+            "title": "Site"
+          },
+          "schema": {
+            "min": 1,
+            "max": 2
+          }
+        }
+      },
+      {
+        "id": "449a45f6-4541-4a46-91bd-8b8931b07b50",
+        "title": "",
+        "path": "/summary",
+        "controller": "SummaryPageWithConfirmationEmailController",
+        "next": []
+      }
+    ],
+    "conditions": [],
+    "sections": [],
+    "lists": []
+  }
+}

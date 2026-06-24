@@ -29,6 +29,7 @@ export const state = {
  */
 export const metadata = {
   id: '661e4ca5039739ef2902b214',
+  offline: false,
   slug: 'test-form',
   title: 'Test form',
   organisation: 'Defra',

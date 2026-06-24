@@ -25,9 +25,13 @@ import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
 import { formFeedbackVersions } from '~/test/fixtures/forms-feedback-versions.js'
 import { formPaymentVersions } from '~/test/fixtures/forms-payment-versions.js'
 // @ts-expect-error - import json
+import formSubmissionsWithGeo from '~/test/fixtures/forms-submissions-with-geo.json'
+// @ts-expect-error - import json
 import formSubmissionsWithPayments from '~/test/fixtures/forms-submissions-with-payments.json'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
+// @ts-expect-error - import json
+import formVersionsWithGeo from '~/test/fixtures/forms-versions-with-geo.json'
 // @ts-expect-error - import json
 import formVersions from '~/test/fixtures/forms-versions.json'
 
@@ -117,17 +121,97 @@ describe('Submission service', () => {
 
       // XLSX escapes double quotes in JSON with another double quote
       const geojson = `[{""id"":""6e9bd871-d9a9-44f8-a065-d02b30782c31"",""type"":""Feature"",""properties"":{""description"":""The quadrangle"",""gridReference"":""ST 000001""},""geometry"":{""coordinates"":[[[-0.14301008297061912,51.50124368719568],[-0.14226083598384776,51.501549070063504],[-0.14205122521880753,51.5013519595378],[-0.1420913634506462,51.501329749847514],[-0.141948649739021,51.501193715259205],[-0.1418995919000281,51.50120482013867],[-0.14168106152902737,51.50100493189194],[-0.14244641795605162,51.500686867437906],[-0.14301008297061912,51.50124368719568]]],""type"":""Polygon""}},{""id"":""36deedeb-54e6-4abf-a32e-233acf35f0cb"",""type"":""Feature"",""properties"":{""description"":""Birdcage walk"",""gridReference"":""ST 000002""},""geometry"":{""coordinates"":[[-0.14075460239675408,51.5002266684821],[-0.12978924563600458,51.50130199419283],[-0.14012872586908998,51.502050031896914]],""type"":""LineString""}},{""type"":""Feature"",""properties"":{""description"":""St James' park"",""gridReference"":""ST 000003""},""geometry"":{""type"":""Point"",""coordinates"":[-0.13359457492299498,51.5026889710461]},""id"":""ea4d3d46-64ac-4f31-87f4-8aa0d8b6ad96""}]`
+      const geospatialLink = (/** @type {string} */ ref) =>
+        `http://localhost:3000/submission/${ref}/map-review/0b608f84-d2e2-4158-9737-37bd49305fd3/6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7`
+
       expect(sheetAsCsv).toBe(
-        `Submission reference number,Submission date,Live or draft,Is preview,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Leading space,Site features,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
-365-DFR-C67,13/11/2025,live,No,Chocolate,,,,,,,[],,,,,,,,,,
-549-FBF-C88,13/11/2025,live,No,Chocolate,,,,,,,[],,,,,,,,,,
-187-231-E68,27/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,[],,,,,,,,,,d@s.com
-259-0B2-442,28/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,,"${geojson}",Cheese,2,Ham,6,,,,,,d@s.com
-F6C-807-B1F,28/11/2025,draft,Yes,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",,[],Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
-D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",,[],Egg,1,Ham,2,Bacon,4,,,http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e,
-8CC-882-665,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],Cheese,2,Hawaian,12,Cheese,6,,,http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61,
-450-904-A2C,01/12/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",,[],Ham,2,Pineapple,1,Bacon,5,Cheese,3,http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f,
-8C2-7E8-189,02/12/2025,draft,Yes,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],Egg,9,,,,,,,http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47,`
+        `Submission reference number,Submission date,Live or draft,Is preview,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Leading space,Site features,Site features link,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
+365-DFR-C67,13/11/2025,live,No,Chocolate,,,,,,,[],${geospatialLink('365-DFR-C67')},,,,,,,,,,
+549-FBF-C88,13/11/2025,live,No,Chocolate,,,,,,,[],${geospatialLink('549-FBF-C88')},,,,,,,,,,
+187-231-E68,27/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,[],${geospatialLink('187-231-E68')},,,,,,,,,,d@s.com
+259-0B2-442,28/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,,"${geojson}",${geospatialLink('259-0B2-442')},Cheese,2,Ham,6,,,,,,d@s.com
+F6C-807-B1F,28/11/2025,draft,Yes,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",,[],${geospatialLink('F6C-807-B1F')},Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
+D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",,[],${geospatialLink('D44-841-706')},Egg,1,Ham,2,Bacon,4,,,http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e,
+8CC-882-665,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8CC-882-665')},Cheese,2,Hawaian,12,Cheese,6,,,http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61,
+450-904-A2C,01/12/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",,[],${geospatialLink('450-904-A2C')},Ham,2,Pineapple,1,Bacon,5,Cheese,3,http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f,
+8C2-7E8-189,02/12/2025,draft,Yes,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8C2-7E8-189')},Egg,9,,,,,,,http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47,`
+      )
+
+      expect(sendNotification).toHaveBeenCalledWith({
+        emailAddress: 'enrique.chase@defra.gov.uk',
+        templateId: 'dummy',
+        personalisation: {
+          subject: 'File is ready to download - My form',
+          body: "The file you requested for 'My form' is ready to download.\n\n  [Download file](http://localhost:3000/file-download/fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5)\n\n  ^ The link will expire in 90 days.\n\n  From the Defra Forms team.\n  "
+        },
+        emailReplyToId: 'dummy'
+      })
+
+      expect(result).toEqual({ fileId })
+    })
+
+    test('should generate submission file with geospatial if all valid', async () => {
+      const formId = '688131eeff67f889d52c66cc'
+      const fileId = 'fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5'
+      jest.mocked(getFormMetadataById).mockResolvedValue(
+        /** @type {FormMetadata}  */ ({
+          title: 'My form',
+          notificationEmail: 'enrique.chase@defra.gov.uk'
+        })
+      )
+
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          for (const submission of formSubmissionsWithGeo) {
+            yield submission
+          }
+        }
+      }
+
+      // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
+      jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
+
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersionsWithGeo)
+      )
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockImplementation((id, versionNumber) => {
+          if (!versionNumber) {
+            throw new Error('Expected a version number')
+          }
+
+          const version = versions[versionNumber.toString()]
+
+          return Promise.resolve(version)
+        })
+
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
+
+      const result = await generateFormSubmissionsFile(formId)
+
+      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        false
+      )
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
+
+      expect(workbook.Sheets.Sheet1).toBeDefined()
+
+      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+
+      // XLSX escapes double quotes in JSON with another double quote
+      const geojson = `[{""type"":""Feature"",""properties"":{""description"":""Bangor"",""coordinateGridReference"":""SH 58523 68911"",""centroidGridReference"":""SH 58523 68911""},""geometry"":{""type"":""Point"",""coordinates"":[-4.1193627,53.1984038]},""id"":""194c635f-dada-4328-8fea-624750aa6aff""},{""type"":""Feature"",""properties"":{""description"":""Swansea"",""coordinateGridReference"":""SS 53653 94282"",""centroidGridReference"":""SS 53653 94282""},""geometry"":{""type"":""Point"",""coordinates"":[-4.1157394,51.6282728]},""id"":""9669f61c-25d7-422f-ba5a-2265ce9cfa2e""}]`
+
+      expect(sheetAsCsv).toBe(
+        `Submission reference number,Submission date,Live or draft,Is preview,Optional features,Optional features link,Multisite 1,Multisite 1 link
+M27-S47-RTH,24/06/2026,draft,Yes,"${geojson}",http://localhost:3000/submission/M27-S47-RTH/map-review/2296641a-80e9-4927-bf95-39c265500647/464b78d3-797e-47a7-97aa-43ac37fb9ff6,"[{""id"":""82e3a9c3-3eff-46fb-8ccb-746477ce1ae2"",""type"":""Feature"",""properties"":{""description"":""York"",""coordinateGridReference"":""SE 45519 57686"",""centroidGridReference"":""SE 62615 53567""},""geometry"":{""coordinates"":[[-1.3068627,54.0131965],[-0.9333275,53.8774089],[-0.9003686,54.0325587]],""type"":""LineString""}}]",http://localhost:3000/submission/M27-S47-RTH/map-review/0a206ea7-24c9-4af5-b4ef-f3b79edc1c82/03f409c8-878e-482f-9250-d211d3435540
+F2B-JFE-WA9,24/06/2026,draft,Yes,,,,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
