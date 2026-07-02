@@ -14,13 +14,23 @@ const loadedPrefix = config.get('loadedPrefix')
  * @param {{name: string, title: string, value: string}[]} main - Main form data
  * @param {string} hashedRetrievalKey - Hashed retrieval key
  * @param {boolean} retrievalKeyIsCaseSensitive - Whether retrieval key is case sensitive
+ * @param { string | undefined } referenceNumber - Reference number of form submission
  * @returns {Promise<string>} File ID
  */
 export async function createMainCsvFile(
   main,
   hashedRetrievalKey,
-  retrievalKeyIsCaseSensitive
+  retrievalKeyIsCaseSensitive,
+  referenceNumber
 ) {
+  if (referenceNumber) {
+    main.unshift({
+      name: '__refNum',
+      title: 'Reference number',
+      value: referenceNumber
+    })
+  }
+
   const headers = main.map((rec) => rec.title)
   const values = main.map((rec) => rec.value)
   const csv = await createCsv([headers, values])
