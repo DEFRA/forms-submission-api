@@ -1,0 +1,125 @@
+[
+  {
+    "_id": "6a3bde9a6e32e4855482d10d",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2026-06-24T13:41:46.143Z",
+      "referenceNumber": "F2B-JFE-WA9",
+      "formName": "Geospatial",
+      "formId": "6a3bde2a7a6af2ab22ef011d",
+      "formSlug": "geospatial",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "enrique.chase@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 1,
+        "createdAt": "2026-06-24T13:41:25.333Z"
+      }
+    },
+    "data": {
+      "main": {
+        "WNEXPf": null
+      },
+      "repeaters": {
+        "GNNwcg": [{}]
+      },
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "9ae97975-061a-4b9d-971e-20bfdada33ba",
+        "repeaters": {
+          "GNNwcg": "a4136983-879d-4cec-9eb2-27789f77ed4c"
+        }
+      }
+    },
+    "recordCreatedAt": "2026-06-24T13:41:46.263Z",
+    "expireAt": "2027-03-24T14:41:46.263Z"
+  },
+  {
+    "_id": "6a3bdf806e32e4855482d110",
+    "meta": {
+      "schemaVersion": 1,
+      "timestamp": "2026-06-24T13:45:36.406Z",
+      "referenceNumber": "M27-S47-RTH",
+      "formName": "Geospatial",
+      "formId": "6a3bde2a7a6af2ab22ef011d",
+      "formSlug": "geospatial",
+      "status": "draft",
+      "isPreview": true,
+      "notificationEmail": "enrique.chase@defra.gov.uk",
+      "versionMetadata": {
+        "versionNumber": 1,
+        "createdAt": "2026-06-24T13:41:25.333Z"
+      }
+    },
+    "data": {
+      "main": {
+        "WNEXPf": [
+          {
+            "type": "Feature",
+            "properties": {
+              "description": "Bangor",
+              "coordinateGridReference": "SH 58523 68911",
+              "centroidGridReference": "SH 58523 68911"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-4.1193627, 53.1984038]
+            },
+            "id": "194c635f-dada-4328-8fea-624750aa6aff"
+          },
+          {
+            "type": "Feature",
+            "properties": {
+              "description": "Swansea",
+              "coordinateGridReference": "SS 53653 94282",
+              "centroidGridReference": "SS 53653 94282"
+            },
+            "geometry": {
+              "type": "Point",
+              "coordinates": [-4.1157394, 51.6282728]
+            },
+            "id": "9669f61c-25d7-422f-ba5a-2265ce9cfa2e"
+          }
+        ]
+      },
+      "repeaters": {
+        "GNNwcg": [
+          {
+            "SGAwuk": [
+              {
+                "id": "82e3a9c3-3eff-46fb-8ccb-746477ce1ae2",
+                "type": "Feature",
+                "properties": {
+                  "description": "York",
+                  "coordinateGridReference": "SE 45519 57686",
+                  "centroidGridReference": "SE 62615 53567"
+                },
+                "geometry": {
+                  "coordinates": [
+                    [-1.3068627, 54.0131965],
+                    [-0.9333275, 53.8774089],
+                    [-0.9003686, 54.0325587]
+                  ],
+                  "type": "LineString"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "files": {}
+    },
+    "result": {
+      "files": {
+        "main": "3b4545b7-66e0-4895-94e1-ec24a141629f",
+        "repeaters": {
+          "GNNwcg": "449b6ee5-a47e-4d04-af00-4e3465b0049d"
+        }
+      }
+    },
+    "recordCreatedAt": "2026-06-24T13:45:36.719Z",
+    "expireAt": "2027-03-24T14:45:36.719Z"
+  }
+]
