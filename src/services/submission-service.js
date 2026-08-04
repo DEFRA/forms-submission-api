@@ -97,6 +97,9 @@ const PAYMENT_REFERENCE_HEADER_TEXT = 'Payment reference'
 const PAYMENT_DATE_HEADER = 'PaymentDate'
 const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 
+const SUBMISSION_LANGUAGE_HEADER = 'SubmissionLanguage'
+const SUBMISSION_LANGUAGE_HEADER_TEXT = 'Submission language'
+
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
@@ -234,11 +237,14 @@ export function coerceDataValue(asText, component) {
  * @param {Record<string, any>} data - the answers data
  * @param {string} key - the component key (name)
  * @param {Field} component - the form component
+ * @param {Translator} translator - the translator for the appropriate language
  * @returns {CellValue}
  */
-export function getValue(data, key, component) {
+export function getValue(data, key, component, translator) {
   const asText =
-    key in data ? component.getDisplayStringFromFormValue(data[key]) : undefined
+    key in data
+      ? component.getDisplayStringFromFormValue(data[key], translator)
+      : undefined
 
   return coerceDataValue(asText, component)
 }
@@ -362,9 +368,17 @@ export async function addFirstCellsToRow(
   record,
   options
 ) {
-  const { versionNumber, submissionRef, submissionDate, status, isPreview } =
-    extractMeta(record)
+  const {
+    versionNumber,
+    submissionRef,
+    submissionDate,
+    status,
+    isPreview,
+    language
+  } = extractMeta(record)
   const formModel = await getFormModel(context, formId, versionNumber, status)
+
+  const languageText = language === 'cy' ? 'Welsh' : 'English'
 
   addCellToRow(row, SUBMISSION_REF_HEADER, submissionRef, options)
   addCellToRow(row, SUBMISSION_DATE_HEADER, submissionDate, options)
@@ -375,6 +389,7 @@ export async function addFirstCellsToRow(
     isPreview ? 'Yes' : 'No',
     options
   )
+  addCellToRow(row, SUBMISSION_LANGUAGE_HEADER, languageText, options)
 
   return {
     formModel
@@ -392,76 +407,80 @@ export async function addFirstCellsToRow(
 function addFormComponentCellsToRow(formModel, row, context, record, options) {
   const designerUrl = config.get('designerUrl')
 
-  formModel?.componentMap.forEach((comp, key) => {
-    if (!comp.isFormComponent) {
-      return
-    }
+  if (formModel) {
+    const translator = formModel.createTranslator()
 
-    const component = /** @type {Field} */ (comp)
-
-    if (component.page && hasRepeater(component.page.pageDef)) {
-      const repeaterName = component.page.pageDef.repeat.options.name
-      const hasRepeaterData = repeaterName in record.data.repeaters
-      const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
-
-      for (let index = 0; index < items.length; index++) {
-        const componentKey = `${component.name} ${index + 1}`
-        const componentValue = `${component.label} ${index + 1}`
-
-        if (component.type === ComponentType.GeospatialField) {
-          const features = items[index][component.name]
-          const value = JSON.stringify(features)
-
-          addCellToRow(row, componentKey, value, options)
-          addHeader(context, component, componentKey, componentValue)
-
-          // Add map review link
-          const link = generateMapReviewLink(features, component)
-          addCellToRow(row, `${componentKey} link`, link, options)
-          addHeader(
-            context,
-            component,
-            `${componentKey} link`,
-            `${componentValue} link`
-          )
-        } else {
-          const value = getValue(items[index], key, component)
-
-          addCellToRow(row, componentKey, value, options)
-          addHeader(context, component, componentKey, componentValue)
-        }
+    formModel.componentMap.forEach((comp, key) => {
+      if (!comp.isFormComponent) {
+        return
       }
-    } else if (component.type === ComponentType.FileUploadField) {
-      const files = record.data.files[component.name]
-      const fileLinks = Array.isArray(files)
-        ? files.map((f) => f.userDownloadLink).join(' \r\n')
-        : ''
 
-      addCellToRow(row, component.name, fileLinks, options)
-      addHeader(context, component)
-    } else if (component.type === ComponentType.GeospatialField) {
-      const features = record.data.main[component.name]
-      const value = features ? JSON.stringify(features) : ''
+      const component = /** @type {Field} */ (comp)
 
-      addCellToRow(row, component.name, value, options)
-      addHeader(context, component)
+      if (component.page && hasRepeater(component.page.pageDef)) {
+        const repeaterName = component.page.pageDef.repeat.options.name
+        const hasRepeaterData = repeaterName in record.data.repeaters
+        const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
-      // Add map review link
-      const link = generateMapReviewLink(features, component)
-      addCellToRow(row, `${component.name} link`, link, options)
-      addHeader(
-        context,
-        component,
-        `${component.name} link`,
-        `${component.label} link`
-      )
-    } else {
-      const value = getValue(record.data.main, key, component)
+        for (let index = 0; index < items.length; index++) {
+          const componentKey = `${component.name} ${index + 1}`
+          const componentValue = `${component.label} ${index + 1}`
 
-      addCellToRow(row, component.name, value, options)
-      addHeader(context, component)
-    }
-  })
+          if (component.type === ComponentType.GeospatialField) {
+            const features = items[index][component.name]
+            const value = JSON.stringify(features)
+
+            addCellToRow(row, componentKey, value, options)
+            addHeader(context, component, componentKey, componentValue)
+
+            // Add map review link
+            const link = generateMapReviewLink(features, component)
+            addCellToRow(row, `${componentKey} link`, link, options)
+            addHeader(
+              context,
+              component,
+              `${componentKey} link`,
+              `${componentValue} link`
+            )
+          } else {
+            const value = getValue(items[index], key, component, translator)
+
+            addCellToRow(row, componentKey, value, options)
+            addHeader(context, component, componentKey, componentValue)
+          }
+        }
+      } else if (component.type === ComponentType.FileUploadField) {
+        const files = record.data.files[component.name]
+        const fileLinks = Array.isArray(files)
+          ? files.map((f) => f.userDownloadLink).join(' \r\n')
+          : ''
+
+        addCellToRow(row, component.name, fileLinks, options)
+        addHeader(context, component)
+      } else if (component.type === ComponentType.GeospatialField) {
+        const features = record.data.main[component.name]
+        const value = features ? JSON.stringify(features) : ''
+
+        addCellToRow(row, component.name, value, options)
+        addHeader(context, component)
+
+        // Add map review link
+        const link = generateMapReviewLink(features, component)
+        addCellToRow(row, `${component.name} link`, link, options)
+        addHeader(
+          context,
+          component,
+          `${component.name} link`,
+          `${component.label} link`
+        )
+      } else {
+        const value = getValue(record.data.main, key, component, translator)
+
+        addCellToRow(row, component.name, value, options)
+        addHeader(context, component)
+      }
+    })
+  }
 
   /**
    *
@@ -650,13 +669,15 @@ function createCaches() {
  */
 function extractMeta(record) {
   const meta = record.meta
-  const submissionRef = meta.referenceNumber
-  const submissionDate = new Date(meta.timestamp)
-  const versionNumber = meta.versionMetadata?.versionNumber
-  const isPreview = meta.isPreview
-  const status = meta.status
 
-  return { versionNumber, submissionRef, submissionDate, isPreview, status }
+  return {
+    versionNumber: meta.versionMetadata?.versionNumber,
+    submissionRef: meta.referenceNumber,
+    submissionDate: new Date(meta.timestamp),
+    isPreview: meta.isPreview,
+    status: meta.status,
+    language: meta.language
+  }
 }
 
 /**
@@ -730,7 +751,8 @@ export function buildPreHeaders(options) {
   wsPreHeaders.push(
     SUBMISSION_DATE_HEADER_TEXT,
     SUBMISSION_STATUS_HEADER_TEXT,
-    SUBMISSION_ISPREVIEW_HEADER_TEXT
+    SUBMISSION_ISPREVIEW_HEADER_TEXT,
+    SUBMISSION_LANGUAGE_HEADER_TEXT
   )
   if (addFormName) {
     wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
@@ -766,7 +788,8 @@ function buildExcelFile(formId, headers, rows, options) {
     wsRow.push(
       row.get(SUBMISSION_DATE_HEADER),
       row.get(SUBMISSION_STATUS_HEADER),
-      row.get(SUBMISSION_ISPREVIEW_HEADER)
+      row.get(SUBMISSION_ISPREVIEW_HEADER),
+      row.get(SUBMISSION_LANGUAGE_HEADER)
     )
     if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
       wsRow.push(row.get(SUBMISSION_FORM_NAME))
@@ -877,5 +900,6 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
  * @import { WithId } from 'mongodb'
  * @import { RichFormValue } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
+ * @import { Translator } from '@defra/forms-engine-plugin/types'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
