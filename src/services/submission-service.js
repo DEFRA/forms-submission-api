@@ -398,7 +398,7 @@ export async function addFirstCellsToRow(
 
 /**
  * Add form component cells to a row
- * @param {FormModel | undefined} formModel - the form model
+ * @param {FormModel} formModel - the form model
  * @param {Map<string, CellValue>} row - the row to add cells to
  * @param {SpreadsheetContext} context - the spreadsheet context
  * @param {WithId<FormSubmissionDocument>} record - the submission record
@@ -407,80 +407,78 @@ export async function addFirstCellsToRow(
 function addFormComponentCellsToRow(formModel, row, context, record, options) {
   const designerUrl = config.get('designerUrl')
 
-  if (formModel) {
-    const translator = formModel.createTranslator()
+  const translator = formModel.createTranslator()
 
-    formModel.componentMap.forEach((comp, key) => {
-      if (!comp.isFormComponent) {
-        return
-      }
+  formModel.componentMap.forEach((comp, key) => {
+    if (!comp.isFormComponent) {
+      return
+    }
 
-      const component = /** @type {Field} */ (comp)
+    const component = /** @type {Field} */ (comp)
 
-      if (component.page && hasRepeater(component.page.pageDef)) {
-        const repeaterName = component.page.pageDef.repeat.options.name
-        const hasRepeaterData = repeaterName in record.data.repeaters
-        const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
+    if (component.page && hasRepeater(component.page.pageDef)) {
+      const repeaterName = component.page.pageDef.repeat.options.name
+      const hasRepeaterData = repeaterName in record.data.repeaters
+      const items = hasRepeaterData ? record.data.repeaters[repeaterName] : []
 
-        for (let index = 0; index < items.length; index++) {
-          const componentKey = `${component.name} ${index + 1}`
-          const componentValue = `${component.label} ${index + 1}`
+      for (let index = 0; index < items.length; index++) {
+        const componentKey = `${component.name} ${index + 1}`
+        const componentValue = `${component.label} ${index + 1}`
 
-          if (component.type === ComponentType.GeospatialField) {
-            const features = items[index][component.name]
-            const value = JSON.stringify(features)
+        if (component.type === ComponentType.GeospatialField) {
+          const features = items[index][component.name]
+          const value = JSON.stringify(features)
 
-            addCellToRow(row, componentKey, value, options)
-            addHeader(context, component, componentKey, componentValue)
+          addCellToRow(row, componentKey, value, options)
+          addHeader(context, component, componentKey, componentValue)
 
-            // Add map review link
-            const link = generateMapReviewLink(features, component)
-            addCellToRow(row, `${componentKey} link`, link, options)
-            addHeader(
-              context,
-              component,
-              `${componentKey} link`,
-              `${componentValue} link`
-            )
-          } else {
-            const value = getValue(items[index], key, component, translator)
+          // Add map review link
+          const link = generateMapReviewLink(features, component)
+          addCellToRow(row, `${componentKey} link`, link, options)
+          addHeader(
+            context,
+            component,
+            `${componentKey} link`,
+            `${componentValue} link`
+          )
+        } else {
+          const value = getValue(items[index], key, component, translator)
 
-            addCellToRow(row, componentKey, value, options)
-            addHeader(context, component, componentKey, componentValue)
-          }
+          addCellToRow(row, componentKey, value, options)
+          addHeader(context, component, componentKey, componentValue)
         }
-      } else if (component.type === ComponentType.FileUploadField) {
-        const files = record.data.files[component.name]
-        const fileLinks = Array.isArray(files)
-          ? files.map((f) => f.userDownloadLink).join(' \r\n')
-          : ''
-
-        addCellToRow(row, component.name, fileLinks, options)
-        addHeader(context, component)
-      } else if (component.type === ComponentType.GeospatialField) {
-        const features = record.data.main[component.name]
-        const value = features ? JSON.stringify(features) : ''
-
-        addCellToRow(row, component.name, value, options)
-        addHeader(context, component)
-
-        // Add map review link
-        const link = generateMapReviewLink(features, component)
-        addCellToRow(row, `${component.name} link`, link, options)
-        addHeader(
-          context,
-          component,
-          `${component.name} link`,
-          `${component.label} link`
-        )
-      } else {
-        const value = getValue(record.data.main, key, component, translator)
-
-        addCellToRow(row, component.name, value, options)
-        addHeader(context, component)
       }
-    })
-  }
+    } else if (component.type === ComponentType.FileUploadField) {
+      const files = record.data.files[component.name]
+      const fileLinks = Array.isArray(files)
+        ? files.map((f) => f.userDownloadLink).join(' \r\n')
+        : ''
+
+      addCellToRow(row, component.name, fileLinks, options)
+      addHeader(context, component)
+    } else if (component.type === ComponentType.GeospatialField) {
+      const features = record.data.main[component.name]
+      const value = features ? JSON.stringify(features) : ''
+
+      addCellToRow(row, component.name, value, options)
+      addHeader(context, component)
+
+      // Add map review link
+      const link = generateMapReviewLink(features, component)
+      addCellToRow(row, `${component.name} link`, link, options)
+      addHeader(
+        context,
+        component,
+        `${component.name} link`,
+        `${component.label} link`
+      )
+    } else {
+      const value = getValue(record.data.main, key, component, translator)
+
+      addCellToRow(row, component.name, value, options)
+      addHeader(context, component)
+    }
+  })
 
   /**
    *
@@ -601,7 +599,9 @@ export async function generateSubmissionsFile(
     )
 
     addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
-    addFormComponentCellsToRow(formModel, row, context, record, options)
+    if (formModel) {
+      addFormComponentCellsToRow(formModel, row, context, record, options)
+    }
     addPaymentCellsToRow(row, caches, record, options)
 
     rows.push(row)
