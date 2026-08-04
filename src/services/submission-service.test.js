@@ -125,16 +125,16 @@ describe('Submission service', () => {
         `http://localhost:3000/submission/${ref}/map-review/0b608f84-d2e2-4158-9737-37bd49305fd3/6b4c5b0d-7a49-459e-b9dc-db0b18cbeaa7`
 
       expect(sheetAsCsv).toBe(
-        `Submission reference number,Submission date,Live or draft,Is preview,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Leading space,Site features,Site features link,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
-365-DFR-C67,13/11/2025,live,No,Chocolate,,,,,,,[],${geospatialLink('365-DFR-C67')},,,,,,,,,,
-549-FBF-C88,13/11/2025,live,No,Chocolate,,,,,,,[],${geospatialLink('549-FBF-C88')},,,,,,,,,,
-187-231-E68,27/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,[],${geospatialLink('187-231-E68')},,,,,,,,,,d@s.com
-259-0B2-442,28/11/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,,"${geojson}",${geospatialLink('259-0B2-442')},Cheese,2,Ham,6,,,,,,d@s.com
-F6C-807-B1F,28/11/2025,draft,Yes,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",,[],${geospatialLink('F6C-807-B1F')},Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
-D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",,[],${geospatialLink('D44-841-706')},Egg,1,Ham,2,Bacon,4,,,http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e,
-8CC-882-665,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8CC-882-665')},Cheese,2,Hawaian,12,Cheese,6,,,http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61,
-450-904-A2C,01/12/2025,draft,Yes,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",,[],${geospatialLink('450-904-A2C')},Ham,2,Pineapple,1,Bacon,5,Cheese,3,http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f,
-8C2-7E8-189,02/12/2025,draft,Yes,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8C2-7E8-189')},Egg,9,,,,,,,http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47,`
+        `Submission reference number,Submission date,Live or draft,Is preview,Submission language,Easter egg,Your email,Country,Phone number,Delivery address,Fave color,Leading space,Site features,Site features link,Pizza flavour 1,Quantity 1,Pizza flavour 2,Quantity 2,Pizza flavour 3,Quantity 3,Pizza flavour 4,Quantity 4,Files,Your email
+365-DFR-C67,13/11/2025,live,No,English,Chocolate,,,,,,,[],${geospatialLink('365-DFR-C67')},,,,,,,,,,
+549-FBF-C88,13/11/2025,live,No,English,Chocolate,,,,,,,[],${geospatialLink('549-FBF-C88')},,,,,,,,,,
+187-231-E68,27/11/2025,draft,Yes,English,Chocolate,enrique.chase@defra.gov.uk,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, C",,[],${geospatialLink('187-231-E68')},,,,,,,,,,d@s.com
+259-0B2-442,28/11/2025,draft,Yes,English,Chocolate,enrique.chase@defra.gov.uk,B,123456789,"House name, Forest Hill, Village, Town, M15 5TX",A,,"${geojson}",${geospatialLink('259-0B2-442')},Cheese,2,Ham,6,,,,,,d@s.com
+F6C-807-B1F,28/11/2025,draft,Yes,English,Kinder,kinder@egg.com,D,123,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, B, C",,[],${geospatialLink('F6C-807-B1F')},Ham,2,Cheese,1,Hawaian,12,,,,d@s.com
+D44-841-706,28/11/2025,draft,Yes,English,Chocolate,kinder@egg.com,A,12345,"House name, Forest Hill, Village, Town, M15 5TX","A, B",,[],${geospatialLink('D44-841-706')},Egg,1,Ham,2,Bacon,4,,,http://localhost:3000/file-download/4444ac6f-7a5c-4bb8-bbd8-459c3700a42e,
+8CC-882-665,28/11/2025,draft,Yes,English,Chocolate,kinder@egg.com,A,123456789,"House name, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8CC-882-665')},Cheese,2,Hawaian,12,Cheese,6,,,http://localhost:3000/file-download/99d51a43-8121-4368-8b52-1ae93ebb9b61,
+450-904-A2C,01/12/2025,draft,Yes,Welsh,Chocolate,enrique.chase@defra.gov.uk,D,+447930696579,"Prime Minister & First Lord Of The Treasury 10, Downing Street, London, SW1A 2AA","A, C",,[],${geospatialLink('450-904-A2C')},Ham,2,Pineapple,1,Bacon,5,Cheese,3,http://localhost:3000/file-download/207a6520-f311-4862-9d46-360d14918b4f,
+8C2-7E8-189,02/12/2025,draft,Yes,English,Chocolate,kinder@egg.com,E,12345,"Orchards, Forest Hill, Village, Town, M15 5TX","A, C",With leading space,[],${geospatialLink('8C2-7E8-189')},Egg,9,,,,,,,http://localhost:3000/file-download/e0f661ac-e9be-44ed-a156-e9128a89ce47,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
@@ -209,9 +209,9 @@ D44-841-706,28/11/2025,draft,Yes,Chocolate,kinder@egg.com,A,12345,"House name, F
       const geojson = `[{""type"":""Feature"",""properties"":{""description"":""Bangor"",""coordinateGridReference"":""SH 58523 68911"",""centroidGridReference"":""SH 58523 68911""},""geometry"":{""type"":""Point"",""coordinates"":[-4.1193627,53.1984038]},""id"":""194c635f-dada-4328-8fea-624750aa6aff""},{""type"":""Feature"",""properties"":{""description"":""Swansea"",""coordinateGridReference"":""SS 53653 94282"",""centroidGridReference"":""SS 53653 94282""},""geometry"":{""type"":""Point"",""coordinates"":[-4.1157394,51.6282728]},""id"":""9669f61c-25d7-422f-ba5a-2265ce9cfa2e""}]`
 
       expect(sheetAsCsv).toBe(
-        `Submission reference number,Submission date,Live or draft,Is preview,Optional features,Optional features link,Multisite 1,Multisite 1 link
-M27-S47-RTH,24/06/2026,draft,Yes,"${geojson}",http://localhost:3000/submission/M27-S47-RTH/map-review/2296641a-80e9-4927-bf95-39c265500647/464b78d3-797e-47a7-97aa-43ac37fb9ff6,"[{""id"":""82e3a9c3-3eff-46fb-8ccb-746477ce1ae2"",""type"":""Feature"",""properties"":{""description"":""York"",""coordinateGridReference"":""SE 45519 57686"",""centroidGridReference"":""SE 62615 53567""},""geometry"":{""coordinates"":[[-1.3068627,54.0131965],[-0.9333275,53.8774089],[-0.9003686,54.0325587]],""type"":""LineString""}}]",http://localhost:3000/submission/M27-S47-RTH/map-review/0a206ea7-24c9-4af5-b4ef-f3b79edc1c82/03f409c8-878e-482f-9250-d211d3435540
-F2B-JFE-WA9,24/06/2026,draft,Yes,,,,`
+        `Submission reference number,Submission date,Live or draft,Is preview,Submission language,Optional features,Optional features link,Multisite 1,Multisite 1 link
+M27-S47-RTH,24/06/2026,draft,Yes,English,"${geojson}",http://localhost:3000/submission/M27-S47-RTH/map-review/2296641a-80e9-4927-bf95-39c265500647/464b78d3-797e-47a7-97aa-43ac37fb9ff6,"[{""id"":""82e3a9c3-3eff-46fb-8ccb-746477ce1ae2"",""type"":""Feature"",""properties"":{""description"":""York"",""coordinateGridReference"":""SE 45519 57686"",""centroidGridReference"":""SE 62615 53567""},""geometry"":{""coordinates"":[[-1.3068627,54.0131965],[-0.9333275,53.8774089],[-0.9003686,54.0325587]],""type"":""LineString""}}]",http://localhost:3000/submission/M27-S47-RTH/map-review/0a206ea7-24c9-4af5-b4ef-f3b79edc1c82/03f409c8-878e-482f-9250-d211d3435540
+F2B-JFE-WA9,24/06/2026,draft,Yes,English,,,,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
@@ -376,11 +376,11 @@ F2B-JFE-WA9,24/06/2026,draft,Yes,,,,`
       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
       expect(sheetAsCsv).toBe(
-        `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
-28/11/2025,draft,Yes,Feedback form,Very satisfied,
-28/11/2025,draft,Yes,Feedback form,Very satisfied,
-01/12/2025,draft,Yes,Feedback form,Satisfied,
-02/12/2025,draft,Yes,Feedback form,Very satisfied,`
+        `Submission date,Live or draft,Is preview,Submission language,Form name,How you feel about the service,How we could improve this service
+28/11/2025,draft,Yes,English,Feedback form,Very satisfied,
+28/11/2025,draft,Yes,English,Feedback form,Very satisfied,
+01/12/2025,draft,Yes,English,Feedback form,Satisfied,
+02/12/2025,draft,Yes,English,Feedback form,Very satisfied,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
@@ -453,11 +453,11 @@ F2B-JFE-WA9,24/06/2026,draft,Yes,,,,`
       const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
 
       expect(sheetAsCsv).toBe(
-        `Submission date,Live or draft,Is preview,Form name,How you feel about the service,How we could improve this service
-28/11/2025,draft,Yes,Example form,Very satisfied,
-28/11/2025,draft,Yes,Example form,Very satisfied,
-01/12/2025,draft,Yes,Example form,Satisfied,
-02/12/2025,draft,Yes,Example form,Very satisfied,`
+        `Submission date,Live or draft,Is preview,Submission language,Form name,How you feel about the service,How we could improve this service
+28/11/2025,draft,Yes,English,Example form,Very satisfied,
+28/11/2025,draft,Yes,English,Example form,Very satisfied,
+01/12/2025,draft,Yes,English,Example form,Satisfied,
+02/12/2025,draft,Yes,English,Example form,Very satisfied,`
       )
 
       expect(sendNotification).toHaveBeenCalledWith({
