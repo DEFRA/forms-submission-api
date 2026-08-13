@@ -118,9 +118,9 @@ export default [
     method: 'GET',
     path: '/report/timeline',
     handler(request) {
-      const { date } = request.query
+      const { date, language } = request.query
 
-      return generateReportTimeline(date)
+      return generateReportTimeline(date, language)
     },
     options: {
       tags: ['api'],
@@ -128,7 +128,8 @@ export default [
       validate: {
         query: Joi.object()
           .keys({
-            date: Joi.date().required()
+            date: Joi.date().required(),
+            language: Joi.string().allow('cy').optional()
           })
           .label('getReportTimelineQuery')
       },

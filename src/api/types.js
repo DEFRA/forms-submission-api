@@ -74,7 +74,7 @@
  */
 
 /**
- * @typedef {{ Query: { date: Date }}} GetReportTimelineRequest
+ * @typedef {{ Query: { date: Date, language?: string }}} GetReportTimelineRequest
  */
 
 /**
