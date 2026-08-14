@@ -62,7 +62,8 @@ describe('report-timeline', () => {
         .mockReturnValueOnce(mockAsyncIterator)
 
       const metrics = await generateReportTimeline(
-        new Date('2025-05-07T00:00:00.000Z')
+        new Date('2025-05-07T00:00:00.000Z'),
+        undefined
       )
 
       expect(metrics).toEqual({
@@ -109,7 +110,7 @@ describe('report-timeline', () => {
       })
 
       await expect(() =>
-        generateReportTimeline(new Date(2025, 1, 1))
+        generateReportTimeline(new Date(2025, 1, 1), 'cy')
       ).rejects.toThrow('report error')
     })
   })

@@ -137,7 +137,7 @@ describe('submission repository', () => {
         })
       })
       const date = new Date('2026-02-15')
-      const submissionRecord = getSubmissionRecordsForDate(date)
+      const submissionRecord = getSubmissionRecordsForDate(date, undefined)
       expect(submissionRecord.next()).toEqual(submissionDocument)
       expect(mockCollection.find).toHaveBeenCalledWith({
         'meta.timestamp': {
@@ -152,7 +152,9 @@ describe('submission repository', () => {
         throw new Error('db error')
       })
       const date = new Date()
-      expect(() => getSubmissionRecordsForDate(date)).toThrow('db error')
+      expect(() => getSubmissionRecordsForDate(date, undefined)).toThrow(
+        'db error'
+      )
     })
   })
 })

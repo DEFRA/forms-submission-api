@@ -13,7 +13,7 @@ EXPOSE ${PORT} ${PORT_DEBUG}
 
 COPY --chown=node:node packag*.json ./
 
-RUN npm ci
+RUN npm ci --allow-remote=root
 
 COPY --chown=node:node . .
 RUN npm run build
@@ -40,7 +40,7 @@ COPY --from=development /home/node/src/config/index.js ./src/config/index.js
 COPY --from=development /home/node/migrations ./migrations/
 COPY --from=development /home/node/scripts ./scripts/
 
-RUN npm ci --omit=dev && \
+RUN npm ci --omit=dev --allow-remote=root && \
     chmod +x scripts/run-migrations-and-start.sh
 
 ARG PORT

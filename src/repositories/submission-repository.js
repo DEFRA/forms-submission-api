@@ -37,9 +37,10 @@ export function getSubmissionRecords(formId, filter) {
 /**
  * Gets all submission records for a single day
  * @param {Date} date - the specified day
+ * @param { Filter<FormSubmissionDocument> | undefined } filter - additional properties by which to filter records e.g. 'welsh-submission'
  * @returns { FindCursor<WithId<FormSubmissionDocument>> }
  */
-export function getSubmissionRecordsForDate(date) {
+export function getSubmissionRecordsForDate(date, filter) {
   logger.info(`Reading submission records for date ${date.toISOString()}`)
 
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
@@ -49,13 +50,15 @@ export function getSubmissionRecordsForDate(date) {
   const withoutTime = date.toISOString().substring(0, 10)
   const startOfDay = `${withoutTime}T00:00:00.000Z`
   const endOfDay = `${withoutTime}T23:59:59.999Z`
+  const extraFilter = filter ?? {}
   try {
     const result = coll
       .find({
         'meta.timestamp': {
           $gte: new Date(startOfDay),
           $lte: new Date(endOfDay)
-        }
+        },
+        ...extraFilter
       })
       .sort('meta.timestamp', 'desc')
 
@@ -130,6 +133,6 @@ export async function getSubmissionRecordByReference(referenceNumber) {
 }
 
 /**
- * @import { ClientSession, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
+ * @import { ClientSession, Filter, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

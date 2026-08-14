@@ -40,30 +40,29 @@ function pushTimelineMetric(timelineMetrics, formId, formStatus, count, date) {
 /**
  * Generates a set of timeline metrics
  * @param {Date} date - date on which to gather the metrics for
+ * @param { string | undefined } language - optional language e.g. 'cy', to restrict records to only those submitted in that language
  */
-export async function generateReportTimeline(date) {
+export async function generateReportTimeline(date, language) {
   logger.info(
     `[report] Generating timeline report for date ${date.toUTCString()}`
   )
 
-  try {
-    const submissionsCursor = getSubmissionRecordsForDate(date)
+  // Map flags to additional filter criteria
+  const filter = language ? { 'meta.language': language } : undefined
 
-    const timelineMapDraft = new Map()
-    const timelineMapLive = new Map()
+  try {
+    const submissionsCursor = getSubmissionRecordsForDate(date, filter)
+
+    const timelineMapDraft = /** @type {Map<string, number>} */ (new Map())
+    const timelineMapLive = /** @type {Map<string, number>} */ (new Map())
 
     for await (const submission of submissionsCursor) {
-      const status = submission.meta.status
-      const isPreview = submission.meta.isPreview
+      const { formId, isPreview, status } = submission.meta
       if (status === FormsEnginePluginFormStatus.Draft) {
-        incrementFormCount(timelineMapDraft, submission.meta.formId)
+        incrementFormCount(timelineMapDraft, formId)
       } else {
-        const isLivePreview = isPreview
-        incrementFormCount(
-          timelineMapLive,
-          submission.meta.formId,
-          isLivePreview
-        )
+        const ignore = isPreview
+        incrementFormCount(timelineMapLive, formId, ignore)
       }
     }
 
