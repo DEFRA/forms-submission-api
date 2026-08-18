@@ -40,6 +40,7 @@ module.exports = {
     `node_modules/(?!${[
       '@defra/forms-model/.*',
       '@defra/hapi-tracing/.*',
+      'geodesy', // Supports ESM only
       'nanoid', // Supports ESM only
       'slug', // Supports ESM only
       '@defra/forms-engine-plugin'
