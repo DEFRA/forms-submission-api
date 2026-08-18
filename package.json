@@ -116,6 +116,7 @@
     "argon2": true,
     "esbuild": true,
     "unrs-resolver": true,
-    "@defra/forms-engine-plugin": true
+    "@defra/forms-engine-plugin": true,
+    "fsevents": true
   }
 }
