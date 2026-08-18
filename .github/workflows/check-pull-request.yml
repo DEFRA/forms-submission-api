@@ -44,7 +44,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.npm-install-cache.outputs.cache-hit != 'true'
-        run: npm ci
+        run: npm ci --allow-remote=root
 
       - name: Run build
         run: npm run build
@@ -112,7 +112,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.restore-deps.outputs.cache-hit != 'true'
-        run: npm ci
+        run: npm ci --allow-remote=root
 
       - name: Run lint task
         run: ${{ matrix.task.run }}
@@ -163,7 +163,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.restore-deps-tasks.outputs.cache-hit != 'true'
-        run: npm ci
+        run: npm ci --allow-remote=root
 
       - name: Build project
         if: steps.restore-build.outputs.cache-hit != 'true'
