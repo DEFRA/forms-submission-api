@@ -4,8 +4,8 @@ export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
 export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
 
 /**
- * Create the new `reference-numbers` collection and seeds
- * it with all the reference numbers from the submissions collection
+ * Create the new `reference-numbers` collection and seed it
+ * with all the reference numbers from the submissions collection
  * @param {Db} db - the Mongo Db instance
  */
 export const up = async (db) => {
