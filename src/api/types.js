@@ -52,6 +52,10 @@
  */
 
 /**
+ * @typedef {{ referenceNumber: string } & ({ submissionId: ObjectId } | { expireAt: Date })} FormSubmissionReferenceNumberDocument
+ */
+
+/**
  * @typedef {{ Params: { formId: string }}} GenerateFormSubmissionsFile
  */
 
@@ -61,6 +65,7 @@
 
 /**
  * @typedef {{ Params: { referenceNumber: string }}} GetSubmissionByReference
+ * @typedef {{ Query: { prefix?: string }}} GenerateReferenceNumber
  * @typedef {{ Params: { dlq: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueRequest
  * @typedef {{ Params: { dlq: string, messageId: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueMessageRequest
  */
@@ -81,5 +86,5 @@
  * @import { SaveAndExitRecord } from '@defra/forms-model'
  * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request } from '@hapi/hapi'
- * @import { Db } from 'mongodb'
+ * @import { Db, ObjectId } from 'mongodb'
  */

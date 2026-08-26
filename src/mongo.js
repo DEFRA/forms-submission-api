@@ -6,6 +6,7 @@ import { secureContext } from '~/src/secure-context.js'
 export const FILES_COLLECTION_NAME = 'files'
 export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
 export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
+export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
 
 /**
  * @type {Db}
@@ -66,12 +67,41 @@ export async function prepareDb(logger) {
    */
   const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
   await submissionsColl.createIndex({ 'meta.formId': 1 })
+
+  /**
+   * REMOVE THESE LINES ONCE INDEX HAS BEEN RECREATED
+   */
+  const indexes = await submissionsColl.indexes()
+  const referenceNumberIndex = indexes.find(
+    (idx) => idx.name === 'meta.referenceNumber_1'
+  )
+  // If the index is not yet `unique`, drop it and recreate
+  if (!referenceNumberIndex?.unique) {
+    await submissionsColl.dropIndex('meta.referenceNumber_1')
+  }
+  /**
+   * REMOVE THESE LINES ONCE INDEX HAS BEEN RECREATED
+   */
+
   await submissionsColl.createIndex(
     { 'meta.referenceNumber': 1 },
     { unique: true }
   )
   await submissionsColl.createIndex({ 'meta.timestamp': -1 })
   await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+
+  /**
+   * @type {Collection<FormSubmissionReferenceNumberDocument>}
+   */
+  const referenceNumbersColl = db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
+  await referenceNumbersColl.createIndex(
+    { referenceNumber: 1 },
+    { unique: true }
+  )
+  await referenceNumbersColl.createIndex(
+    { expireAt: 1 },
+    { expireAfterSeconds: 0 }
+  ) // enables TTL
 
   logger.info(`Mongodb connected to ${databaseName}`)
 
@@ -81,5 +111,5 @@ export async function prepareDb(logger) {
 /**
  * @import { Collection, Db } from 'mongodb'
  * @import { Logger } from 'pino'
- * @import { FormFileUploadStatus, SaveAndExitDocument, FormSubmissionDocument } from '~/src/api/types.js'
+ * @import { FormFileUploadStatus, SaveAndExitDocument, FormSubmissionDocument, FormSubmissionReferenceNumberDocument } from '~/src/api/types.js'
  */
