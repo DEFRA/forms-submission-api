@@ -23,6 +23,7 @@ module.exports = {
     '<rootDir>/src/mongo.js'
   ],
   coverageDirectory: '<rootDir>/coverage',
+  modulePathIgnorePatterns: ['<rootDir>/src/mongo.js'],
   setupFiles: ['<rootDir>/jest.setup.js'],
   setupFilesAfterEnv: ['jest-extended/all'],
   transform: {
