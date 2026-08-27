@@ -2,6 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
 import { STUB_SUBMISSION_REF } from '~/src/repositories/__stubs__/submission.js'
+import { create } from '~/src/repositories/reference-number-repository.js'
 import { getSubmissionRecordByReference } from '~/src/repositories/submission-repository.js'
 import { authAD, authAdmin } from '~/test/fixtures/auth.js'
 // @ts-expect-error - import json
@@ -9,6 +10,7 @@ import formSubmissions from '~/test/fixtures/forms-submissions.json'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/repositories/submission-repository.js')
+jest.mock('~/src/repositories/reference-number-repository.js')
 
 describe('Submission routes', () => {
   /** @type {Server} */
@@ -65,6 +67,20 @@ describe('Submission routes', () => {
         auth: authAD
       })
 
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+    })
+  })
+
+  describe('Generate reference number', () => {
+    test('Testing POST /submission/generate-reference-number route is successful with valid params', async () => {
+      jest.mocked(create).mockResolvedValue({ referenceNumber: 'XXX-XXX-XXX' })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/submission/generate-reference-number'
+      })
+
+      expect(response.payload).toBe('{"referenceNumber":"XXX-XXX-XXX"}')
       expect(response.statusCode).toEqual(StatusCodes.OK)
     })
   })
