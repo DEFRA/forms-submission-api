@@ -95,6 +95,17 @@ describe('reference-number-repository', () => {
       expect(referenceNumber).toHaveLength(11)
       expect(referenceNumber.substring(0, 3)).toBe('ABC')
     })
+
+    it('should throw on non-duplicate errors', async () => {
+      const err = new Error('Unknown error')
+
+      jest.mocked(mockCollection.insertOne.mockRejectedValueOnce(err))
+      jest.mocked(
+        mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
+      )
+
+      await expect(() => create('ABC')).rejects.toThrow('Unknown error')
+    })
   })
 
   describe('updateWithSubmissionId', () => {
