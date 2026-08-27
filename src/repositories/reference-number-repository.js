@@ -1,6 +1,7 @@
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import { addMonths } from 'date-fns'
 
+import { MONGO_DUPLICATE_KEY_ERROR } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { REFERENCE_NUMBERS_COLLECTION_NAME, db } from '~/src/mongo.js'
 
@@ -30,7 +31,7 @@ export async function create(prefix) {
 
       return { referenceNumber }
     } catch (/** @type {any} */ err) {
-      if (err.code !== 11000) {
+      if (err.code !== MONGO_DUPLICATE_KEY_ERROR) {
         throw err
       }
       // Collision occurred - generate another one and try again
