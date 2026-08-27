@@ -76,6 +76,7 @@ describe('reference-number-repository', () => {
 
     it('should create a reference number record after collision', async () => {
       const err = new Error()
+      // @ts-expect-error - mock mongo error
       err.code = MONGO_DUPLICATE_KEY_ERROR
 
       jest.mocked(mockCollection.insertOne.mockRejectedValueOnce(err))
