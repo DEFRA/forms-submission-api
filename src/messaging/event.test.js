@@ -11,6 +11,7 @@ import 'aws-sdk-client-mock-jest'
 import {
   deleteDlqMessage,
   deleteMessage,
+  getDeadLetterQueueUrl,
   receiveDlqMessages,
   receiveMessages,
   redriveDlqMessages,
@@ -177,6 +178,17 @@ describe('event', () => {
       await expect(() =>
         resubmitDlqMessage(queueName, messageStub.MessageId, messageStub.Body)
       ).rejects.toThrow('bad SQS command')
+    })
+  })
+
+  describe('getDeadLetterQueueUrl', () => {
+    it('should get correct queue', () => {
+      expect(getDeadLetterQueueUrl('save-and-exit')).toBe(
+        'http://localhost:4566/000000000000/forms_submission_events-deadletter'
+      )
+      expect(getDeadLetterQueueUrl('submissions')).toBe(
+        'http://localhost:4566/000000000000/forms_submission-deadletter'
+      )
     })
   })
 })

@@ -31,7 +31,7 @@ function getQueueUrl(dlqName) {
 /**
  * @param {string} dlqName
  */
-function getDeadLetterQueueUrl(dlqName) {
+export function getDeadLetterQueueUrl(dlqName) {
   return `${getQueueUrl(dlqName)}-deadletter`
 }
 
