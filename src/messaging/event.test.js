@@ -167,7 +167,7 @@ describe('event', () => {
         messageStub.Body
       )
       expect(snsMock).toHaveReceivedCommandWith(SendMessageCommand, {
-        QueueUrl: expect.any(String),
+        QueueUrl: 'http://localhost:4566/000000000000/forms_submission_events',
         MessageBody: messageStub.Body
       })
     })
