@@ -21,6 +21,22 @@ export const up = async (db) => {
       db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
     )
 
+  const indexes = await submissionsColl.indexes()
+  const referenceNumberIndex = indexes.find(
+    (idx) => idx.name === 'meta.referenceNumber_1'
+  )
+
+  // If the index is not yet `unique`, drop it
+  if (!referenceNumberIndex?.unique) {
+    await submissionsColl.dropIndex('meta.referenceNumber_1')
+  }
+
+  // Add unique index to the `reference-numbers` collection
+  await referenceNumbersColl.createIndex(
+    { referenceNumber: 1 },
+    { unique: true }
+  )
+
   let counter = 0
   for await (const record of submissionsColl.find(
     {},

@@ -68,21 +68,6 @@ export async function prepareDb(logger) {
   const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
   await submissionsColl.createIndex({ 'meta.formId': 1 })
 
-  /**
-   * REMOVE THESE LINES ONCE INDEX HAS BEEN RECREATED
-   */
-  const indexes = await submissionsColl.indexes()
-  const referenceNumberIndex = indexes.find(
-    (idx) => idx.name === 'meta.referenceNumber_1'
-  )
-  // If the index is not yet `unique`, drop it and recreate
-  if (!referenceNumberIndex?.unique) {
-    await submissionsColl.dropIndex('meta.referenceNumber_1')
-  }
-  /**
-   * REMOVE THESE LINES ONCE INDEX HAS BEEN RECREATED
-   */
-
   await submissionsColl.createIndex(
     { 'meta.referenceNumber': 1 },
     { unique: true }
