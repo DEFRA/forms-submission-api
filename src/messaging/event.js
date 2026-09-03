@@ -18,13 +18,21 @@ const MAX_RETRIES = 7
 const RETRY_WAIT_BETWEEN_TRIES_IN_SECS = 1
 const DEFAULT_VISIBILITY_TIMEOUT = 3
 const DEFAULT_WAIT_TIME_IN_SECS = 3
+
 /**
  * @param {string} dlqName
  */
-function getDeadLetterQueueUrl(dlqName) {
+function getQueueUrl(dlqName) {
   return dlqName === 'save-and-exit'
-    ? `${config.get('saveAndExitQueueUrl')}-deadletter`
-    : `${config.get('submissionQueueUrl')}-deadletter`
+    ? config.get('saveAndExitQueueUrl')
+    : config.get('submissionQueueUrl')
+}
+
+/**
+ * @param {string} dlqName
+ */
+export function getDeadLetterQueueUrl(dlqName) {
+  return `${getQueueUrl(dlqName)}-deadletter`
 }
 
 /**
@@ -145,7 +153,7 @@ export async function resubmitDlqMessage(dlq, messageId, messageJson) {
     )
 
     const command = new SendMessageCommand({
-      QueueUrl: getDeadLetterQueueUrl(dlq),
+      QueueUrl: getQueueUrl(dlq),
       MessageBody: messageJson
     })
     const sendResult = await sqsClient.send(command)
