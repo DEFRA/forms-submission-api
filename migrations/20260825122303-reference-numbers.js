@@ -16,22 +16,16 @@ export const up = async (db) => {
   const submissionsColl = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
+
   const referenceNumbersColl =
     /** @type {Collection<FormSubmissionReferenceNumberDocument>} */ (
       db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
     )
 
-  const indexes = await submissionsColl.indexes()
-  const referenceNumberIndex = indexes.find(
-    (idx) => idx.name === 'meta.referenceNumber_1'
-  )
+  // Drop the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
+  await submissionsColl.dropIndex('meta.referenceNumber_1')
 
-  // If the index is not yet `unique`, drop it
-  if (!referenceNumberIndex?.unique) {
-    await submissionsColl.dropIndex('meta.referenceNumber_1')
-  }
-
-  // Add unique index to the `reference-numbers` collection
+  // Add unique index on the `referenceNumber` field to the `reference-numbers` collection
   await referenceNumbersColl.createIndex(
     { referenceNumber: 1 },
     { unique: true }
@@ -53,11 +47,23 @@ export const up = async (db) => {
 }
 
 /**
- * Drop the new `reference-numbers` collection
+ * Drop the new `reference-numbers` collection and undo the index changes made in the `up` migration
  * @param {Db} db - the Mongo Db instance
  */
 export const down = async (db) => {
-  await db.collection(REFERENCE_NUMBERS_COLLECTION_NAME).drop()
+  const submissionsColl = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  const referenceNumbersColl =
+    /** @type {Collection<FormSubmissionReferenceNumberDocument>} */ (
+      db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
+    )
+
+  // Recreate the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
+  await submissionsColl.createIndex({ referenceNumber: 1 })
+
+  await referenceNumbersColl.drop()
 }
 
 /**
