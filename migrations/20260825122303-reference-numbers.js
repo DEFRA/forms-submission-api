@@ -22,9 +22,6 @@ export const up = async (db) => {
       db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
     )
 
-  // Drop the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
-  await submissionsColl.dropIndex('meta.referenceNumber_1')
-
   // Add unique index on the `referenceNumber` field to the `reference-numbers` collection
   await referenceNumbersColl.createIndex(
     { referenceNumber: 1 },
@@ -42,6 +39,15 @@ export const up = async (db) => {
     })
     ++counter
   }
+
+  // Drop the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
+  await submissionsColl.dropIndex('meta.referenceNumber_1')
+
+  // Re-add unique index on the `meta.referenceNumber` field to the `submissions` collection
+  await submissionsColl.createIndex(
+    { 'meta.referenceNumber': 1 },
+    { unique: true }
+  )
 
   console.log(`Inserted ${counter} reference numbers`)
 }
