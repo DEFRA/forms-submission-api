@@ -34,8 +34,12 @@ export async function create(prefix) {
       if (err.code !== MONGO_DUPLICATE_KEY_ERROR) {
         throw err
       }
-      // Collision occurred - generate another one and try again
+
+      logger.info(
+        `Reference number collision occurred for ${referenceNumber}, generating a new one`
+      )
     }
+    // Collision occurred - generate another one and try again
   }
 }
 
