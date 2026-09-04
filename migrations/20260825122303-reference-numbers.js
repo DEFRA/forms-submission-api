@@ -23,27 +23,24 @@ export const up = async (db) => {
     )
 
   console.log(
-    '[REF-MIG] Adding records into reference-numbers collection from the existing submissions collection'
+    '[REF-MIG] Adding records into reference-numbers collection from the existing submissions collection via aggregation pipeline'
   )
 
-  let counter = 0
-  for await (const record of submissionsColl.find(
-    {},
-    { projection: { 'meta.referenceNumber': 1 } }
-  )) {
-    await referenceNumbersColl.insertOne({
-      referenceNumber: record.meta.referenceNumber,
-      submissionId: record._id
-    })
-    ++counter
-
-    if (counter % 5000 === 0) {
-      console.log(`[REF-MIG] Counter ${counter} records processed`)
-    }
-  }
+  await submissionsColl
+    .aggregate([
+      {
+        $project: {
+          _id: 0,
+          referenceNumber: '$meta.referenceNumber',
+          submissionId: '$_id'
+        }
+      },
+      { $merge: { into: REFERENCE_NUMBERS_COLLECTION_NAME } }
+    ])
+    .toArray()
 
   console.log(
-    `[REF-MIG] Added ${counter} records into reference-numbers collection from the existing submissions collection`
+    '[REF-MIG] Added records into reference-numbers collection from the existing submissions collection via aggregation pipeline'
   )
 
   console.log(
