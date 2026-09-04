@@ -188,6 +188,11 @@ jobs:
           path: ${{ matrix.task.cache }}
 
       - name: Run task
+        # MONGOMS_MAX_RETRIES gives the mongod binary download (used by
+        # src/mongo.test.js) more attempts against fastdl.mongodb.org, which
+        # is occasionally slow or resets connections from CI runners
+        env:
+          MONGOMS_MAX_RETRIES: 6
         run: ${{ matrix.task.run }}
 
       - name: Save test coverage
