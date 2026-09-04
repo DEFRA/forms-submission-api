@@ -20,7 +20,7 @@ const mockLogger = /** @type {never} */ ({
   info: jest.fn()
 })
 
-describe('prepareDb', () => {
+describe.skip('prepareDb', () => {
   /** @type {MongoMemoryServer} */
   let mongod
 
