@@ -156,6 +156,16 @@ jobs:
           restore-keys: |
             npm-build-${{ runner.os }}-
 
+      # The unit tests run mongodb-memory-server, which downloads a mongod
+      # binary on first use. The version in the key follows MONGO_VERSION in
+      # src/mongo.test.js
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          enableCrossOsArchive: true
+          key: mongodb-binaries-${{ runner.os }}-6.0.14
+          path: ~/.cache/mongodb-binaries
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
