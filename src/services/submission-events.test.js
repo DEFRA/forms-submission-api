@@ -2,6 +2,7 @@ import { pino } from 'pino'
 
 import { deleteMessage } from '~/src/messaging/event.js'
 import { prepareDb } from '~/src/mongo.js'
+import { updateWithSubmissionId } from '~/src/repositories/reference-number-repository.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
 import {
   mapSubmissionDataToDocument,
@@ -11,6 +12,7 @@ import {
 
 jest.mock('~/src/messaging/event.js')
 jest.mock('~/src/repositories/submission-repository.js')
+jest.mock('~/src/repositories/reference-number-repository.js')
 jest.mock('~/src/services/notify.js')
 jest.mock('~/src/helpers/logging/logger.js', () => ({
   logger: {
@@ -190,6 +192,7 @@ describe('events', () => {
     it('should process submission message', async () => {
       const result = await processSubmissionMessages(messages)
       expect(createSubmissionRecord).toHaveBeenCalledTimes(1)
+      expect(updateWithSubmissionId).toHaveBeenCalledTimes(1)
       expect(deleteMessage).toHaveBeenCalledTimes(1)
 
       expect(result).toEqual({

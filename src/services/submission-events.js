@@ -7,6 +7,7 @@ import { addMonths } from '~/src/helpers/date-helper.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
+import { updateWithSubmissionId } from '~/src/repositories/reference-number-repository.js'
 import { createSubmissionRecord } from '~/src/repositories/submission-repository.js'
 import { cleanUpSaveAndExit } from '~/src/services/save-and-exit-service.js'
 
@@ -78,7 +79,13 @@ export async function processSubmissionMessages(messages) {
         const data = mapSubmissionMessageToData(message)
         const document = mapSubmissionDataToDocument(data)
 
-        await createSubmissionRecord(document, session)
+        const submissionId = await createSubmissionRecord(document, session)
+
+        await updateWithSubmissionId(
+          document.meta.referenceNumber,
+          submissionId,
+          session
+        )
 
         logger.info(`Deleting submission message ${message.MessageId}`)
 

@@ -9,6 +9,7 @@ import argon2 from 'argon2'
 import { create as contentDisposition } from 'content-disposition'
 import { MongoServerError } from 'mongodb'
 
+import { MONGO_DUPLICATE_KEY_ERROR } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { isRetrievalKeyCaseSensitive } from '~/src/helpers/retrieval-key/retrieval-key.js'
 import * as repository from '~/src/repositories/file-repository.js'
@@ -20,8 +21,6 @@ import {
 import { getS3Client } from '~/src/services/utils.js'
 
 export { persistFiles } from '~/src/services/file-persist-service.js'
-
-const ALREADY_INGESTED = 11000
 
 /**
  * Accepts file status into the forms-submission-api
@@ -79,13 +78,13 @@ export async function ingestFile(uploadPayload) {
     } catch (err) {
       if (
         err instanceof MongoServerError &&
-        err.errorResponse.code === ALREADY_INGESTED
+        err.errorResponse.code === MONGO_DUPLICATE_KEY_ERROR
       ) {
         const message = `File ID '${fileContainer.fileId}' has already been ingested`
 
         logger.error(
           err,
-          `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${ALREADY_INGESTED}`
+          `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${MONGO_DUPLICATE_KEY_ERROR}`
         )
 
         throw Boom.badRequest(message)

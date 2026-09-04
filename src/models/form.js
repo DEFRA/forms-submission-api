@@ -81,6 +81,13 @@ export const generateReportTimelineResponseSchema = Joi.object({
 }).label('generateReportTimelineResponse')
 
 /**
+ * @type {Joi.StringSchema<string>}
+ */
+export const generateReferenceNumberResponseSchema = Joi.string().label(
+  'generateReferenceNumberResponseSchema'
+)
+
+/**
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */
 export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
