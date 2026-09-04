@@ -23,20 +23,6 @@ export const up = async (db) => {
     )
 
   console.log(
-    '[REF-MIG] Adding unique index to the new reference-numbers collection'
-  )
-
-  // Add unique index on the `referenceNumber` field to the `reference-numbers` collection
-  await referenceNumbersColl.createIndex(
-    { referenceNumber: 1 },
-    { unique: true }
-  )
-
-  console.log(
-    '[REF-MIG] Added unique index to the new reference-numbers collection'
-  )
-
-  console.log(
     '[REF-MIG] Adding records into reference-numbers collection from the existing submissions collection'
   )
 
@@ -58,6 +44,20 @@ export const up = async (db) => {
 
   console.log(
     `[REF-MIG] Added ${counter} records into reference-numbers collection from the existing submissions collection`
+  )
+
+  console.log(
+    '[REF-MIG] Adding unique index to the new reference-numbers collection'
+  )
+
+  // Add unique index on the `referenceNumber` field to the `reference-numbers` collection
+  await referenceNumbersColl.createIndex(
+    { referenceNumber: 1 },
+    { unique: true }
+  )
+
+  console.log(
+    '[REF-MIG] Added unique index to the new reference-numbers collection'
   )
 
   console.log(
