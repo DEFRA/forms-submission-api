@@ -26,15 +26,31 @@ export const up = async (db) => {
     .aggregate([
       { $group: { _id: '$meta.referenceNumber', count: { $sum: 1 } } },
       { $match: { count: { $gt: 1 } } },
-      { $limit: 10 }
+      { $limit: 100 }
     ])
     .toArray()
 
   if (duplicates.length > 0) {
     const sample = duplicates.map((duplicate) => duplicate._id).join(', ')
 
+    // Print out duplicate meta.referenceNumber values and abort the migration
+    for (const duplicate of duplicates) {
+      const dupDocs = await submissionsColl
+        .find(
+          { 'meta.referenceNumber': duplicate._id },
+          { projection: { meta: 1 } }
+        )
+        .toArray()
+
+      for (const doc of dupDocs) {
+        console.error(
+          `[REF-MIG] Found duplicate reference number in submissions collection: ${duplicate._id} (count: ${duplicate.count}) - meta: ${JSON.stringify(doc.meta)}`
+        )
+      }
+    }
+
     throw new Error(
-      `[REF-MIG] Found duplicate reference numbers in submissions collection, aborting migration before any changes are made. Sample (up to 10): ${sample}`
+      `[REF-MIG] Found duplicate reference numbers in submissions collection, aborting migration before any changes are made. Sample (up to 100): ${sample}`
     )
   }
 
@@ -114,7 +130,7 @@ export const down = async (db) => {
     )
 
   // Recreate the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
-  await submissionsColl.createIndex({ referenceNumber: 1 })
+  await submissionsColl.createIndex({ 'meta.referenceNumber': 1 })
 
   await referenceNumbersColl.drop()
 }
