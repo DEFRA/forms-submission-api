@@ -1,4 +1,19 @@
 /* eslint-disable no-console */
+import crypto from 'node:crypto'
+
+/**
+ * Get the hash of the document excluding the `meta.timestamp` and `_id` fields
+ * @param {any} doc - the document to hash
+ */
+function getDocumentHash(doc) {
+  // Shallow copy and remove the excluded key
+  const cleanDoc = { ...doc }
+  delete cleanDoc.meta.timestamp
+  delete cleanDoc._id
+  const canonicalString = JSON.stringify(cleanDoc)
+
+  return crypto.createHash('sha256').update(canonicalString).digest('hex')
+}
 
 export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
 export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
@@ -31,6 +46,30 @@ export const up = async (db) => {
     .toArray()
 
   if (duplicates.length > 0) {
+    for (const duplicate of duplicates) {
+      const dupDocs = await submissionsColl
+        .find({ 'meta.referenceNumber': duplicate._id })
+        .toArray()
+
+      for (const doc of dupDocs) {
+        console.error(
+          `[REF-MIG] Found duplicate reference number in submissions collection: ${duplicate._id} (count: ${duplicate.count}) - meta: ${JSON.stringify(doc.meta)}`
+        )
+      }
+
+      const hashes = dupDocs.map((doc) => getDocumentHash(doc))
+      console.log(
+        `[REF-MIG] Found ${hashes.length} documents for reference number ${duplicate._id}:`,
+        hashes
+      )
+
+      const hashset = new Set(hashes)
+      console.log(
+        `[REF-MIG] Found ${hashset.size} documents with unique hashes for reference number ${duplicate._id}:`,
+        hashset
+      )
+    }
+
     const sample = duplicates.map((duplicate) => duplicate._id).join(', ')
 
     // Print out duplicate meta.referenceNumber values and abort the migration
