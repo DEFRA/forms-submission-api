@@ -40,6 +40,7 @@ export const up = async (db) => {
           { 'meta.referenceNumber': duplicate._id },
           { projection: { meta: 1 } }
         )
+        .limit(5)
         .toArray()
 
       for (const doc of dupDocs) {
