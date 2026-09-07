@@ -2,14 +2,16 @@
 import crypto from 'node:crypto'
 
 /**
- * Get the hash of the document excluding the `meta.timestamp` and `_id` fields
+ * Get the hash of the document excluding the timestamp and `_id` fields
  * @param {any} doc - the document to hash
  */
 function getDocumentHash(doc) {
-  // Shallow copy and remove the excluded key
+  // Shallow copy and remove the excluded keys
   const cleanDoc = { ...doc }
-  delete cleanDoc.meta.timestamp
   delete cleanDoc._id
+  delete cleanDoc.meta.timestamp
+  delete cleanDoc.recordCreatedAt
+  delete cleanDoc.expireAt
   const canonicalString = JSON.stringify(cleanDoc)
 
   return crypto.createHash('sha256').update(canonicalString).digest('hex')
@@ -65,8 +67,7 @@ export const up = async (db) => {
 
       const hashset = new Set(hashes)
       console.log(
-        `[REF-MIG] Found ${hashset.size} documents with unique hashes for reference number ${duplicate._id}:`,
-        hashset
+        `[REF-MIG] Found ${hashset.size} documents with unique hashes for reference number ${duplicate._id}:`
       )
     }
 
