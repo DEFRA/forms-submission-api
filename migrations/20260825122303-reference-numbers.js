@@ -1,18 +1,101 @@
 /* eslint-disable no-console */
 import crypto from 'node:crypto'
+import { isDeepStrictEqual } from 'node:util'
+
+/** Maximum number of documents to field-diff against the baseline per group */
+const MAX_DIFFED_DOCS = 25
 
 /**
- * Get the hash of the document excluding the `meta.timestamp` and `_id` fields
- * @param {any} doc - the document to hash
+ * Stable JSON stringify: recursively sorts object keys so that two documents
+ * with the same content but different key insertion order hash identically.
+ * Array order is preserved (it is meaningful). `Date` values are serialised
+ * via `Date.prototype.toJSON` before the replacer sees them.
+ * @param {any} value - the value to stringify
  */
-function getDocumentHash(doc) {
-  // Shallow copy and remove the excluded key
-  const cleanDoc = { ...doc }
-  delete cleanDoc.meta.timestamp
-  delete cleanDoc._id
-  const canonicalString = JSON.stringify(cleanDoc)
+function stableStringify(value) {
+  return JSON.stringify(value, (_key, val) =>
+    val && typeof val === 'object' && !Array.isArray(val)
+      ? Object.fromEntries(
+          Object.entries(val).sort(([a], [b]) => a.localeCompare(b))
+        )
+      : val
+  )
+}
+
+/**
+ * Hash the submitter-provided content of a submission so that records which are
+ * genuinely the same submission (e.g. the sender delivered the message twice)
+ * produce the same hash. Everything assigned by this service at ingest time
+ * (`_id`, `recordCreatedAt`, `expireAt`) and the per-send `meta.timestamp` are
+ * excluded so that "true" duplicates are not masked by those always-differing
+ * fields.
+ * @param {any} doc - the submissions document to hash
+ */
+function getSubmissionContentHash(doc) {
+  // Copy `meta` before deleting from it so the source document is not mutated
+  const meta = { ...(doc.meta ?? {}) }
+  delete meta.timestamp
+
+  const canonicalString = stableStringify({ meta, data: doc.data })
 
   return crypto.createHash('sha256').update(canonicalString).digest('hex')
+}
+
+/**
+ * Recursively collect the leaf paths at which two values differ, so we can
+ * report exactly which fields (and their values) diverge between two documents
+ * that share a reference number.
+ * @param {any} a - the baseline value
+ * @param {any} b - the value to compare against the baseline
+ * @param {string} [path] - dotted path to the current value
+ * @returns {{ path: string, a: any, b: any }[]}
+ */
+function diffValues(a, b, path = '') {
+  if (isDeepStrictEqual(a, b)) {
+    return []
+  }
+
+  const bothPlainObjects =
+    a !== null &&
+    b !== null &&
+    typeof a === 'object' &&
+    typeof b === 'object' &&
+    !Array.isArray(a) &&
+    !Array.isArray(b) &&
+    !(a instanceof Date) &&
+    !(b instanceof Date)
+
+  if (!bothPlainObjects) {
+    return [{ path: path || '(root)', a, b }]
+  }
+
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+
+  /** @type {{ path: string, a: any, b: any }[]} */
+  const diffs = []
+
+  for (const key of keys) {
+    const childPath = path ? `${path}.${key}` : key
+    diffs.push(...diffValues(a[key], b[key], childPath))
+  }
+
+  return diffs
+}
+
+/**
+ * Render a value for a single-line log entry.
+ * @param {any} value - the value to render
+ */
+function renderValue(value) {
+  if (value === undefined) {
+    return '(absent)'
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString()
+  }
+
+  return JSON.stringify(value)
 }
 
 export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
@@ -57,7 +140,7 @@ export const up = async (db) => {
         )
       }
 
-      const hashes = dupDocs.map((doc) => getDocumentHash(doc))
+      const hashes = dupDocs.map((doc) => getSubmissionContentHash(doc))
       console.log(
         `[REF-MIG] Found ${hashes.length} documents for reference number ${duplicate._id}:`,
         hashes
@@ -68,6 +151,41 @@ export const up = async (db) => {
         `[REF-MIG] Found ${hashset.size} documents with unique hashes for reference number ${duplicate._id}:`,
         hashset
       )
+
+      // Report field-by-field which values differ between the duplicates so a
+      // human can tell true resends (only ingest/timestamp fields differ) from
+      // genuine reference-number reuse (content fields differ).
+      const [baseline, ...rest] = dupDocs
+      console.log(
+        `[REF-MIG] Diffing ${rest.length} submission(s) for reference number ${duplicate._id} against baseline _id ${baseline._id.toString()}`
+      )
+
+      for (const doc of rest.slice(0, MAX_DIFFED_DOCS)) {
+        const fieldDiffs = diffValues(baseline, doc)
+
+        if (fieldDiffs.length === 0) {
+          console.log(
+            `[REF-MIG]   _id ${doc._id.toString()} is identical to the baseline`
+          )
+          continue
+        }
+
+        console.log(
+          `[REF-MIG]   _id ${doc._id.toString()} differs from baseline in ${fieldDiffs.length} field(s):`
+        )
+
+        for (const { path, a, b } of fieldDiffs) {
+          console.log(
+            `[REF-MIG]     ${path}: ${renderValue(a)} -> ${renderValue(b)}`
+          )
+        }
+      }
+
+      if (rest.length > MAX_DIFFED_DOCS) {
+        console.log(
+          `[REF-MIG]   ...and ${rest.length - MAX_DIFFED_DOCS} more submission(s) not diffed`
+        )
+      }
     }
 
     const sample = duplicates.map((duplicate) => duplicate._id).join(', ')
