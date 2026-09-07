@@ -9,10 +9,6 @@ export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
  * @param {Db} db - the Mongo Db instance
  */
 export const up = async (db) => {
-  console.log(
-    '[REF-MIG] Reading submission records and inserting existing reference numbers'
-  )
-
   const submissionsColl = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)
   )
@@ -21,6 +17,30 @@ export const up = async (db) => {
     /** @type {Collection<FormSubmissionReferenceNumberDocument>} */ (
       db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
     )
+
+  console.log(
+    '[REF-MIG] Checking for duplicate reference numbers in submissions collection'
+  )
+
+  const duplicates = await submissionsColl
+    .aggregate([
+      { $group: { _id: '$meta.referenceNumber', count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $limit: 10 }
+    ])
+    .toArray()
+
+  if (duplicates.length > 0) {
+    const sample = duplicates.map((duplicate) => duplicate._id).join(', ')
+
+    throw new Error(
+      `[REF-MIG] Found duplicate reference numbers in submissions collection, aborting migration before any changes are made. Sample (up to 10): ${sample}`
+    )
+  }
+
+  console.log(
+    '[REF-MIG] No duplicate reference numbers found in submissions collection'
+  )
 
   console.log(
     '[REF-MIG] Adding records into reference-numbers collection from the existing submissions collection via aggregation pipeline'
