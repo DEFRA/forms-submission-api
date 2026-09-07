@@ -10,6 +10,7 @@ on:
       - 'Dockerfile'
       - 'src/**'
       - '!**/*.test.*'
+      - 'migrations/**'
 
   workflow_dispatch:
     inputs:
