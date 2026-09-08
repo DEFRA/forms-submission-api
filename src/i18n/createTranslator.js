@@ -1,5 +1,7 @@
 import { createI18nInstance } from '~/src/i18n/index.js'
 
+const NOT_IMPLEMENTED = 'not-implemented'
+
 /**
  * Creates a translator for the specified language, decorated with utility functions
  * for translating specific parts of the form definition.
@@ -17,11 +19,11 @@ export function createTranslator(i18nInstance, language = 'en-GB') {
 
   return {
     t,
-    tForm: () => 'not-implemented',
-    tPage: () => 'not-implemented',
-    tComponent: () => 'not-implemented',
-    tListItem: () => 'not-implemented',
-    tSection: () => 'not-implemented',
+    tForm: () => NOT_IMPLEMENTED,
+    tPage: () => NOT_IMPLEMENTED,
+    tComponent: () => NOT_IMPLEMENTED,
+    tListItem: () => NOT_IMPLEMENTED,
+    tSection: () => NOT_IMPLEMENTED,
     language
   }
 }

@@ -10,7 +10,7 @@ import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
 import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { logger } from '~/src/helpers/logging/logger.js'
-import { translator } from '~/src/i18n/createTranslator.js'
+import { translator as createdTranslator } from '~/src/i18n/createTranslator.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import {
@@ -247,7 +247,7 @@ export async function processSaveAndExitEvents(messages) {
           const emailContent = await constructEmailContentV2(
             document,
             data.parsedContent.data.form,
-            translator
+            createdTranslator
           )
           await sendNotification(emailContent)
         }
