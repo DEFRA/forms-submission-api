@@ -2,6 +2,7 @@ import { buildArtifactStub } from '~/src/plugins/auth/auth-stub.js'
 import {
   validateAppAuth,
   validateAuth,
+  validateCitizenAuth,
   validateRetrievalKey
 } from '~/src/plugins/auth/index.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
@@ -141,6 +142,60 @@ describe('Auth plugin', () => {
       expect(() => {
         validateRetrievalKey('unknown-client', 'test-key-1')
       }).toThrow('retrievalKey not permitted for client')
+    })
+  })
+
+  describe('Validate citizen JWT', () => {
+    const buildCitizenArtifactStub = function (partialPayload = {}) {
+      return {
+        token: 'eyJrjwt...',
+        raw: { header: 'eyJraW', payload: 'eyJzdWIi', signature: 'pNNv...' },
+        decoded: {
+          header: { alg: 'ES256', kid: 'amhKOdpPMacPs5=' },
+          payload: {
+            sub: 'a3f1c0de-0000-4000-8000-000000000001',
+            iss: 'http://identity:80',
+            aud: 'urn:defra:forms:forms-submission-api',
+            client_id: 'runner',
+            scope: 'save-and-exit.read',
+            exp: 1765385125,
+            iat: 1765381526,
+            jti: '4592ec9a-a4fa-47e7-8a65-eb130c5a2b60',
+            ...partialPayload
+          },
+          signature: 'pNNvCHFI7uz0Sj'
+        }
+      }
+    }
+
+    test('Testing validateCitizenAuth with a valid artifact returns the subject and issuer', () => {
+      const artifacts = buildCitizenArtifactStub()
+      const res = validateCitizenAuth(artifacts)
+
+      expect(res).toEqual({
+        isValid: true,
+        credentials: {
+          user: {
+            sub: 'a3f1c0de-0000-4000-8000-000000000001',
+            iss: 'http://identity:80'
+          }
+        }
+      })
+    })
+
+    test('Testing validateCitizenAuth with a missing payload returns isValid: false', () => {
+      const artifacts = buildCitizenArtifactStub()
+
+      // @ts-expect-error - test stub
+      artifacts.decoded.payload = undefined
+
+      expect(validateCitizenAuth(artifacts)).toEqual({ isValid: false })
+    })
+
+    test('Testing validateCitizenAuth with a missing sub returns isValid: false', () => {
+      const artifacts = buildCitizenArtifactStub({ sub: undefined })
+
+      expect(validateCitizenAuth(artifacts)).toEqual({ isValid: false })
     })
   })
 })

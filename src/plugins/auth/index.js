@@ -9,6 +9,10 @@ const oidcJwksUri = config.get('oidcJwksUri')
 const oidcVerifyAud = config.get('oidcVerifyAud')
 const oidcVerifyIss = config.get('oidcVerifyIss')
 
+const citizenJwksUri = config.get('citizenJwksUri')
+const citizenVerifyAud = config.get('citizenVerifyAud')
+const citizenVerifyIss = config.get('citizenVerifyIss')
+
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
 
@@ -65,6 +69,21 @@ export const auth = {
           exp: true
         },
         validate: validateAppAuth
+      })
+
+      // `aud` names this API, so a token minted for another API is refused.
+      server.auth.strategy('citizen-access-token', 'jwt', {
+        keys: {
+          uri: citizenJwksUri
+        },
+        verify: {
+          aud: citizenVerifyAud,
+          iss: citizenVerifyIss,
+          sub: false,
+          nbf: true,
+          exp: true
+        },
+        validate: validateCitizenAuth
       })
 
       // Set as the default strategy
@@ -146,6 +165,35 @@ export function validateAppAuth(artifacts) {
 }
 
 /**
+ * Additional validation for citizen access token based authentication. A
+ * `sub` is unique only within its provider, so the issuer is carried with it.
+ * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
+ */
+export function validateCitizenAuth(artifacts) {
+  const citizen = artifacts.decoded.payload
+
+  if (!citizen?.sub) {
+    logger.error('Authentication error: citizen.sub is missing')
+
+    return {
+      isValid: false
+    }
+  }
+
+  logger.debug(`Citizen ${citizen.sub}: passed authentication`)
+
+  return {
+    isValid: true,
+    credentials: {
+      user: {
+        sub: citizen.sub,
+        iss: citizen.iss
+      }
+    }
+  }
+}
+
+/**
  * Validates that a retrievalKey is permitted for a given Cognito client.
  * Routes should extract the retrievalKey and clientId from their request and call this function.
  * @example
@@ -174,5 +222,5 @@ export function validateRetrievalKey(clientId, retrievalKey) {
 
 /**
  * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
- * @import { Artifacts } from '~/src/plugins/auth/types.js'
+ * @import { Artifacts, CitizenAccessTokenPayload } from '~/src/plugins/auth/types.js'
  */
