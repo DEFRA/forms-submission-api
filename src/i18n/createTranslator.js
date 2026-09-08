@@ -1,13 +1,11 @@
 import { createI18nInstance } from '~/src/i18n/index.js'
 
-const NOT_IMPLEMENTED = 'not-implemented'
-
 /**
  * Creates a translator for the specified language, decorated with utility functions
  * for translating specific parts of the form definition.
  * @param {i18n} i18nInstance - instance of i18next which gets created on startup (reads the boilerplate files en-GB.json and cy.json)
  * @param {string} [language] - requested language
- * @returns {Translator}
+ * @returns {SubmissionTranslator}
  */
 export function createTranslator(i18nInstance, language = 'en-GB') {
   /**
@@ -19,18 +17,14 @@ export function createTranslator(i18nInstance, language = 'en-GB') {
 
   return {
     t,
-    tForm: () => NOT_IMPLEMENTED,
-    tPage: () => NOT_IMPLEMENTED,
-    tComponent: () => NOT_IMPLEMENTED,
-    tListItem: () => NOT_IMPLEMENTED,
-    tSection: () => NOT_IMPLEMENTED,
     language
   }
 }
 
+/** @type {SubmissionTranslator} */
 export const translator = createTranslator(createI18nInstance())
 
 /**
  * @import { i18n } from 'i18next'
- * @import { Translator } from '@defra/forms-engine-plugin/engine/i18n/types.js'
+ * @import { SubmissionTranslator } from '~/src/api/types.js'
  */

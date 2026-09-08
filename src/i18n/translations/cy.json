@@ -1,5 +1,10 @@
 {
   "saveAndExit": {
-    "xxx": "Cadw eich cynnydd tan nes ymlaen"
+    "progressSavedShort": "Cynnydd ffurflen wedi’i arbed",
+    "progressSavedLong": "Mae eich cynnydd gyda ‘[[formTitle]]’ wedi’i arbed.",
+    "signInToContinue": "Mewngofnodwch gan ddefnyddio’r ddolen isod i barhau â’ch ffurflen '[[formTitle]]'.",
+    "sameEmailOrNumber": "Defnyddiwch yr un cyfeiriad e-bost neu rif ffôn a ddefnyddioch wrth greu eich mewngofnodi.",
+    "continueForm": "Parhau â’ch ffurflen",
+    "expiryIfNoSignIn": "Os na fyddwch yn mewngofnodi o fewn [[expiryInDays]] diwrnod, bydd eich gwybodaeth a arbedwyd yn cael ei dileu."
   }
 }

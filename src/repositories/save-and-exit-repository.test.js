@@ -6,8 +6,7 @@ import {
   buildDbDocumentV2
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
-  createSaveAndExitRecordV1,
-  createSaveAndExitRecordV2,
+  createSaveAndExitRecord,
   deleteSaveAndExitGroup,
   findExpiringRecords,
   getLatestSaveAndExitByGroup,
@@ -131,7 +130,7 @@ describe('save-and-exit-repository', () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
-      await createSaveAndExitRecordV1(submissionRecordInputV1, mockSession)
+      await createSaveAndExitRecord(submissionRecordInputV1, mockSession)
       const [insertedSubmissionRecordInput, session] =
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
@@ -148,7 +147,7 @@ describe('save-and-exit-repository', () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
-      await createSaveAndExitRecordV1(
+      await createSaveAndExitRecord(
         {
           ...submissionRecordInputV1,
           magicLinkGroupId: 'group-id'
@@ -170,7 +169,7 @@ describe('save-and-exit-repository', () => {
     it('should handle failures', async () => {
       mockCollection.insertOne.mockRejectedValueOnce(new Error('Failed'))
       await expect(
-        createSaveAndExitRecordV1(submissionRecordInputV1, mockSession)
+        createSaveAndExitRecord(submissionRecordInputV1, mockSession)
       ).rejects.toThrow(new Error('Failed'))
     })
   })
@@ -180,12 +179,14 @@ describe('save-and-exit-repository', () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
-      await createSaveAndExitRecordV2(submissionRecordInputV2, mockSession)
+      await createSaveAndExitRecord(submissionRecordInputV2, mockSession)
       const [insertedSubmissionRecordInput, session] =
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
         ...submissionRecordInputV2,
         magicLinkId: expect.any(String),
+        magicLinkGroupId: expect.any(String),
+        invalidPasswordAttempts: 0,
         expireAt: expect.any(Date),
         consumed: false
       })
@@ -195,7 +196,7 @@ describe('save-and-exit-repository', () => {
     it('should handle failures', async () => {
       mockCollection.insertOne.mockRejectedValueOnce(new Error('Failed'))
       await expect(
-        createSaveAndExitRecordV2(submissionRecordInputV2, mockSession)
+        createSaveAndExitRecord(submissionRecordInputV2, mockSession)
       ).rejects.toThrow(new Error('Failed'))
     })
   })

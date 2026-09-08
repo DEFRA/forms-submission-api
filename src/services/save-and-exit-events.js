@@ -13,10 +13,7 @@ import { logger } from '~/src/helpers/logging/logger.js'
 import { translator as createdTranslator } from '~/src/i18n/createTranslator.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
-import {
-  createSaveAndExitRecordV1,
-  createSaveAndExitRecordV2
-} from '~/src/repositories/save-and-exit-repository.js'
+import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 
@@ -41,7 +38,7 @@ function getNotifyEmailConfig() {
 
 /**
  * @param {Message} message
- * @returns { Promise<{ messageId: string, parsedContent: SaveAndExitMessage}> }
+ * @returns { Promise<{ messageId: string, parsedContent: SaveAndExitMessage | SaveAndExitV2Message}> }
  */
 export async function mapSaveAndExitMessageToData(message) {
   if (!message.MessageId) {
@@ -114,11 +111,11 @@ export function mapSaveAndExitDataToDocumentV1(message) {
 }
 
 /**
- * @param {{ messageId: string, parsedContent: SaveAndExitMessage}} message
+ * @param {{ messageId: string, parsedContent: SaveAndExitV2Message}} message
  * @returns { Omit<SaveAndExitV2Document, 'expireAt'> }
  */
 export function mapSaveAndExitDataToDocumentV2(message) {
-  const { form, state, email } = message.parsedContent.data
+  const { form, state, auth, email } = message.parsedContent.data
 
   return {
     form: {
@@ -128,6 +125,7 @@ export function mapSaveAndExitDataToDocumentV2(message) {
       baseUrl: form.baseUrl,
       title: form.title
     },
+    auth,
     email,
     state,
     magicLinkId: '',
@@ -175,7 +173,7 @@ export function constructEmailContentV1(document, formTitle) {
 /**
  * @param {Omit<SaveAndExitV2Document, 'expireAt'>} document
  * @param {{ id: string; title: string; status: FormStatus; isPreview: boolean; baseUrl: string }} form
- * @param {Translator} translator
+ * @param {SubmissionTranslator} translator
  * @returns {Promise<SendNotificationArgs>}
  */
 export async function constructEmailContentV2(document, form, translator) {
@@ -234,16 +232,24 @@ export async function processSaveAndExitEvents(messages) {
           data.parsedContent.type ===
           SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT
         ) {
-          const document = mapSaveAndExitDataToDocumentV1(data)
-          await createSaveAndExitRecordV1(document, session)
+          const dataTyped =
+            /** @type {{ messageId: string, parsedContent: SaveAndExitMessage}} */ (
+              data
+            )
+          const document = mapSaveAndExitDataToDocumentV1(dataTyped)
+          await createSaveAndExitRecord(document, session)
           const emailContent = constructEmailContentV1(
             /** @type {Omit<SaveAndExitV1Document, "expireAt">} */ (document),
             data.parsedContent.data.form.title
           )
           await sendNotification(emailContent)
         } else {
-          const document = mapSaveAndExitDataToDocumentV2(data)
-          await createSaveAndExitRecordV2(document, session)
+          const dataTyped =
+            /** @type {{ messageId: string, parsedContent: SaveAndExitV2Message}} */ (
+              data
+            )
+          const document = mapSaveAndExitDataToDocumentV2(dataTyped)
+          await createSaveAndExitRecord(document, session)
           const emailContent = await constructEmailContentV2(
             document,
             data.parsedContent.data.form,
@@ -298,7 +304,7 @@ export async function processSaveAndExitEvents(messages) {
 /**
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
- * @import { FormStatus, SaveAndExitMessage } from '@defra/forms-model'
- * @import { Translator } from '@defra/forms-engine-plugin/engine/i18n/types.js'
+ * @import { FormStatus, SaveAndExitMessage, SaveAndExitV2Message } from '@defra/forms-model'
+ * @import { SubmissionTranslator } from '~/src/api/types.js'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */

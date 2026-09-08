@@ -98,11 +98,11 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 
 /**
  * Creates a save and exit V1 record from SubmissionRecordInput
- * @param {Omit<SaveAndExitV1Document, 'expireAt'>} recordInput
+ * @param {Omit<SaveAndExitV1Document, 'expireAt'> | Omit<SaveAndExitV2Document, 'expireAt'>} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
  */
-export async function createSaveAndExitRecordV1(recordInput, session) {
+export async function createSaveAndExitRecord(recordInput, session) {
   const event = {
     category: saveAndExitLabel,
     action: 'create-record',
@@ -110,9 +110,10 @@ export async function createSaveAndExitRecordV1(recordInput, session) {
   }
   logger.info({ event }, `Inserting ${recordInput.magicLinkId}`)
 
-  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
+  const coll =
+    /** @type {Collection<SaveAndExitV1Document | SaveAndExitV2Document>} */ (
+      db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+    )
 
   try {
     const timer = createTimer()
@@ -132,9 +133,8 @@ export async function createSaveAndExitRecordV1(recordInput, session) {
     const res = await coll.insertOne(
       {
         ...recordInput,
-        magicLinkGroupId: recordInput.magicLinkGroupId
-          ? recordInput.magicLinkGroupId
-          : randomUUID(),
+        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+        magicLinkGroupId: recordInput.magicLinkGroupId || randomUUID(),
         expireAt: addDays(new Date(), expiryInDays),
         invalidPasswordAttempts: 0,
         consumed: false
@@ -152,56 +152,6 @@ export async function createSaveAndExitRecordV1(recordInput, session) {
     logger.error(
       { err, event },
       `Failed to insert ${recordInput.magicLinkId} - ${getErrorMessage(err)} `
-    )
-    throw err
-  }
-}
-
-/**
- * Creates a save and exit V2 record from SubmissionRecordInput
- * @param {Omit<SaveAndExitV2Document, 'expireAt'>} recordInput
- * @param {ClientSession} session
- * @returns {Promise<ObjectId>} newId
- */
-export async function createSaveAndExitRecordV2(recordInput, session) {
-  const event = {
-    category: saveAndExitLabel,
-    action: 'create-record'
-  }
-  logger.info(
-    { event },
-    `Inserting save-and-exit record ${recordInput.form.title}`
-  )
-
-  const coll = /** @type {Collection<SaveAndExitV2Document>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
-
-  try {
-    const timer = createTimer()
-
-    // Insert new record
-    const res = await coll.insertOne(
-      {
-        ...recordInput,
-        // This can be removed once V1 documents are removed and the unique magicLinkId index is removed
-        magicLinkId: randomUUID(),
-        expireAt: addDays(new Date(), expiryInDays),
-        consumed: false
-      },
-      { session }
-    )
-
-    logger.info(
-      { event: { ...event, duration: timer.elapsed } },
-      `Inserted save-and-exit record ${recordInput.form.title} (${timer.elapsed}ms)`
-    )
-
-    return res.insertedId
-  } catch (err) {
-    logger.error(
-      { err, event },
-      `Failed to insert save-and-exit record ${recordInput.form.title} - ${getErrorMessage(err)} `
     )
     throw err
   }

@@ -16,10 +16,7 @@ import {
   buildSaveAndExitV2Message,
   rawMessageDelivery
 } from '~/src/repositories/__stubs__/save-and-exit.js'
-import {
-  createSaveAndExitRecordV1,
-  createSaveAndExitRecordV2
-} from '~/src/repositories/save-and-exit-repository.js'
+import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import {
   mapSaveAndExitMessageToData,
@@ -321,6 +318,10 @@ describe('events', () => {
           baseUrl: 'http://localhost:3009'
         },
         email: 'my-email@test.com',
+        auth: {
+          sub: 'auth-sub',
+          issuer: 'auth-issuer'
+        },
         state: {
           formField1: 'val1',
           formField2: 'val2'
@@ -343,21 +344,20 @@ describe('events', () => {
       )
 
       const result = await processSaveAndExitEvents(messages)
-      expect(createSaveAndExitRecordV1).toHaveBeenCalledTimes(3)
-      expect(createSaveAndExitRecordV1).toHaveBeenCalledWith(
+      expect(createSaveAndExitRecord).toHaveBeenCalledTimes(4)
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped1,
         expect.anything()
       )
-      expect(createSaveAndExitRecordV1).toHaveBeenCalledWith(
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped2,
         expect.anything()
       )
-      expect(createSaveAndExitRecordV1).toHaveBeenCalledWith(
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped3,
         expect.anything()
       )
-      expect(createSaveAndExitRecordV2).toHaveBeenCalledTimes(1)
-      expect(createSaveAndExitRecordV2).toHaveBeenCalledWith(
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped4,
         expect.anything()
       )
@@ -375,12 +375,12 @@ describe('events', () => {
 
     it('should handle failures', async () => {
       // @ts-expect-error - record not found
-      jest.mocked(createSaveAndExitRecordV1).mockResolvedValueOnce(undefined)
+      jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
       jest
-        .mocked(createSaveAndExitRecordV1)
+        .mocked(createSaveAndExitRecord)
         .mockRejectedValueOnce(new Error('error in create'))
       // @ts-expect-error - record not found
-      jest.mocked(createSaveAndExitRecordV1).mockResolvedValueOnce(undefined)
+      jest.mocked(createSaveAndExitRecord).mockResolvedValueOnce(undefined)
       jest.mocked(deleteMessage).mockResolvedValueOnce({
         $metadata: { httpStatusCode: 200 }
       })

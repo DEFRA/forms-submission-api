@@ -75,6 +75,10 @@ export function buildSaveAndExitV2Message(
         baseUrl: 'http://localhost:3009'
       },
       email: 'my-email@test.com',
+      auth: {
+        sub: 'auth-sub',
+        issuer: 'auth-issuer'
+      },
       state: {
         formField1: 'val1',
         formField2: 'val2'
@@ -183,7 +187,10 @@ export function buildDbDocumentV2() {
       baseUrl: 'http://localhost:3009',
       title: 'My FirstForm'
     },
-    email: 'my-email@test.com',
+    auth: {
+      sub: 'auth-sub',
+      issuer: 'auth-issuer'
+    },
     state: {
       formField1: 'val1',
       formField2: 'val2'
