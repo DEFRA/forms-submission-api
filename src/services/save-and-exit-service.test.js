@@ -3,6 +3,7 @@ import { SecurityQuestionsEnum } from '@defra/forms-model'
 import { buildDbDocumentV1 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
+  findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
@@ -11,6 +12,7 @@ import {
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   cleanUpSaveAndExit,
+  getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
   resetSaveAndExitLink,
   validateSavedLinkCredentials
@@ -170,6 +172,89 @@ describe('save-and-exit service', () => {
       // @ts-expect-error - partial mock of message
       await cleanUpSaveAndExit({}, {})
       expect(deleteSaveAndExitGroup).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getSaveAndExitRecordsForUser', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+    const createdAt = new Date('2026-09-01T09:00:00.000Z')
+    const expireAt = new Date('2026-09-29T09:00:00.000Z')
+
+    test('should describe each record without exposing the answers', async () => {
+      jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
+        /** @type {any} */ ({
+          magicLinkId: 'magic-id',
+          form: { id: 'form-id', title: 'My FirstForm' },
+          state: { $$__referenceNumber: '123-456-789' },
+          createdAt,
+          expireAt
+        })
+      ])
+
+      const records = await getSaveAndExitRecordsForUser(sub, iss)
+
+      expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
+        sub,
+        iss,
+        undefined
+      )
+      expect(records).toEqual([
+        {
+          magicLinkId: 'magic-id',
+          referenceNumber: '123-456-789',
+          formId: 'form-id',
+          formTitle: 'My FirstForm',
+          createdAt,
+          expireAt
+        }
+      ])
+    })
+
+    test('should prefer a stored reference number over the one in the state', async () => {
+      jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
+        /** @type {any} */ ({
+          magicLinkId: 'magic-id',
+          form: { id: 'form-id', title: 'My FirstForm' },
+          referenceNumber: 'stored-ref',
+          state: { $$__referenceNumber: 'state-ref' },
+          createdAt,
+          expireAt
+        })
+      ])
+
+      const [record] = await getSaveAndExitRecordsForUser(sub, iss)
+
+      expect(record.referenceNumber).toBe('stored-ref')
+    })
+
+    test('should describe a record that has neither a reference number nor a title', async () => {
+      // A projection matching no reference number drops `state` entirely.
+      jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
+        /** @type {any} */ ({
+          magicLinkId: 'magic-id',
+          form: { id: 'form-id' },
+          createdAt,
+          expireAt
+        })
+      ])
+
+      const [record] = await getSaveAndExitRecordsForUser(sub, iss)
+
+      expect(record.referenceNumber).toBeUndefined()
+      expect(record.formTitle).toBeUndefined()
+    })
+
+    test('should pass a form id through to the query', async () => {
+      jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([])
+
+      await getSaveAndExitRecordsForUser(sub, iss, 'form-id')
+
+      expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
+        sub,
+        iss,
+        'form-id'
+      )
     })
   })
 })

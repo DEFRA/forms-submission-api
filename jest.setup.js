@@ -1,3 +1,5 @@
+import { generateKeyPairSync } from 'node:crypto'
+
 import nock from 'nock'
 
 process.env.NODE_ENV = 'test'
@@ -31,6 +33,9 @@ process.env.COGNITO_JWKS_URI = 'https://cognito.com/.well_known/jwks.json'
 process.env.COGNITO_CLIENT_IDS =
   '{"dummy": ["test-key-1", "test-key-2"], "6v87ae6bg5tltqsdfe3icgjv": ["test"]}'
 process.env.COGNITO_VERIFY_ISS = 'dummy'
+process.env.CITIZEN_JWKS_URI = 'https://identity.com/.well_known/jwks.json'
+process.env.CITIZEN_VERIFY_AUD = 'urn:defra:forms:forms-submission-api'
+process.env.CITIZEN_VERIFY_ISS = 'dummy'
 process.env.S3_BUCKET = 'test-forms-submission-bucket'
 process.env.S3_ENDPOINT = 'http://localhost:4566'
 process.env.LOADED_PREFIX = 'loaded'
@@ -86,3 +91,31 @@ nock('https://cognito.com')
   .persist()
   .get('/.well_known/jwks.json')
   .reply(200, jwks)
+
+/**
+ * A real key pair, so tests check the signature rather than skip it. The
+ * private half is published for tests that sign a token.
+ */
+const citizenKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 })
+
+globalThis.citizenSigningKey = {
+  privateKeyPem: citizenKeyPair.privateKey.export({
+    type: 'pkcs8',
+    format: 'pem'
+  }),
+  kid: 'sig-rs256-test'
+}
+
+nock('https://identity.com')
+  .persist()
+  .get('/.well_known/jwks.json')
+  .reply(200, {
+    keys: [
+      {
+        ...citizenKeyPair.publicKey.export({ format: 'jwk' }),
+        use: 'sig',
+        alg: 'RS256',
+        kid: globalThis.citizenSigningKey.kid
+      }
+    ]
+  })
