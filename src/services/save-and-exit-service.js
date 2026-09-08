@@ -5,6 +5,7 @@ import argon2 from 'argon2'
 import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
+  findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
@@ -88,6 +89,28 @@ export async function validateSavedLinkCredentials(
     validPassword,
     magicLinkGroupId: record.magicLinkGroupId
   }
+}
+
+/**
+ * List the in-progress forms of one citizen, soonest to expire first.
+ * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} [formId] - limits the result to a single form
+ */
+export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
+  const records = await findSaveAndExitRecordsForUser(sub, iss, formId)
+
+  return records.map((record) => ({
+    magicLinkId: record.magicLinkId,
+    referenceNumber:
+      /** @type {{ referenceNumber?: string }} */ (record).referenceNumber ??
+      /** @type {{ $$__referenceNumber?: string } | undefined} */ (record.state)
+        ?.$$__referenceNumber,
+    formId: record.form.id,
+    formTitle: record.form.title,
+    createdAt: record.createdAt,
+    expireAt: record.expireAt
+  }))
 }
 
 /**

@@ -97,6 +97,68 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
+ * Find the in-progress save-and-exit records of one citizen. A `sub` is
+ * unique only within its provider, so the match uses both. The record stores
+ * the issuer as `auth.issuer`.
+ * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} [formId] - limits the result to a single form
+ * @returns {Promise<WithId<SaveAndExitV2Document>[]>}
+ */
+export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'read-records-for-user'
+  }
+  logger.info({ event }, 'Reading save and exit records for user')
+
+  const coll = /** @type {Collection<SaveAndExitV2Document>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const timer = createTimer()
+
+    const filter = /** @type {Filter<SaveAndExitV2Document>} */ ({
+      'auth.sub': sub,
+      'auth.issuer': iss,
+      consumed: { $ne: true },
+      ...(formId ? { 'form.id': formId } : {})
+    })
+
+    // The reference number is the only answer needed, so the rest of the
+    // state stays in the database.
+    const results = await coll
+      .find(filter, {
+        projection: {
+          magicLinkId: 1,
+          'form.id': 1,
+          'form.title': 1,
+          createdAt: 1,
+          expireAt: 1,
+          referenceNumber: 1,
+          'state.$$__referenceNumber': 1
+        }
+      })
+      .sort({ expireAt: 1 })
+      .toArray()
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Read ${results.length} save and exit records for user (${timer.elapsed}ms)`
+    )
+
+    return results
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to read save and exit records for user - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Creates a save and exit V1 record from SubmissionRecordInput
  * @param {Omit<SaveAndExitV1Document, 'expireAt'> | Omit<SaveAndExitV2Document, 'expireAt'>} recordInput
  * @param {ClientSession} session
@@ -527,6 +589,6 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 }
 
 /**
- * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
+ * @import { ClientSession, Collection, Filter, ObjectId, WithId } from 'mongodb'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */

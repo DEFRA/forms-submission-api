@@ -62,6 +62,13 @@ export async function prepareDb(logger) {
     consumed: 1
   })
 
+  // Serves the query for one citizen's forms, soonest to expire first.
+  await saveColl.createIndex({
+    'auth.issuer': 1,
+    'auth.sub': 1,
+    expireAt: 1
+  })
+
   /**
    * @type {Collection<FormSubmissionDocument>}
    */

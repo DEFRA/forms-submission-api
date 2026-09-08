@@ -28,6 +28,16 @@ declare module '@hapi/hapi' {
      * Object ID of the user
      */
     oid?: string
+
+    /**
+     * Subject of a citizen access token
+     */
+    sub?: string
+
+    /**
+     * Issuer of a citizen access token
+     */
+    iss?: string
   }
 
   interface AppCredentials {

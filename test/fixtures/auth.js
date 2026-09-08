@@ -103,3 +103,13 @@ export const appAuth = {
     }
   }
 }
+
+export const authCitizen = {
+  strategy: 'citizen-access-token',
+  credentials: {
+    user: {
+      sub: 'a3f1c0de-0000-4000-8000-000000000001',
+      iss: 'http://localhost:3011'
+    }
+  }
+}
