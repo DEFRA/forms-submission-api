@@ -2,10 +2,12 @@ import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
   STUB_SAVE_AND_EXIT_RECORD_ID,
-  buildDbDocument
+  buildDbDocumentV1,
+  buildDbDocumentV2
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
-  createSaveAndExitRecord,
+  createSaveAndExitRecordV1,
+  createSaveAndExitRecordV2,
   deleteSaveAndExitGroup,
   findExpiringRecords,
   getLatestSaveAndExitByGroup,
@@ -61,9 +63,11 @@ jest.mock('~/src/mongo.js', () => {
 })
 
 describe('save-and-exit-repository', () => {
-  const submissionDocument = buildDbDocument()
+  const submissionDocumentV1 = buildDbDocumentV1()
 
-  const submissionRecordInput = structuredClone(buildDbDocument())
+  const submissionRecordInputV1 = structuredClone(buildDbDocumentV1())
+
+  const submissionRecordInputV2 = structuredClone(buildDbDocumentV2())
 
   beforeEach(() => {
     jest
@@ -73,11 +77,11 @@ describe('save-and-exit-repository', () => {
 
   describe('getSaveAndExitRecord', () => {
     it('should get save and exit record if not comsumed', async () => {
-      mockCollection.findOne.mockReturnValueOnce(submissionDocument)
+      mockCollection.findOne.mockReturnValueOnce(submissionDocumentV1)
       const submissionRecord = await getSaveAndExitRecord(
         STUB_SAVE_AND_EXIT_RECORD_ID
       )
-      expect(submissionRecord).toEqual(submissionDocument)
+      expect(submissionRecord).toEqual(submissionDocumentV1)
     })
 
     it('should handle get save and exit record failures', async () => {
@@ -93,12 +97,12 @@ describe('save-and-exit-repository', () => {
   describe('getLatestSaveAndExitByGroup', () => {
     it('should get latest save and exit record by group', async () => {
       const document1WithGroup = {
-        ...submissionDocument,
+        ...submissionDocumentV1,
         magicLinkId: 'id1',
         magicLinkGroupId: 'magic-group-id'
       }
       const document2WithGroup = {
-        ...submissionDocument,
+        ...submissionDocumentV1,
         magicLinkId: 'id2',
         magicLinkGroupId: 'magic-group-id'
       }
@@ -122,16 +126,16 @@ describe('save-and-exit-repository', () => {
     })
   })
 
-  describe('createSaveAndExitRecord', () => {
+  describe('createSaveAndExitRecord V1', () => {
     it('should create a save and exit record when no previous relevant ones', async () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
-      await createSaveAndExitRecord(submissionRecordInput, mockSession)
+      await createSaveAndExitRecordV1(submissionRecordInputV1, mockSession)
       const [insertedSubmissionRecordInput, session] =
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
-        ...submissionRecordInput,
+        ...submissionRecordInputV1,
         magicLinkGroupId: expect.any(String),
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 0,
@@ -144,9 +148,9 @@ describe('save-and-exit-repository', () => {
       jest.mocked(
         mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
       )
-      await createSaveAndExitRecord(
+      await createSaveAndExitRecordV1(
         {
-          ...submissionRecordInput,
+          ...submissionRecordInputV1,
           magicLinkGroupId: 'group-id'
         },
         mockSession
@@ -154,7 +158,7 @@ describe('save-and-exit-repository', () => {
       const [insertedSubmissionRecordInput, session] =
         mockCollection.insertOne.mock.calls[0]
       expect(insertedSubmissionRecordInput).toEqual({
-        ...submissionRecordInput,
+        ...submissionRecordInputV1,
         magicLinkGroupId: 'group-id',
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 0,
@@ -166,7 +170,32 @@ describe('save-and-exit-repository', () => {
     it('should handle failures', async () => {
       mockCollection.insertOne.mockRejectedValueOnce(new Error('Failed'))
       await expect(
-        createSaveAndExitRecord(submissionRecordInput, mockSession)
+        createSaveAndExitRecordV1(submissionRecordInputV1, mockSession)
+      ).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('createSaveAndExitRecord V2', () => {
+    it('should create a save and exit record V2', async () => {
+      jest.mocked(
+        mockCollection.insertOne.mockResolvedValueOnce({ insertedId: 123 })
+      )
+      await createSaveAndExitRecordV2(submissionRecordInputV2, mockSession)
+      const [insertedSubmissionRecordInput, session] =
+        mockCollection.insertOne.mock.calls[0]
+      expect(insertedSubmissionRecordInput).toEqual({
+        ...submissionRecordInputV2,
+        magicLinkId: expect.any(String),
+        expireAt: expect.any(Date),
+        consumed: false
+      })
+      expect(session).toEqual({ session: mockSession })
+    })
+
+    it('should handle failures', async () => {
+      mockCollection.insertOne.mockRejectedValueOnce(new Error('Failed'))
+      await expect(
+        createSaveAndExitRecordV2(submissionRecordInputV2, mockSession)
       ).rejects.toThrow(new Error('Failed'))
     })
   })
@@ -175,7 +204,7 @@ describe('save-and-exit-repository', () => {
     it('should increment record', async () => {
       jest.mocked(
         mockCollection.findOneAndUpdate.mockResolvedValueOnce({
-          ...submissionRecordInput,
+          ...submissionRecordInputV1,
           expireAt: expect.any(Date),
           invalidPasswordAttempts: 1
         })
@@ -186,7 +215,7 @@ describe('save-and-exit-repository', () => {
         magicLinkId: '123'
       })
       expect(res).toEqual({
-        ...submissionRecordInput,
+        ...submissionRecordInputV1,
         expireAt: expect.any(Date),
         invalidPasswordAttempts: 1
       })
@@ -196,7 +225,7 @@ describe('save-and-exit-repository', () => {
     it('should mark record as consumed if increment max threshold reached', async () => {
       jest.mocked(
         mockCollection.findOneAndUpdate.mockResolvedValueOnce({
-          ...submissionRecordInput,
+          ...submissionRecordInputV1,
           expireAt: expect.any(Date),
           invalidPasswordAttempts: 5
         })
@@ -244,8 +273,8 @@ describe('save-and-exit-repository', () => {
   describe('findExpiringRecords', () => {
     it('should find expiring records within the specified window', async () => {
       const expiringRecords = [
-        { ...submissionDocument, magicLinkId: 'expiring-1' },
-        { ...submissionDocument, magicLinkId: 'expiring-2' }
+        { ...submissionDocumentV1, magicLinkId: 'expiring-1' },
+        { ...submissionDocumentV1, magicLinkId: 'expiring-2' }
       ]
       const mockCursor = {
         withReadPreference: jest.fn().mockReturnThis(),
@@ -274,7 +303,7 @@ describe('save-and-exit-repository', () => {
   describe('lockRecordForExpiryEmail', () => {
     it('should lock a record successfully', async () => {
       const lockedRecord = {
-        ...submissionDocument,
+        ...submissionDocumentV1,
         notify: {
           expireLockId: 'runtime-123',
           expireLockTimestamp: new Date(),
@@ -332,7 +361,7 @@ describe('save-and-exit-repository', () => {
   describe('markExpiryEmailSent', () => {
     it('should mark expiry email as sent', async () => {
       const updatedRecord = {
-        ...submissionDocument,
+        ...submissionDocumentV1,
         notify: {
           expireLockId: 'runtime-123',
           expireLockTimestamp: new Date(),

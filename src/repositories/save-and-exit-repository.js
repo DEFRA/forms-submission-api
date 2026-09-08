@@ -17,7 +17,7 @@ const maxInvalidPasswordAttempts = 5
 /**
  * Gets a save and exit record based on magic link id
  * @param {string} id
- * @returns { Promise<WithId<SaveAndExitDocument> | null> }
+ * @returns { Promise<WithId<SaveAndExitV1Document> | null> }
  */
 export async function getSaveAndExitRecord(id) {
   const event = {
@@ -27,7 +27,7 @@ export async function getSaveAndExitRecord(id) {
   }
   logger.info({ event }, 'Reading save and exit record')
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -55,7 +55,7 @@ export async function getSaveAndExitRecord(id) {
 /**
  * Find the latest (active) link in a group of save-and-exit records
  * @param {string} groupId - group id of save-and-exit record
- * @returns { Promise<WithId<SaveAndExitDocument> | null> }
+ * @returns { Promise<WithId<SaveAndExitV1Document> | null> }
  */
 export async function getLatestSaveAndExitByGroup(groupId) {
   const event = {
@@ -65,7 +65,7 @@ export async function getLatestSaveAndExitByGroup(groupId) {
   }
   logger.info({ event }, 'Reading latest save and exit record')
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -97,12 +97,12 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
- * Creates a save and exit record from SubmissionRecordInput
- * @param {Omit<SaveAndExitDocument, 'expireAt'>} recordInput
+ * Creates a save and exit V1 record from SubmissionRecordInput
+ * @param {Omit<SaveAndExitV1Document, 'expireAt'>} recordInput
  * @param {ClientSession} session
  * @returns {Promise<ObjectId>} newId
  */
-export async function createSaveAndExitRecord(recordInput, session) {
+export async function createSaveAndExitRecordV1(recordInput, session) {
   const event = {
     category: saveAndExitLabel,
     action: 'create-record',
@@ -110,7 +110,7 @@ export async function createSaveAndExitRecord(recordInput, session) {
   }
   logger.info({ event }, `Inserting ${recordInput.magicLinkId}`)
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -158,9 +158,59 @@ export async function createSaveAndExitRecord(recordInput, session) {
 }
 
 /**
+ * Creates a save and exit V2 record from SubmissionRecordInput
+ * @param {Omit<SaveAndExitV2Document, 'expireAt'>} recordInput
+ * @param {ClientSession} session
+ * @returns {Promise<ObjectId>} newId
+ */
+export async function createSaveAndExitRecordV2(recordInput, session) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'create-record'
+  }
+  logger.info(
+    { event },
+    `Inserting save-and-exit record ${recordInput.form.title}`
+  )
+
+  const coll = /** @type {Collection<SaveAndExitV2Document>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const timer = createTimer()
+
+    // Insert new record
+    const res = await coll.insertOne(
+      {
+        ...recordInput,
+        // This can be removed once V1 documents are removed and the unique magicLinkId index is removed
+        magicLinkId: randomUUID(),
+        expireAt: addDays(new Date(), expiryInDays),
+        consumed: false
+      },
+      { session }
+    )
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Inserted save-and-exit record ${recordInput.form.title} (${timer.elapsed}ms)`
+    )
+
+    return res.insertedId
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to insert save-and-exit record ${recordInput.form.title} - ${getErrorMessage(err)} `
+    )
+    throw err
+  }
+}
+
+/**
  * Increment invalid password attempts on a record based on magic link id
  * @param {string} id - magic link id
- * @returns { Promise<WithId<SaveAndExitDocument>> }
+ * @returns { Promise<WithId<SaveAndExitV1Document>> }
  */
 export async function incrementInvalidPasswordAttempts(id) {
   const event = {
@@ -170,7 +220,7 @@ export async function incrementInvalidPasswordAttempts(id) {
   }
   logger.info({ event }, 'Increment invalid password attempts')
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -228,7 +278,7 @@ export async function resetSaveAndExitRecord(id) {
   }
   logger.info({ event }, `Resetting save and exit record ${id}`)
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -269,7 +319,7 @@ export async function markSaveAndExitRecordAsConsumed(id) {
   }
   logger.info({ event }, `Marking ${id} as consumed`)
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -298,7 +348,7 @@ export async function markSaveAndExitRecordAsConsumed(id) {
 export async function deleteSaveAndExitGroup(magicLinkGroupId, session) {
   logger.info(`Deleting records of magicLinkGroupId ${magicLinkGroupId}`)
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -325,7 +375,7 @@ export async function deleteSaveAndExitGroup(magicLinkGroupId, session) {
  * @param {number} expiryWindowInHours - Number of hours before expiry
  * @param {number} minimumHoursRemaining - Minimum hours that must remain before expiry
  * @param {number} [limit] - Maximum number of records to return
- * @returns {Promise<WithId<SaveAndExitDocument>[]>}
+ * @returns {Promise<WithId<SaveAndExitV1Document>[]>}
  */
 export async function findExpiringRecords(
   expiryWindowInHours,
@@ -334,9 +384,10 @@ export async function findExpiringRecords(
 ) {
   logger.info('[SAER] Finding expiring save-and-exit records')
 
-  const saveAndExitCollection = /** @type {Collection<SaveAndExitDocument>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
+  const saveAndExitCollection =
+    /** @type {Collection<SaveAndExitV1Document>} */ (
+      db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+    )
 
   try {
     const now = new Date()
@@ -395,7 +446,7 @@ export async function findExpiringRecords(
  * @param {string} magicLinkId - The magic link ID
  * @param {string} runtimeId - The runtime ID to use as lock
  * @param {number|null} [currentVersion] - The current version of the record
- * @returns {Promise<WithId<SaveAndExitDocument> | null>}
+ * @returns {Promise<WithId<SaveAndExitV1Document> | null>}
  */
 export async function lockRecordForExpiryEmail(
   magicLinkId,
@@ -412,7 +463,7 @@ export async function lockRecordForExpiryEmail(
     `[SAER] Locking record ${magicLinkId} for expiry email`
   )
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -467,7 +518,7 @@ export async function lockRecordForExpiryEmail(
  * Updates a save-and-exit record to mark the expiry email as sent
  * @param {string} magicLinkId - The magic link ID
  * @param {string} runtimeId - The runtime ID that locked the record
- * @returns {Promise<WithId<SaveAndExitDocument> | null>}
+ * @returns {Promise<WithId<SaveAndExitV1Document> | null>}
  */
 export async function markExpiryEmailSent(magicLinkId, runtimeId) {
   const event = {
@@ -477,7 +528,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
   }
   logger.info({ event }, `[SAER] Marking expiry email sent for ${magicLinkId}`)
 
-  const coll = /** @type {Collection<SaveAndExitDocument>} */ (
+  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
     db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
   )
 
@@ -527,5 +578,5 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 
 /**
  * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
- * @import { SaveAndExitDocument } from '~/src/api/types.js'
+ * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */

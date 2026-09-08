@@ -44,7 +44,22 @@
  *   version?: number | null,
  *   consumed?: boolean,
  *   notify?: SaveAndExitNotify | null
- * }} SaveAndExitDocument
+ * }} SaveAndExitV1Document
+ */
+
+/**
+ * @typedef {Omit<SaveAndExitV2Record, 'form'> & {
+ *   form: SaveAndExitV2Record['form'] & { title?: string },
+ *   magicLinkId: string,
+ *   expireAt: Date,
+ *   version?: number | null,
+ *   consumed?: boolean,
+ *   notify?: SaveAndExitNotify | null
+ * }} SaveAndExitV2Document
+ */
+
+/**
+ * @typedef {SaveAndExitV1Document | SaveAndExitV2Document} SaveAndExitDocument
  */
 
 /**
@@ -83,7 +98,7 @@
  */
 
 /**
- * @import { SaveAndExitRecord } from '@defra/forms-model'
+ * @import { SaveAndExitRecord, SaveAndExitV2Record } from '@defra/forms-model'
  * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Request } from '@hapi/hapi'
  * @import { Db, ObjectId } from 'mongodb'
