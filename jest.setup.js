@@ -94,17 +94,16 @@ nock('https://cognito.com')
 
 /**
  * A real key pair, so tests check the signature rather than skip it. The
- * private half is published for tests that sign a token.
+ * private half is passed on like every other setting here, for tests that
+ * sign a token.
  */
 const citizenKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 })
 
-globalThis.citizenSigningKey = {
-  privateKeyPem: citizenKeyPair.privateKey.export({
-    type: 'pkcs8',
-    format: 'pem'
-  }),
-  kid: 'sig-rs256-test'
-}
+process.env.CITIZEN_SIGNING_KEY_ID = 'sig-rs256-test'
+process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey.export({
+  type: 'pkcs8',
+  format: 'pem'
+})
 
 nock('https://identity.com')
   .persist()
@@ -115,7 +114,7 @@ nock('https://identity.com')
         ...citizenKeyPair.publicKey.export({ format: 'jwk' }),
         use: 'sig',
         alg: 'RS256',
-        kid: globalThis.citizenSigningKey.kid
+        kid: process.env.CITIZEN_SIGNING_KEY_ID
       }
     ]
   })
