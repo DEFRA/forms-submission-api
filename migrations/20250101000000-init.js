@@ -65,7 +65,7 @@ export const up = async (db) => {
   await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
 
   console.log(
-    `[INIT-MIG] Creating the ${SUBMISSIONS_COLLECTION_NAME} collection and indexes`
+    `[INIT-MIG] Created the ${SUBMISSIONS_COLLECTION_NAME} collection and indexes`
   )
 }
 
@@ -88,9 +88,10 @@ export const down = async (db) => {
 
   await saveColl.drop()
 
-  const submissionsColl = /** @type {Collection<FormSubmissionDocument>} */ (
-    db.collection(SUBMISSIONS_COLLECTION_NAME)
-  )
+  /**
+   * @type {Collection<FormSubmissionDocument>}
+   */
+  const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
 
   await submissionsColl.drop()
 }
