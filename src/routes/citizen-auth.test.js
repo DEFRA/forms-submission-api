@@ -25,7 +25,8 @@ const ISSUER = 'dummy'
 const AUDIENCE = 'urn:defra:forms:forms-submission-api'
 const SUB = 'a3f1c0de-0000-4000-8000-000000000001'
 
-const { privateKeyPem, kid } = globalThis.citizenSigningKey
+const privateKeyPem = String(process.env.CITIZEN_SIGNING_PRIVATE_KEY)
+const kid = process.env.CITIZEN_SIGNING_KEY_ID
 
 /**
  * Signs a token the way the identity provider does.
