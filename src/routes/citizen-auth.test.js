@@ -63,7 +63,7 @@ describe('Citizen access token', () => {
   function callWith(token) {
     return server.inject({
       method: 'GET',
-      url: '/save-and-exit/records',
+      url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc',
       headers: { authorization: `Bearer ${token}` }
     })
   }
@@ -77,7 +77,7 @@ describe('Citizen access token', () => {
     expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
       SUB,
       ISSUER,
-      undefined
+      '688131eeff67f889d52c66cc'
     )
   })
 

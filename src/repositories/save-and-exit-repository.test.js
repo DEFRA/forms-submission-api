@@ -455,18 +455,18 @@ describe('save-and-exit-repository', () => {
       }))
       mockCollection.find.mockReturnValueOnce({ sort })
 
-      const records = await findSaveAndExitRecordsForUser(sub, iss)
+      const records = await findSaveAndExitRecordsForUser(sub, iss, 'form-id')
 
       expect(mockCollection.find).toHaveBeenCalledWith(
         {
           'auth.sub': sub,
           'auth.issuer': iss,
-          consumed: { $ne: true }
+          consumed: { $ne: true },
+          'form.id': 'form-id'
         },
         {
           projection: {
             magicLinkId: 1,
-            'form.id': 1,
             'form.title': 1,
             createdAt: 1,
             expireAt: 1,
@@ -497,9 +497,9 @@ describe('save-and-exit-repository', () => {
         throw new Error('an error')
       })
 
-      await expect(findSaveAndExitRecordsForUser(sub, iss)).rejects.toThrow(
-        new Error('an error')
-      )
+      await expect(
+        findSaveAndExitRecordsForUser(sub, iss, 'form-id')
+      ).rejects.toThrow(new Error('an error'))
     })
   })
 })

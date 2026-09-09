@@ -279,7 +279,6 @@ describe('Forms route', () => {
     const record = {
       magicLinkId: '3b3ba0e1-45cf-4b2b-9a3a-8f0f9a1c33aa',
       referenceNumber: '123-456-789',
-      formId: '688131eeff67f889d52c66cc',
       formTitle: 'My FirstForm',
       createdAt: new Date('2026-09-01T09:00:00.000Z'),
       expireAt: new Date('2026-09-29T09:00:00.000Z')
@@ -290,14 +289,14 @@ describe('Forms route', () => {
 
       const response = await server.inject({
         method: 'GET',
-        url: '/save-and-exit/records',
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc',
         auth: authCitizen
       })
 
       expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         authCitizen.credentials.user.sub,
         authCitizen.credentials.user.iss,
-        undefined
+        '688131eeff67f889d52c66cc'
       )
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toEqual([
@@ -305,27 +304,20 @@ describe('Forms route', () => {
       ])
     })
 
-    test('Testing GET /save-and-exit/records passes a form id through', async () => {
-      jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValueOnce([])
-
+    test('Testing GET /save-and-exit/records refuses a request without a form id', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc',
+        url: '/save-and-exit/records',
         auth: authCitizen
       })
 
-      expect(response.statusCode).toEqual(StatusCodes.OK)
-      expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
-        authCitizen.credentials.user.sub,
-        authCitizen.credentials.user.iss,
-        '688131eeff67f889d52c66cc'
-      )
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
     })
 
     test('Testing GET /save-and-exit/records is not reachable without a citizen token', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: '/save-and-exit/records'
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc'
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)

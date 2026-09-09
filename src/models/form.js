@@ -27,7 +27,6 @@ export const getSaveAndExitRecordsResponseSchema = Joi.array()
     Joi.object({
       magicLinkId: Joi.string().required(),
       referenceNumber: Joi.string().optional(),
-      formId: Joi.string().required(),
       formTitle: Joi.string().optional(),
       createdAt: Joi.date().required(),
       expireAt: Joi.date().required()

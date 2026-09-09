@@ -178,6 +178,7 @@ describe('save-and-exit service', () => {
   describe('getSaveAndExitRecordsForUser', () => {
     const sub = 'a3f1c0de-0000-4000-8000-000000000001'
     const iss = 'https://identity.forms.example'
+    const formId = 'form-id'
     const createdAt = new Date('2026-09-01T09:00:00.000Z')
     const expireAt = new Date('2026-09-29T09:00:00.000Z')
 
@@ -192,18 +193,17 @@ describe('save-and-exit service', () => {
         })
       ])
 
-      const records = await getSaveAndExitRecordsForUser(sub, iss)
+      const records = await getSaveAndExitRecordsForUser(sub, iss, formId)
 
       expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
         iss,
-        undefined
+        formId
       )
       expect(records).toEqual([
         {
           magicLinkId: 'magic-id',
           referenceNumber: '123-456-789',
-          formId: 'form-id',
           formTitle: 'My FirstForm',
           createdAt,
           expireAt
@@ -223,7 +223,7 @@ describe('save-and-exit service', () => {
         })
       ])
 
-      const [record] = await getSaveAndExitRecordsForUser(sub, iss)
+      const [record] = await getSaveAndExitRecordsForUser(sub, iss, formId)
 
       expect(record.referenceNumber).toBe('stored-ref')
     })
@@ -239,7 +239,7 @@ describe('save-and-exit service', () => {
         })
       ])
 
-      const [record] = await getSaveAndExitRecordsForUser(sub, iss)
+      const [record] = await getSaveAndExitRecordsForUser(sub, iss, formId)
 
       expect(record.referenceNumber).toBeUndefined()
       expect(record.formTitle).toBeUndefined()
@@ -248,12 +248,12 @@ describe('save-and-exit service', () => {
     test('should pass a form id through to the query', async () => {
       jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([])
 
-      await getSaveAndExitRecordsForUser(sub, iss, 'form-id')
+      await getSaveAndExitRecordsForUser(sub, iss, 'another-form')
 
       expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
         iss,
-        'form-id'
+        'another-form'
       )
     })
   })
