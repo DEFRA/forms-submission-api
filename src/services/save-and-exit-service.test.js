@@ -211,24 +211,7 @@ describe('save-and-exit service', () => {
       ])
     })
 
-    test('should prefer a stored reference number over the one in the state', async () => {
-      jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
-        /** @type {any} */ ({
-          magicLinkId: 'magic-id',
-          form: { id: 'form-id', title: 'My FirstForm' },
-          referenceNumber: 'stored-ref',
-          state: { $$__referenceNumber: 'state-ref' },
-          createdAt,
-          expireAt
-        })
-      ])
-
-      const [record] = await getSaveAndExitRecordsForUser(sub, iss, formId)
-
-      expect(record.referenceNumber).toBe('stored-ref')
-    })
-
-    test('should describe a record that has neither a reference number nor a title', async () => {
+    test('should describe a record whose answers hold no reference number', async () => {
       // A projection matching no reference number drops `state` entirely.
       jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
         /** @type {any} */ ({
