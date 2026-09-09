@@ -1,26 +1,7 @@
 /* eslint-disable no-console */
-import crypto from 'node:crypto'
 
-import {
-  REFERENCE_NUMBERS_COLLECTION_NAME,
-  SUBMISSIONS_COLLECTION_NAME
-} from '~/src/mongo.js'
-
-/**
- * Get the hash of the document excluding the timestamp and `_id` fields
- * @param {any} doc - the document to hash
- */
-function getDocumentHash(doc) {
-  // Shallow copy and remove the excluded keys
-  const cleanDoc = { ...doc }
-  delete cleanDoc._id
-  delete cleanDoc.meta.timestamp
-  delete cleanDoc.recordCreatedAt
-  delete cleanDoc.expireAt
-  const canonicalString = JSON.stringify(cleanDoc)
-
-  return crypto.createHash('sha256').update(canonicalString).digest('hex')
-}
+export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
+export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
 
 /**
  * Create the new `reference-numbers` collection and seed it
@@ -38,7 +19,7 @@ export const up = async (db) => {
     )
 
   console.log(
-    '[REF-MIG] Checking for duplicate reference numbers in submissions collection'
+    `[REF-MIG] Checking for duplicate reference numbers in the existing ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
 
   const duplicates = await submissionsColl
@@ -50,59 +31,19 @@ export const up = async (db) => {
     .toArray()
 
   if (duplicates.length > 0) {
-    for (const duplicate of duplicates) {
-      const dupDocs = await submissionsColl
-        .find({ 'meta.referenceNumber': duplicate._id })
-        .toArray()
-
-      for (const doc of dupDocs) {
-        console.error(
-          `[REF-MIG] Found duplicate reference number in submissions collection: ${duplicate._id} (count: ${duplicate.count}) - meta: ${JSON.stringify(doc.meta)}`
-        )
-      }
-
-      const hashes = dupDocs.map((doc) => getDocumentHash(doc))
-      console.log(
-        `[REF-MIG] Found ${hashes.length} documents for reference number ${duplicate._id}:`,
-        hashes
-      )
-
-      const hashset = new Set(hashes)
-      console.log(
-        `[REF-MIG] Found ${hashset.size} documents with unique hashes for reference number ${duplicate._id}:`
-      )
-    }
-
     const sample = duplicates.map((duplicate) => duplicate._id).join(', ')
 
-    // Print out duplicate meta.referenceNumber values and abort the migration
-    for (const duplicate of duplicates) {
-      const dupDocs = await submissionsColl
-        .find(
-          { 'meta.referenceNumber': duplicate._id },
-          { projection: { meta: 1 } }
-        )
-        .limit(5)
-        .toArray()
-
-      for (const doc of dupDocs) {
-        console.error(
-          `[REF-MIG] Found duplicate reference number in submissions collection: ${duplicate._id} (count: ${duplicate.count}) - meta: ${JSON.stringify(doc.meta)}`
-        )
-      }
-    }
-
     throw new Error(
-      `[REF-MIG] Found duplicate reference numbers in submissions collection, aborting migration before any changes are made. Sample (up to 100): ${sample}`
+      `[REF-MIG] Found duplicate reference numbers in ${SUBMISSIONS_COLLECTION_NAME} collection, aborting migration before any changes are made. Sample (up to 100): ${sample}`
     )
   }
 
   console.log(
-    '[REF-MIG] No duplicate reference numbers found in submissions collection'
+    `[REF-MIG] No duplicate reference numbers found in ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
 
   console.log(
-    '[REF-MIG] Adding records into reference-numbers collection from the existing submissions collection via aggregation pipeline'
+    `[REF-MIG] Adding records into ${REFERENCE_NUMBERS_COLLECTION_NAME} collection from the existing ${SUBMISSIONS_COLLECTION_NAME} collection via aggregation pipeline`
   )
 
   await submissionsColl
@@ -119,14 +60,14 @@ export const up = async (db) => {
     .toArray()
 
   console.log(
-    '[REF-MIG] Added records into reference-numbers collection from the existing submissions collection via aggregation pipeline'
+    `[REF-MIG] Added records into ${REFERENCE_NUMBERS_COLLECTION_NAME} collection from the existing ${SUBMISSIONS_COLLECTION_NAME} collection via aggregation pipeline`
   )
 
   console.log(
-    '[REF-MIG] Adding unique index to the new reference-numbers collection'
+    `[REF-MIG] Adding indexes to the new ${REFERENCE_NUMBERS_COLLECTION_NAME} collection`
   )
 
-  // Add unique index on the `referenceNumber` field to the `reference-numbers` collection
+  // Add unique index on the `referenceNumber` field to the `reference-numbers` collection and expireAt TTL index
   await referenceNumbersColl.createIndex(
     { referenceNumber: 1 },
     { unique: true }
@@ -138,24 +79,28 @@ export const up = async (db) => {
   ) // enables TTL
 
   console.log(
-    '[REF-MIG] Added unique index to the new reference-numbers collection'
+    `[REF-MIG] Added indexes to the new ${REFERENCE_NUMBERS_COLLECTION_NAME} collection`
   )
 
   console.log(
-    `[REF-MIG] Dropping the non-unique index on the meta.referenceNumber field in the submissions collection`
+    `[REF-MIG] Dropping the non-unique index on the meta.referenceNumber field in the ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
 
   // Drop the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
   await submissionsColl.dropIndex('meta.referenceNumber_1')
 
   console.log(
-    `[REF-MIG] Creating unique index on the meta.referenceNumber field in the submissions collection`
+    `[REF-MIG] Recreating the meta.referenceNumber index as unique in the ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
 
   // Re-add unique index on the `meta.referenceNumber` field to the `submissions` collection
   await submissionsColl.createIndex(
     { 'meta.referenceNumber': 1 },
     { unique: true }
+  )
+
+  console.log(
+    `[REF-MIG] Recreated the meta.referenceNumber index as unique in the ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
 
   console.log(
@@ -177,9 +122,13 @@ export const down = async (db) => {
       db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
     )
 
+  // Drop the unique index on the `meta.referenceNumber` field in the `submissions` collection
+  await submissionsColl.dropIndex('meta.referenceNumber_1')
+
   // Recreate the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
   await submissionsColl.createIndex({ 'meta.referenceNumber': 1 })
 
+  // Drop the `reference-numbers` collection
   await referenceNumbersColl.drop()
 }
 
