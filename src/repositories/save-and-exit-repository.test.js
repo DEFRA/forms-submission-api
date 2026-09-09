@@ -470,7 +470,6 @@ describe('save-and-exit-repository', () => {
             'form.title': 1,
             createdAt: 1,
             expireAt: 1,
-            referenceNumber: 1,
             'state.$$__referenceNumber': 1
           }
         }

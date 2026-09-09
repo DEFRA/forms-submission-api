@@ -92,22 +92,12 @@ export async function validateSavedLinkCredentials(
 }
 
 /**
- * The reference number of a saved form. No save-and-exit record carries a
- * `referenceNumber` column today: the engine writes the number into the
- * answers on the first page of a form, so that is where it is read from. The
- * column is preferred when one is present, so a record gains one without this
- * needing to change.
+ * The reference number of a saved form. The engine writes it into the answers
+ * on the first page of a form, so the saved state is where it is read from.
  * @param {WithId<SaveAndExitV2Document>} record
  * @returns {string | undefined}
  */
 function getReferenceNumber(record) {
-  const stored = /** @type {{ referenceNumber?: string }} */ (record)
-    .referenceNumber
-
-  if (stored) {
-    return stored
-  }
-
   return /** @type {{ $$__referenceNumber?: string } | undefined} */ (
     record.state
   )?.$$__referenceNumber
