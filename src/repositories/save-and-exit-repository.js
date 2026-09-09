@@ -117,8 +117,6 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
   )
 
   try {
-    const timer = createTimer()
-
     const filter = /** @type {Filter<SaveAndExitV2Document>} */ ({
       'auth.sub': sub,
       'auth.issuer': iss,
@@ -142,10 +140,7 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
       .sort({ expireAt: 1 })
       .toArray()
 
-    logger.info(
-      { event: { ...event, duration: timer.elapsed } },
-      `Read ${results.length} save and exit records for user (${timer.elapsed}ms)`
-    )
+    logger.info({ event }, `Read ${results.length} save and exit records`)
 
     return results
   } catch (err) {
