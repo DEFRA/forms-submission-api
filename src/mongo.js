@@ -41,53 +41,6 @@ export async function prepareDb(logger) {
 
   db = client.db(databaseName)
 
-  /**
-   * @type {Collection<FormFileUploadStatus>}
-   */
-  const filesColl = db.collection(FILES_COLLECTION_NAME)
-
-  await filesColl.createIndex({ fileId: 1 }, { unique: true })
-
-  /**
-   * @type {Collection<SaveAndExitDocument>}
-   */
-  const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-
-  await saveColl.createIndex({ magicLinkId: 1 }, { unique: true })
-  await saveColl.createIndex({ magicLinkGroupId: 1 })
-  await saveColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
-  await saveColl.createIndex({
-    'notify.expireEmailSentTimestamp': 1,
-    expireAt: 1,
-    consumed: 1
-  })
-
-  /**
-   * @type {Collection<FormSubmissionDocument>}
-   */
-  const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
-  await submissionsColl.createIndex({ 'meta.formId': 1 })
-
-  await submissionsColl.createIndex(
-    { 'meta.referenceNumber': 1 },
-    { unique: true }
-  )
-  await submissionsColl.createIndex({ 'meta.timestamp': -1 })
-  await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
-
-  /**
-   * @type {Collection<FormSubmissionReferenceNumberDocument>}
-   */
-  const referenceNumbersColl = db.collection(REFERENCE_NUMBERS_COLLECTION_NAME)
-  await referenceNumbersColl.createIndex(
-    { referenceNumber: 1 },
-    { unique: true }
-  )
-  await referenceNumbersColl.createIndex(
-    { expireAt: 1 },
-    { expireAfterSeconds: 0 }
-  ) // enables TTL
-
   logger.info(`Mongodb connected to ${databaseName}`)
 
   return db
