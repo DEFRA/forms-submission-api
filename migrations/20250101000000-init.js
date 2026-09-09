@@ -1,8 +1,8 @@
-import {
-  FILES_COLLECTION_NAME,
-  SAVE_AND_EXIT_COLLECTION_NAME,
-  SUBMISSIONS_COLLECTION_NAME
-} from '~/src/mongo.js'
+/* eslint-disable no-console */
+
+export const FILES_COLLECTION_NAME = 'files'
+export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
+export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
 
 /**
  * Initial migration to create the `files`, `submissions`
@@ -16,13 +16,25 @@ export const up = async (db) => {
    */
   const filesColl = db.collection(FILES_COLLECTION_NAME)
 
+  console.log(
+    `[INIT-MIG] Creating the ${FILES_COLLECTION_NAME} collection and indexes`
+  )
+
   await filesColl.createIndex({ fileId: 1 }, { unique: true })
+
+  console.log(
+    `[INIT-MIG] Created the ${FILES_COLLECTION_NAME} collection and indexes`
+  )
 
   /**
    * Initialise the `save-and-exit` collection and add indexes
    * @type {Collection<SaveAndExitDocument>}
    */
   const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+
+  console.log(
+    `[INIT-MIG] Creating the ${SAVE_AND_EXIT_COLLECTION_NAME} collection and indexes`
+  )
 
   await saveColl.createIndex({ magicLinkId: 1 }, { unique: true })
   await saveColl.createIndex({ magicLinkGroupId: 1 })
@@ -33,16 +45,28 @@ export const up = async (db) => {
     consumed: 1
   })
 
+  console.log(
+    `[INIT-MIG] Created the ${SAVE_AND_EXIT_COLLECTION_NAME} collection and indexes`
+  )
+
   /**
    * Initialise the `submissions` collection and add indexes
    * @type {Collection<FormSubmissionDocument>}
    */
   const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
 
+  console.log(
+    `[INIT-MIG] Creating the ${SUBMISSIONS_COLLECTION_NAME} collection and indexes`
+  )
+
   await submissionsColl.createIndex({ 'meta.formId': 1 })
   await submissionsColl.createIndex({ 'meta.referenceNumber': 1 })
   await submissionsColl.createIndex({ 'meta.timestamp': -1 })
   await submissionsColl.createIndex({ expireAt: 1 }, { expireAfterSeconds: 0 }) // enables TTL
+
+  console.log(
+    `[INIT-MIG] Creating the ${SUBMISSIONS_COLLECTION_NAME} collection and indexes`
+  )
 }
 
 /**
