@@ -139,7 +139,19 @@ export const up = async (db) => {
   )
 
   // Drop the (non-unique) index on the `meta.referenceNumber` field in the `submissions` collection
-  await submissionsColl.dropIndex('meta.referenceNumber_1')
+  const indexes = new Set(
+    await submissionsColl
+      .listIndexes()
+      .map(({ name }) => name)
+      .toArray()
+  )
+
+  if (indexes.has('meta.referenceNumber_1')) {
+    await submissionsColl.dropIndex('meta.referenceNumber_1')
+    console.log(
+      `[REF-MIG] Dropped the non-unique index on the meta.referenceNumber field in the submissions collection`
+    )
+  }
 
   console.log(
     `[REF-MIG] Creating unique index on the meta.referenceNumber field in the submissions collection`
