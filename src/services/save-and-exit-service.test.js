@@ -187,7 +187,7 @@ describe('save-and-exit service', () => {
         /** @type {any} */ ({
           magicLinkId: 'magic-id',
           form: { id: 'form-id', title: 'My FirstForm' },
-          state: { $$__referenceNumber: '123-456-789' },
+          referenceNumber: '123-456-789',
           createdAt,
           expireAt
         })
@@ -212,7 +212,6 @@ describe('save-and-exit service', () => {
     })
 
     test('should describe a record whose answers hold no reference number', async () => {
-      // A projection matching no reference number drops `state` entirely.
       jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([
         /** @type {any} */ ({
           magicLinkId: 'magic-id',

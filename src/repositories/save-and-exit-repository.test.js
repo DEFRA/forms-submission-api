@@ -447,52 +447,46 @@ describe('save-and-exit-repository', () => {
     const sub = 'a3f1c0de-0000-4000-8000-000000000001'
     const iss = 'https://identity.forms.example'
 
-    it('should return the records of that user, soonest to expire first', async () => {
-      const expiresSooner = { ...submissionDocumentV2, magicLinkId: 'id1' }
-      const expiresLater = { ...submissionDocumentV2, magicLinkId: 'id2' }
-      const sort = jest.fn(() => ({
-        toArray: () => [expiresSooner, expiresLater]
-      }))
-      mockCollection.find.mockReturnValueOnce({ sort })
+    it('should keep only the latest record of each group, soonest to expire first', async () => {
+      const latestOfGroup = { ...submissionDocumentV2, magicLinkId: 'id1' }
+      const toArray = jest.fn(() => [latestOfGroup])
+      mockCollection.aggregate.mockReturnValueOnce({ toArray })
 
       const records = await findSaveAndExitRecordsForUser(sub, iss, 'form-id')
 
-      expect(mockCollection.find).toHaveBeenCalledWith(
+      expect(mockCollection.aggregate).toHaveBeenCalledWith([
         {
-          'auth.sub': sub,
-          'auth.issuer': iss,
-          consumed: { $ne: true },
-          'form.id': 'form-id'
+          $match: {
+            'auth.sub': sub,
+            'auth.issuer': iss,
+            consumed: { $ne: true },
+            'form.id': 'form-id'
+          }
         },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: '$magicLinkGroupId', latest: { $first: '$$ROOT' } } },
+        { $replaceRoot: { newRoot: '$latest' } },
+        { $sort: { expireAt: 1 } },
         {
-          projection: {
+          $project: {
             magicLinkId: 1,
             'form.title': 1,
             createdAt: 1,
             expireAt: 1,
-            'state.$$__referenceNumber': 1
+            referenceNumber: {
+              $getField: {
+                field: { $literal: '$$__referenceNumber' },
+                input: '$state'
+              }
+            }
           }
         }
-      )
-      expect(sort).toHaveBeenCalledWith({ expireAt: 1 })
-      expect(records).toEqual([expiresSooner, expiresLater])
+      ])
+      expect(records).toEqual([latestOfGroup])
     })
 
-    it('should limit the records to one form when given a form id', async () => {
-      mockCollection.find.mockReturnValueOnce({
-        sort: jest.fn(() => ({ toArray: () => [] }))
-      })
-
-      await findSaveAndExitRecordsForUser(sub, iss, 'form-id')
-
-      expect(mockCollection.find).toHaveBeenCalledWith(
-        expect.objectContaining({ 'form.id': 'form-id' }),
-        expect.anything()
-      )
-    })
-
-    it('should handle find failures', async () => {
-      mockCollection.find.mockImplementation(() => {
+    it('should handle read failures', async () => {
+      mockCollection.aggregate.mockImplementation(() => {
         throw new Error('an error')
       })
 

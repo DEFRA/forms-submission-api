@@ -97,13 +97,18 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
- * Find the in-progress save-and-exit records of one citizen. A `sub` is
- * unique only within its provider, so the match uses both. The record stores
- * the issuer as `auth.issuer`.
+ * Find the in-progress save-and-exit records of one citizen, for one form.
+ * A `sub` is unique only within its provider, so the match uses both. The
+ * record stores the issuer as `auth.issuer`.
+ *
+ * Saving the same form again writes another record, so only the newest of
+ * each group is kept. The reference number is lifted out of the saved answers
+ * here, which leaves the rest of them in the database. Its key begins with a
+ * `$`, so it is read with `$getField` rather than named as a path.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} formId - the form the records belong to
- * @returns {Promise<WithId<SaveAndExitV2Document>[]>}
+ * @returns {Promise<SaveAndExitRecordSummary[]>}
  */
 export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
   const event = {
@@ -117,27 +122,40 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
   )
 
   try {
-    const filter = /** @type {Filter<SaveAndExitV2Document>} */ ({
-      'auth.sub': sub,
-      'auth.issuer': iss,
-      consumed: { $ne: true },
-      'form.id': formId
-    })
-
-    // The reference number is the only answer needed, so the rest of the
-    // state stays in the database.
-    const results = await coll
-      .find(filter, {
-        projection: {
-          magicLinkId: 1,
-          'form.title': 1,
-          createdAt: 1,
-          expireAt: 1,
-          'state.$$__referenceNumber': 1
-        }
-      })
-      .sort({ expireAt: 1 })
-      .toArray()
+    const results = /** @type {SaveAndExitRecordSummary[]} */ (
+      await coll
+        .aggregate([
+          {
+            $match: {
+              'auth.sub': sub,
+              'auth.issuer': iss,
+              consumed: { $ne: true },
+              'form.id': formId
+            }
+          },
+          { $sort: { createdAt: -1 } },
+          {
+            $group: { _id: '$magicLinkGroupId', latest: { $first: '$$ROOT' } }
+          },
+          { $replaceRoot: { newRoot: '$latest' } },
+          { $sort: { expireAt: 1 } },
+          {
+            $project: {
+              magicLinkId: 1,
+              'form.title': 1,
+              createdAt: 1,
+              expireAt: 1,
+              referenceNumber: {
+                $getField: {
+                  field: { $literal: '$$__referenceNumber' },
+                  input: '$state'
+                }
+              }
+            }
+          }
+        ])
+        .toArray()
+    )
 
     logger.info({ event }, `Read ${results.length} save and exit records`)
 
@@ -582,6 +600,16 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 }
 
 /**
- * @import { ClientSession, Collection, Filter, ObjectId, WithId } from 'mongodb'
+ * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
+ */
+
+/**
+ * One saved form, as the dashboard needs it.
+ * @typedef {object} SaveAndExitRecordSummary
+ * @property {string} magicLinkId
+ * @property {{ title?: string }} form
+ * @property {Date} createdAt
+ * @property {Date} expireAt
+ * @property {string} [referenceNumber]
  */
