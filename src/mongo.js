@@ -62,10 +62,13 @@ export async function prepareDb(logger) {
     consumed: 1
   })
 
-  // Serves the query for one citizen's forms, soonest to expire first.
+  // Serves the query for one citizen's records of one form, soonest to
+  // expire first. The sort field comes last, so the sort reads the index
+  // instead of being done in memory.
   await saveColl.createIndex({
     'auth.issuer': 1,
     'auth.sub': 1,
+    'form.id': 1,
     expireAt: 1
   })
 
