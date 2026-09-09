@@ -92,18 +92,6 @@ export async function validateSavedLinkCredentials(
 }
 
 /**
- * The reference number of a saved form. The engine writes it into the answers
- * on the first page of a form, so the saved state is where it is read from.
- * @param {WithId<SaveAndExitV2Document>} record
- * @returns {string | undefined}
- */
-function getReferenceNumber(record) {
-  return /** @type {{ $$__referenceNumber?: string } | undefined} */ (
-    record.state
-  )?.$$__referenceNumber
-}
-
-/**
  * List the in-progress forms of one citizen, soonest to expire first.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
@@ -114,7 +102,7 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
 
   return records.map((record) => ({
     magicLinkId: record.magicLinkId,
-    referenceNumber: getReferenceNumber(record),
+    referenceNumber: record.referenceNumber,
     formTitle: record.form.title,
     createdAt: record.createdAt,
     expireAt: record.expireAt
@@ -159,7 +147,6 @@ export async function cleanUpSaveAndExit(meta, session) {
 }
 
 /**
- * @import { ClientSession, WithId } from 'mongodb'
+ * @import { ClientSession } from 'mongodb'
  * @import { FormAdapterSubmissionMessageMeta } from '@defra/forms-engine-plugin/engine/types.js'
- * @import { SaveAndExitV2Document } from '~/src/api/types.js'
  */
