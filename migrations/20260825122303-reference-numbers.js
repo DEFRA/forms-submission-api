@@ -1,6 +1,11 @@
 /* eslint-disable no-console */
 import crypto from 'node:crypto'
 
+import {
+  REFERENCE_NUMBERS_COLLECTION_NAME,
+  SUBMISSIONS_COLLECTION_NAME
+} from '~/src/mongo.js'
+
 /**
  * Get the hash of the document excluding the timestamp and `_id` fields
  * @param {any} doc - the document to hash
@@ -16,9 +21,6 @@ function getDocumentHash(doc) {
 
   return crypto.createHash('sha256').update(canonicalString).digest('hex')
 }
-
-export const SUBMISSIONS_COLLECTION_NAME = 'submissions'
-export const REFERENCE_NUMBERS_COLLECTION_NAME = 'reference-numbers'
 
 /**
  * Create the new `reference-numbers` collection and seed it
@@ -129,6 +131,11 @@ export const up = async (db) => {
     { referenceNumber: 1 },
     { unique: true }
   )
+
+  await referenceNumbersColl.createIndex(
+    { expireAt: 1 },
+    { expireAfterSeconds: 0 }
+  ) // enables TTL
 
   console.log(
     '[REF-MIG] Added unique index to the new reference-numbers collection'
