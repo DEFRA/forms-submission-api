@@ -92,6 +92,28 @@ export async function validateSavedLinkCredentials(
 }
 
 /**
+ * The reference number of a saved form. No save-and-exit record carries a
+ * `referenceNumber` column today: the engine writes the number into the
+ * answers on the first page of a form, so that is where it is read from. The
+ * column is preferred when one is present, so a record gains one without this
+ * needing to change.
+ * @param {WithId<SaveAndExitV2Document>} record
+ * @returns {string | undefined}
+ */
+function getReferenceNumber(record) {
+  const stored = /** @type {{ referenceNumber?: string }} */ (record)
+    .referenceNumber
+
+  if (stored) {
+    return stored
+  }
+
+  return /** @type {{ $$__referenceNumber?: string } | undefined} */ (
+    record.state
+  )?.$$__referenceNumber
+}
+
+/**
  * List the in-progress forms of one citizen, soonest to expire first.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
@@ -102,10 +124,7 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
 
   return records.map((record) => ({
     magicLinkId: record.magicLinkId,
-    referenceNumber:
-      /** @type {{ referenceNumber?: string }} */ (record).referenceNumber ??
-      /** @type {{ $$__referenceNumber?: string } | undefined} */ (record.state)
-        ?.$$__referenceNumber,
+    referenceNumber: getReferenceNumber(record),
     formTitle: record.form.title,
     createdAt: record.createdAt,
     expireAt: record.expireAt
@@ -150,6 +169,7 @@ export async function cleanUpSaveAndExit(meta, session) {
 }
 
 /**
- * @import { ClientSession } from 'mongodb'
+ * @import { ClientSession, WithId } from 'mongodb'
  * @import { FormAdapterSubmissionMessageMeta } from '@defra/forms-engine-plugin/engine/types.js'
+ * @import { SaveAndExitV2Document } from '~/src/api/types.js'
  */
