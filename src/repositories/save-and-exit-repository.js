@@ -102,7 +102,7 @@ export async function getLatestSaveAndExitByGroup(groupId) {
  * the issuer as `auth.issuer`.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
- * @param {string} [formId] - limits the result to a single form
+ * @param {string} formId - the form the records belong to
  * @returns {Promise<WithId<SaveAndExitV2Document>[]>}
  */
 export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
@@ -123,7 +123,7 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
       'auth.sub': sub,
       'auth.issuer': iss,
       consumed: { $ne: true },
-      ...(formId ? { 'form.id': formId } : {})
+      'form.id': formId
     })
 
     // The reference number is the only answer needed, so the rest of the
@@ -132,7 +132,6 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
       .find(filter, {
         projection: {
           magicLinkId: 1,
-          'form.id': 1,
           'form.title': 1,
           createdAt: 1,
           expireAt: 1,

@@ -95,7 +95,7 @@ export async function validateSavedLinkCredentials(
  * List the in-progress forms of one citizen, soonest to expire first.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
- * @param {string} [formId] - limits the result to a single form
+ * @param {string} formId - the form the records belong to
  */
 export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
   const records = await findSaveAndExitRecordsForUser(sub, iss, formId)
@@ -106,7 +106,6 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
       /** @type {{ referenceNumber?: string }} */ (record).referenceNumber ??
       /** @type {{ $$__referenceNumber?: string } | undefined} */ (record.state)
         ?.$$__referenceNumber,
-    formId: record.form.id,
     formTitle: record.form.title,
     createdAt: record.createdAt,
     expireAt: record.expireAt

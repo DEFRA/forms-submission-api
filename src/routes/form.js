@@ -50,7 +50,7 @@ export default [
   }),
 
   /**
-   * @type {ServerRoute<{ Query: { formId?: string } }>}
+   * @type {ServerRoute<{ Query: { formId: string } }>}
    */
   ({
     method: 'GET',
@@ -70,7 +70,7 @@ export default [
       validate: {
         query: Joi.object()
           .keys({
-            formId: Joi.string().optional()
+            formId: Joi.string().required()
           })
           .label('getSaveAndExitRecordsQuery')
       },
