@@ -101,8 +101,8 @@ export async function getLatestSaveAndExitByGroup(groupId) {
  * A `sub` is unique only within its provider, so the match uses both. The
  * record stores the issuer as `auth.issuer`.
  *
- * Saving the same form again writes another record, so only the newest of
- * each group is kept. The reference number is lifted out of the saved answers
+ * Saving the same form again writes another record, so `$top` keeps the
+ * newest of each group. The reference number is lifted out of the saved answers
  * here, which leaves the rest of them in the database. Its key begins with a
  * `$`, so it is read with `$getField` rather than named as a path.
  * @param {string} sub - subject claim of the access token
@@ -133,9 +133,13 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
               'form.id': formId
             }
           },
-          { $sort: { createdAt: -1 } },
           {
-            $group: { _id: '$magicLinkGroupId', latest: { $first: '$$ROOT' } }
+            $group: {
+              _id: '$magicLinkGroupId',
+              latest: {
+                $top: { sortBy: { createdAt: -1 }, output: '$$ROOT' }
+              }
+            }
           },
           { $replaceRoot: { newRoot: '$latest' } },
           { $sort: { expireAt: 1 } },
