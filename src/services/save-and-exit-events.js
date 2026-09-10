@@ -228,35 +228,15 @@ export async function processSaveAndExitEvents(messages) {
       return await session.withTransaction(async () => {
         const data = await mapSaveAndExitMessageToData(message)
 
-        if (
+        const isV1 =
           data.parsedContent.type ===
           SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT
-        ) {
-          const dataTyped =
-            /** @type {{ messageId: string, parsedContent: SaveAndExitMessage}} */ (
-              data
-            )
-          const document = mapSaveAndExitDataToDocumentV1(dataTyped)
-          await createSaveAndExitRecord(document, session)
-          const emailContent = constructEmailContentV1(
-            /** @type {Omit<SaveAndExitV1Document, "expireAt">} */ (document),
-            data.parsedContent.data.form.title
-          )
-          await sendNotification(emailContent)
-        } else {
-          const dataTyped =
-            /** @type {{ messageId: string, parsedContent: SaveAndExitV2Message}} */ (
-              data
-            )
-          const document = mapSaveAndExitDataToDocumentV2(dataTyped)
-          await createSaveAndExitRecord(document, session)
-          const emailContent = await constructEmailContentV2(
-            document,
-            data.parsedContent.data.form,
-            createdTranslator
-          )
-          await sendNotification(emailContent)
-        }
+
+        const emailContent = isV1
+          ? await handleSaveAndExitV1(data, session)
+          : await handleSaveAndExitV2(data, session)
+
+        await sendNotification(emailContent)
 
         logger.info(`Deleting save and exit message ${message.MessageId}`)
 
@@ -302,7 +282,47 @@ export async function processSaveAndExitEvents(messages) {
 }
 
 /**
+ * Handle a V1 message (map data, save data to DB, construct email content)
+ * @param {{ messageId: string, parsedContent: SaveAndExitMessage | SaveAndExitV2Message }} data
+ * @param {ClientSession} session
+ * @returns {Promise<SendNotificationArgs>} email content
+ */
+async function handleSaveAndExitV1(data, session) {
+  const dataTyped =
+    /** @type {{ messageId: string, parsedContent: SaveAndExitMessage}} */ (
+      data
+    )
+  const document = mapSaveAndExitDataToDocumentV1(dataTyped)
+  await createSaveAndExitRecord(document, session)
+  return constructEmailContentV1(
+    /** @type {Omit<SaveAndExitV1Document, "expireAt">} */ (document),
+    data.parsedContent.data.form.title
+  )
+}
+
+/**
+ * Handle a V2 message (map data, save data to DB, construct email content)
+ * @param {{ messageId: string, parsedContent: SaveAndExitMessage | SaveAndExitV2Message }} data
+ * @param {ClientSession} session
+ * @returns {Promise<SendNotificationArgs>} email content
+ */
+async function handleSaveAndExitV2(data, session) {
+  const dataTyped =
+    /** @type {{ messageId: string, parsedContent: SaveAndExitV2Message}} */ (
+      data
+    )
+  const document = mapSaveAndExitDataToDocumentV2(dataTyped)
+  await createSaveAndExitRecord(document, session)
+  return await constructEmailContentV2(
+    document,
+    data.parsedContent.data.form,
+    createdTranslator
+  )
+}
+
+/**
  * @import { Message } from '@aws-sdk/client-sqs'
+ * @import { ClientSession } from 'mongodb'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
  * @import { FormStatus, SaveAndExitMessage, SaveAndExitV2Message } from '@defra/forms-model'
  * @import { SubmissionTranslator } from '~/src/api/types.js'
