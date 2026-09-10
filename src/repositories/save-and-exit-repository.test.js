@@ -463,8 +463,14 @@ describe('save-and-exit-repository', () => {
             'form.id': 'form-id'
           }
         },
-        { $sort: { createdAt: -1 } },
-        { $group: { _id: '$magicLinkGroupId', latest: { $first: '$$ROOT' } } },
+        {
+          $group: {
+            _id: '$magicLinkGroupId',
+            latest: {
+              $top: { sortBy: { createdAt: -1 }, output: '$$ROOT' }
+            }
+          }
+        },
         { $replaceRoot: { newRoot: '$latest' } },
         { $sort: { expireAt: 1 } },
         {
