@@ -17,7 +17,7 @@ export const STUB_SAVE_AND_EXIT_RECORD_ID = '68948579d5659369f1e634c6'
  * @param {string} [formId]
  * @returns {SaveAndExitMessage}
  */
-export function buildSaveAndExitMessage(
+export function buildSaveAndExitV1Message(
   partialSaveAndExitMessage = {},
   formId
 ) {
@@ -40,6 +40,44 @@ export function buildSaveAndExitMessage(
       security: {
         question: SecurityQuestionsEnum.MemorablePlace,
         answer: 'a2'
+      },
+      state: {
+        formField1: 'val1',
+        formField2: 'val2'
+      }
+    },
+    ...partialSaveAndExitMessage
+  }
+}
+
+/**
+ * @param {Partial<SaveAndExitV2Message>} partialSaveAndExitMessage
+ * @param {string} [formId]
+ * @returns {SaveAndExitV2Message}
+ */
+export function buildSaveAndExitV2Message(
+  partialSaveAndExitMessage = {},
+  formId
+) {
+  return {
+    category: SubmissionEventMessageCategory.RUNNER,
+    type: SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT_V2,
+    schemaVersion: SubmissionEventMessageSchemaVersion.V1,
+    source: SubmissionEventMessageSource.FORMS_RUNNER,
+    createdAt: new Date('2025-08-07T10:52:22.236Z'),
+    messageCreatedAt: new Date('2025-08-07T10:52:22.246Z'),
+    data: {
+      form: {
+        id: formId ?? '688131eeff67f889d52c66cc',
+        title: 'My FirstForm',
+        status: FormStatus.Draft,
+        isPreview: false,
+        baseUrl: 'http://localhost:3009'
+      },
+      email: 'my-email@test.com',
+      auth: {
+        sub: 'auth-sub',
+        issuer: 'auth-issuer'
       },
       state: {
         formField1: 'val1',
@@ -86,7 +124,7 @@ export function buildMessage(partialMessage = {}) {
 
 /**
  * Builds a message from a Message Partial and AuditMessage
- * @param {SaveAndExitMessage} saveAndExitMessage
+ * @param {SaveAndExitMessage | SaveAndExitV2Message} saveAndExitMessage
  * @param {Partial<Message>} partialMessage
  * @returns {Message}
  */
@@ -103,10 +141,10 @@ export function buildMessageFromRunnerMessage(
 }
 
 /**
- * @returns {WithId<SaveAndExitDocument>}
+ * @returns {WithId<SaveAndExitV1Document>}
  */
-export function buildDbDocument() {
-  return /** @type {WithId<SaveAndExitDocument>} */ ({
+export function buildDbDocumentV1() {
+  return /** @type {WithId<SaveAndExitV1Document>} */ ({
     magicLinkId: 'magic-id',
     form: {
       id: 'form-id',
@@ -137,8 +175,40 @@ export function buildDbDocument() {
 }
 
 /**
+ * @returns {WithId<SaveAndExitV2Document>}
+ */
+export function buildDbDocumentV2() {
+  return /** @type {WithId<SaveAndExitV2Document>} */ ({
+    magicLinkId: 'magic-id',
+    form: {
+      id: 'form-id',
+      status: 'draft',
+      isPreview: false,
+      baseUrl: 'http://localhost:3009',
+      title: 'My FirstForm'
+    },
+    auth: {
+      sub: 'auth-sub',
+      issuer: 'auth-issuer'
+    },
+    state: {
+      formField1: 'val1',
+      formField2: 'val2'
+    },
+    createdAt: new Date(),
+    expireAt: addDays(new Date(), 28),
+    version: 1,
+    notify: {
+      expireLockId: null,
+      expireLockTimestamp: null,
+      expireEmailSentTimestamp: null
+    }
+  })
+}
+
+/**
  * @import { WithId } from 'mongodb'
- * @import { SaveAndExitMessage, } from '@defra/forms-model'
+ * @import { SaveAndExitMessage, SaveAndExitV2Message } from '@defra/forms-model'
  * @import { Message } from '@aws-sdk/client-sqs'
- * @import { SaveAndExitDocument } from '~/src/api/types.js'
+ * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */

@@ -1,0 +1,10 @@
+{
+  "saveAndExit": {
+    "progressSavedShort": "Form progress saved",
+    "progressSavedLong": "Your progress with '[[formTitle]]' has been saved.",
+    "signInToContinue": "Sign in using the link below to continue your '[[formTitle]]' form.",
+    "sameEmailOrNumber": "Use the same email address or mobile phone number you used when you created your sign-in.",
+    "continueForm": "Continue with your form",
+    "expiryIfNoSignIn": "If you do not sign in within [[expiryInDays]] days, your saved information will be deleted"
+  }
+}

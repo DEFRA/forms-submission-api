@@ -1,6 +1,6 @@
 import { SecurityQuestionsEnum } from '@defra/forms-model'
 
-import { buildDbDocument } from '~/src/repositories/__stubs__/save-and-exit.js'
+import { buildDbDocumentV1 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
   getLatestSaveAndExitByGroup,
@@ -27,7 +27,7 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
 
 describe('save-and-exit service', () => {
   describe('validateSavedLinkCredentials', () => {
-    const submissionDocument = buildDbDocument()
+    const submissionDocument = buildDbDocumentV1()
 
     test('should throw if invalid magic link', async () => {
       // @ts-expect-error - undefined as returned record i.e. record not found
