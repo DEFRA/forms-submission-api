@@ -67,14 +67,14 @@ export async function updateWithSubmissionId(
   const updateResult = await coll.updateOne(
     { referenceNumber },
     { $set: { submissionId }, $unset: { expireAt: '' } },
-    { session }
+    { session, upsert: true }
   )
 
   logger.info(
     `Updated reference number record ${referenceNumber} with submission id ${submissionId.toString()}`
   )
 
-  return updateResult.modifiedCount === 1
+  return updateResult.upsertedCount === 1
 }
 
 /**

@@ -110,7 +110,7 @@ describe('reference-number-repository', () => {
 
   describe('updateWithSubmissionId', () => {
     it('should update reference number record', async () => {
-      mockCollection.updateOne.mockResolvedValueOnce({ modifiedCount: 1 })
+      mockCollection.updateOne.mockResolvedValueOnce({ upsertedCount: 1 })
       const referenceNumber = 'XXX-XXX-XXX'
       const submissionId = new ObjectId()
       const result = await updateWithSubmissionId(
@@ -121,7 +121,10 @@ describe('reference-number-repository', () => {
       const [filter, update, session] = mockCollection.updateOne.mock.calls[0]
       expect(result).toBe(true)
       expect(filter).toEqual({ referenceNumber })
-      expect(session).toEqual({ session: mockSession })
+      expect(session).toEqual({
+        session: mockSession,
+        upsert: true
+      })
       expect(update).toEqual({
         $set: { submissionId },
         $unset: { expireAt: '' }
