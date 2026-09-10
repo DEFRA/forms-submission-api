@@ -28,7 +28,7 @@ const config = {
   lockCollectionName: 'changelog_lock',
 
   // The value in seconds for the TTL index that will be used for the lock. Value of 0 will disable the feature.
-  lockTtl: 0,
+  lockTtl: 20,
 
   // The file extension to create migrations and search for in migration dir
   migrationFileExtension: '.js',
