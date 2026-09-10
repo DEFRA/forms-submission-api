@@ -45,18 +45,25 @@ export function createS3File(key, body, contentType, client) {
   )
 }
 
+/** @type {S3Client | undefined} */
+let s3Client
+
 /**
- * Retrieves an S3 client
+ * Retrieves a shared S3 client, creating it on first use.
+ * Reusing a single client lets the AWS SDK reuse its connection pool
+ * and credentials instead of paying that cost on every file operation.
  * @returns {S3Client}
  */
 export function getS3Client() {
-  return new S3Client({
+  s3Client ??= new S3Client({
     region: awsRegion,
     ...(config.get('s3Endpoint') && {
       endpoint: config.get('s3Endpoint'),
       forcePathStyle: true
     })
   })
+
+  return s3Client
 }
 
 /**
