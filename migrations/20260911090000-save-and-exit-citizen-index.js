@@ -2,8 +2,6 @@
 
 export const SAVE_AND_EXIT_COLLECTION_NAME = 'save-and-exit'
 
-const INDEX_NAME = 'auth.issuer_1_auth.sub_1_form.id_1_expireAt_1'
-
 /**
  * Serves the query behind the citizen's homepage: the records of one citizen
  * for one form, soonest to expire first. The sort field comes last, so the
@@ -32,14 +30,13 @@ export const up = async (db) => {
 }
 
 /**
- * @param {Db} db - the Mongo Db instance
+ * Rollback migration (not implemented)
+ * @returns {Promise<void>}
  */
-export const down = async (db) => {
-  const saveColl = /** @type {Collection<SaveAndExitDocument>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+export function down() {
+  return Promise.reject(
+    new Error('Migration rollback is not supported for data safety reasons')
   )
-
-  await saveColl.dropIndex(INDEX_NAME)
 }
 
 /**
