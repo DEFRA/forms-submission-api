@@ -33,7 +33,7 @@ process.env.COGNITO_JWKS_URI = 'https://cognito.com/.well_known/jwks.json'
 process.env.COGNITO_CLIENT_IDS =
   '{"dummy": ["test-key-1", "test-key-2"], "6v87ae6bg5tltqsdfe3icgjv": ["test"]}'
 process.env.COGNITO_VERIFY_ISS = 'dummy'
-process.env.CITIZEN_JWKS_URI = 'https://identity.com/.well_known/jwks.json'
+process.env.CITIZEN_JWKS_URI = 'https://identity.test/.well_known/jwks.json'
 process.env.CITIZEN_VERIFY_AUD = 'urn:defra:forms:forms-submission-api'
 process.env.CITIZEN_VERIFY_ISS = 'dummy'
 process.env.S3_BUCKET = 'test-forms-submission-bucket'
@@ -105,7 +105,7 @@ process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey.export({
   format: 'pem'
 })
 
-nock('https://identity.com')
+nock('https://identity.test')
   .persist()
   .get('/.well_known/jwks.json')
   .reply(200, {
