@@ -25,15 +25,17 @@ const ISSUER = 'dummy'
 const AUDIENCE = 'urn:defra:forms:forms-submission-api'
 const SUB = 'a3f1c0de-0000-4000-8000-000000000001'
 
-const privateKeyPem = String(process.env.CITIZEN_SIGNING_PRIVATE_KEY)
+const privateKeyPem = /** @type {string} */ (
+  process.env.CITIZEN_SIGNING_PRIVATE_KEY
+)
 const kid = process.env.CITIZEN_SIGNING_KEY_ID
 
 /**
- * Signs a token the way the identity provider does.
+ * Creates an access token, signed the way the identity provider signs it.
  * @param {Record<string, unknown>} [claims]
  * @param {string} [key]
  */
-function signAccessToken(claims = {}, key = privateKeyPem) {
+function createAccessToken(claims = {}, key = privateKeyPem) {
   return Jwt.token.generate(
     {
       sub: SUB,
@@ -72,7 +74,7 @@ describe('Citizen access token', () => {
   test('should accept a token the identity provider signed and name the citizen from it', async () => {
     jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValueOnce([])
 
-    const response = await callWith(signAccessToken())
+    const response = await callWith(createAccessToken())
 
     expect(response.statusCode).toEqual(StatusCodes.OK)
     expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
@@ -84,7 +86,7 @@ describe('Citizen access token', () => {
 
   test('should refuse a token minted for another resource server', async () => {
     const response = await callWith(
-      signAccessToken({ aud: 'urn:defra:forms:someone-else' })
+      createAccessToken({ aud: 'urn:defra:forms:someone-else' })
     )
 
     expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
@@ -92,7 +94,7 @@ describe('Citizen access token', () => {
 
   test('should refuse a token from another issuer', async () => {
     const response = await callWith(
-      signAccessToken({ iss: 'https://impostor.example' })
+      createAccessToken({ iss: 'https://impostor.example' })
     )
 
     expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
@@ -100,7 +102,7 @@ describe('Citizen access token', () => {
 
   test('should refuse a token signed by a key the provider does not publish', async () => {
     const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
-    const forged = signAccessToken(
+    const forged = createAccessToken(
       {},
       /** @type {string} */ (
         privateKey.export({ type: 'pkcs8', format: 'pem' })
@@ -114,7 +116,7 @@ describe('Citizen access token', () => {
 
   test('should refuse an expired token', async () => {
     const response = await callWith(
-      signAccessToken({ exp: Math.floor(Date.now() / 1000) - 60 })
+      createAccessToken({ exp: Math.floor(Date.now() / 1000) - 60 })
     )
 
     expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
