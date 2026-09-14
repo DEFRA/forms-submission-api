@@ -112,6 +112,9 @@ services:
       COGNITO_JWKS_URI: 'http://oidc:80/.well-known/openid-configuration/jwks'
       COGNITO_CLIENT_IDS: '{}'
       COGNITO_VERIFY_ISS: 'http://oidc:80'
+      CITIZEN_JWKS_URI: 'http://oidc:80/.well-known/openid-configuration/jwks'
+      CITIZEN_VERIFY_AUD: 'urn:defra:forms:forms-submission-api'
+      CITIZEN_VERIFY_ISS: 'http://oidc:80'
       # Mock S3 configuration for testing
       AWS_ACCESS_KEY_ID: 'test'
       AWS_SECRET_ACCESS_KEY: 'test'
