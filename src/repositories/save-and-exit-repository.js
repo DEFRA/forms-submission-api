@@ -141,8 +141,16 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
           },
           // Use the newest record as the document.
           { $replaceRoot: { newRoot: '$latest' } },
-          // Put the records that expire first at the top.
-          { $sort: { expireAt: 1 } },
+          // Order by expiry: the records that have not expired first, then the
+          // expired records. In each set, the record that expires first is at
+          // the top. The order key is used only here, and the projection below
+          // leaves it out of the result.
+          {
+            $set: {
+              expiryOrder: { $cond: [{ $lte: ['$expireAt', '$$NOW'] }, 1, 0] }
+            }
+          },
+          { $sort: { expiryOrder: 1, expireAt: 1 } },
           // Return only the fields that the citizen dashboard shows.
           {
             $project: {

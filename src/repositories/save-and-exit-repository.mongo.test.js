@@ -29,6 +29,18 @@ const SUB = 'a3f1c0de-0000-4000-8000-000000000001'
 const ISSUER = 'https://identity.test'
 const FORM_ID = '688131eeff67f889d52c66cc'
 
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/**
+ * A date some days from the time the test runs. The query compares expiry
+ * with the database clock, so expiry dates in the sort tests count from now
+ * rather than from a fixed date, so that they stay on the same side of it.
+ * @param {number} days - negative for a date in the past
+ */
+function daysFromNow(days) {
+  return new Date(Date.now() + days * DAY_MS)
+}
+
 /**
  * A saved record of the citizen, for the form under test
  * @param {string} magicLinkId
@@ -103,8 +115,8 @@ describe('findSaveAndExitRecordsForUser', () => {
 
   it('should return the records that expire first at the top', async () => {
     await insert([
-      buildRecord('later', { expireAt: new Date('2026-09-29T09:00:00.000Z') }),
-      buildRecord('sooner', { expireAt: new Date('2026-09-15T09:00:00.000Z') })
+      buildRecord('later', { expireAt: daysFromNow(15) }),
+      buildRecord('sooner', { expireAt: daysFromNow(1) })
     ])
 
     const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
@@ -112,6 +124,22 @@ describe('findSaveAndExitRecordsForUser', () => {
     expect(records.map((record) => record.magicLinkId)).toEqual([
       'sooner',
       'later'
+    ])
+  })
+
+  it('should return the expired records after the records that have not expired', async () => {
+    await insert([
+      buildRecord('later', { expireAt: daysFromNow(15) }),
+      buildRecord('expired', { expireAt: daysFromNow(-1) }),
+      buildRecord('sooner', { expireAt: daysFromNow(1) })
+    ])
+
+    const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
+
+    expect(records.map((record) => record.magicLinkId)).toEqual([
+      'sooner',
+      'later',
+      'expired'
     ])
   })
 
