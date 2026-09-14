@@ -50,15 +50,13 @@ export default [
   }),
 
   /**
-   * @type {ServerRoute<{ Query: { formId: string } }>}
+   * @type {ServerRoute<GetSaveAndExitRecordsRequest>}
    */
   ({
     method: 'GET',
     path: '/save-and-exit/records',
     handler(request) {
-      const { sub, iss } = /** @type {{ sub: string, iss: string }} */ (
-        request.auth.credentials.user
-      )
+      const { sub, iss } = request.auth.credentials.user
       const { formId } = request.query
 
       return getSaveAndExitRecordsForUser(sub, iss, formId)
@@ -180,5 +178,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit } from '~/src/api/types.js'
  */
