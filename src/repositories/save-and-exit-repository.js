@@ -97,14 +97,7 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
- * Find the in-progress save-and-exit records of one citizen, for one form.
- * A `sub` is unique only within its provider, so the match uses both. The
- * record stores the issuer as `auth.issuer`.
- *
- * Saving the same form again writes another record, so `$top` keeps the
- * newest of each group. The reference number is lifted out of the saved answers
- * here, which leaves the rest of them in the database. Its key begins with a
- * `$`, so it is read with `$getField` rather than named as a path.
+ * Finds the open save-and-exit records of one citizen for one form.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} formId - the form the records belong to
@@ -125,6 +118,9 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
     const results = /** @type {SaveAndExitRecordSummary[]} */ (
       await coll
         .aggregate([
+          // Get the records of this citizen for this form that are not
+          // consumed. A subject is unique only for one issuer, thus match the
+          // two values.
           {
             $match: {
               'auth.sub': sub,
@@ -133,6 +129,8 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
               'form.id': formId
             }
           },
+          // Each save of a form writes a new record in the same group. Keep
+          // only the newest record of each group.
           {
             $group: {
               _id: '$magicLinkGroupId',
@@ -141,14 +139,20 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
               }
             }
           },
+          // Use the newest record as the document.
           { $replaceRoot: { newRoot: '$latest' } },
+          // Put the records that expire first at the top.
           { $sort: { expireAt: 1 } },
+          // Return only the fields that the citizen dashboard shows.
           {
             $project: {
               magicLinkId: 1,
               'form.title': 1,
               createdAt: 1,
               expireAt: 1,
+              // The key of the reference number starts with `$`, thus read it
+              // with `$getField`. If the saved answers have no reference
+              // number, the result does not have this field.
               referenceNumber: {
                 $getField: {
                   field: { $literal: '$$__referenceNumber' },

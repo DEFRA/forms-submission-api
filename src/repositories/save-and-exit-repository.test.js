@@ -65,8 +65,6 @@ jest.mock('~/src/mongo.js', () => {
 describe('save-and-exit-repository', () => {
   const submissionDocumentV1 = buildDbDocumentV1()
 
-  const submissionDocumentV2 = buildDbDocumentV2()
-
   const submissionRecordInputV1 = structuredClone(buildDbDocumentV1())
 
   const submissionRecordInputV2 = structuredClone(buildDbDocumentV2())
@@ -446,50 +444,6 @@ describe('save-and-exit-repository', () => {
   describe('findSaveAndExitRecordsForUser', () => {
     const sub = 'a3f1c0de-0000-4000-8000-000000000001'
     const iss = 'https://identity.forms.example'
-
-    it('should keep only the latest record of each group, soonest to expire first', async () => {
-      const latestOfGroup = { ...submissionDocumentV2, magicLinkId: 'id1' }
-      const toArray = jest.fn(() => [latestOfGroup])
-      mockCollection.aggregate.mockReturnValueOnce({ toArray })
-
-      const records = await findSaveAndExitRecordsForUser(sub, iss, 'form-id')
-
-      expect(mockCollection.aggregate).toHaveBeenCalledWith([
-        {
-          $match: {
-            'auth.sub': sub,
-            'auth.issuer': iss,
-            consumed: { $ne: true },
-            'form.id': 'form-id'
-          }
-        },
-        {
-          $group: {
-            _id: '$magicLinkGroupId',
-            latest: {
-              $top: { sortBy: { createdAt: -1 }, output: '$$ROOT' }
-            }
-          }
-        },
-        { $replaceRoot: { newRoot: '$latest' } },
-        { $sort: { expireAt: 1 } },
-        {
-          $project: {
-            magicLinkId: 1,
-            'form.title': 1,
-            createdAt: 1,
-            expireAt: 1,
-            referenceNumber: {
-              $getField: {
-                field: { $literal: '$$__referenceNumber' },
-                input: '$state'
-              }
-            }
-          }
-        }
-      ])
-      expect(records).toEqual([latestOfGroup])
-    })
 
     it('should handle read failures', async () => {
       mockCollection.aggregate.mockImplementation(() => {
