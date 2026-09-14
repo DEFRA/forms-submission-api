@@ -615,9 +615,9 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 /**
  * One saved form, as the dashboard needs it.
  * @typedef {object} SaveAndExitRecordSummary
- * @property {string} magicLinkId
- * @property {{ title?: string }} form
- * @property {Date} createdAt
- * @property {Date} expireAt
- * @property {string} [referenceNumber]
+ * @property {string} magicLinkId - the link that opens the saved form
+ * @property {{ title?: string }} form - the form of the record
+ * @property {Date} createdAt - when the citizen saved the form
+ * @property {Date} expireAt - when the record expires
+ * @property {string} [referenceNumber] - the reference number, if the saved answers have one
  */
