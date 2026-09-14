@@ -312,6 +312,11 @@ describe('Forms route', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        statusCode: StatusCodes.BAD_REQUEST,
+        error: 'Bad Request',
+        message: '"formId" is required'
+      })
     })
 
     test('Testing GET /save-and-exit/records is not reachable without a citizen token', async () => {
@@ -321,6 +326,10 @@ describe('Forms route', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+      expect(response.result).toMatchObject({
+        statusCode: StatusCodes.UNAUTHORIZED,
+        error: 'Unauthorized'
+      })
     })
   })
 })
