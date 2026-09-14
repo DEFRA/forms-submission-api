@@ -217,29 +217,31 @@ export const config = convict({
     nullable: false,
     env: 'OIDC_VERIFY_ISS'
   },
-  /** @type {SchemaObj<string>} */
-  citizenJwksUri: {
-    doc: 'The URI that defines the json web key set of the citizen identity provider (forms-identity-ui)',
-    format: String,
-    default: null,
-    nullable: false,
-    env: 'CITIZEN_JWKS_URI'
-  },
-  /** @type {SchemaObj<string>} */
-  citizenVerifyAud: {
-    doc: 'The audience used for verifying the citizen access token. This is the resource indicator forms-runner asks the identity provider for, and identifies this API.',
-    format: String,
-    default: null,
-    nullable: false,
-    env: 'CITIZEN_VERIFY_AUD'
-  },
-  /** @type {SchemaObj<string>} */
-  citizenVerifyIss: {
-    doc: 'The issuer used for verifying the citizen access token, i.e. the public origin of forms-identity-ui',
-    format: String,
-    default: null,
-    nullable: false,
-    env: 'CITIZEN_VERIFY_ISS'
+  citizen: {
+    /** @type {SchemaObj<string>} */
+    jwksUri: {
+      doc: 'The URI that defines the json web key set of the citizen identity provider (forms-identity-ui)',
+      format: String,
+      default: null,
+      nullable: false,
+      env: 'CITIZEN_JWKS_URI'
+    },
+    /** @type {SchemaObj<string>} */
+    verifyAud: {
+      doc: 'The audience used for verifying the citizen access token. This is the resource indicator forms-runner asks the identity provider for, and identifies this API.',
+      format: String,
+      default: null,
+      nullable: false,
+      env: 'CITIZEN_VERIFY_AUD'
+    },
+    /** @type {SchemaObj<string>} */
+    verifyIss: {
+      doc: 'The issuer used for verifying the citizen access token, i.e. the public origin of forms-identity-ui',
+      format: String,
+      default: null,
+      nullable: false,
+      env: 'CITIZEN_VERIFY_ISS'
+    }
   },
   /** @type {SchemaObj<string>} */
   cognitoJwksUri: {

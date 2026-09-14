@@ -9,9 +9,9 @@ const oidcJwksUri = config.get('oidcJwksUri')
 const oidcVerifyAud = config.get('oidcVerifyAud')
 const oidcVerifyIss = config.get('oidcVerifyIss')
 
-const citizenJwksUri = config.get('citizenJwksUri')
-const citizenVerifyAud = config.get('citizenVerifyAud')
-const citizenVerifyIss = config.get('citizenVerifyIss')
+const citizenJwksUri = config.get('citizen.jwksUri')
+const citizenVerifyAud = config.get('citizen.verifyAud')
+const citizenVerifyIss = config.get('citizen.verifyIss')
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
