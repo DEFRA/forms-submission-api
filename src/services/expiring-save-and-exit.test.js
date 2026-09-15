@@ -10,6 +10,7 @@ import {
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   constructExpiryReminderEmailContent,
+  getResumeLink,
   processExpiringSaveAndExitRecords
 } from '~/src/services/expiring-save-and-exit.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
@@ -107,10 +108,10 @@ describe('expiring-save-and-exit', () => {
         expireAt
       })
 
-      const result = constructExpiryReminderEmailContent(
-        mockDocument,
-        'Test Form'
-      )
+      const result = constructExpiryReminderEmailContent(mockDocument, {
+        title: 'Test Form',
+        slug: 'test-form'
+      })
 
       expect(result.emailAddress).toBe('test@example.com')
       expect(result.templateId).toBe(config.get('notifyTemplateId'))
@@ -141,10 +142,10 @@ describe('expiring-save-and-exit', () => {
         }
       })
 
-      const result = constructExpiryReminderEmailContent(
-        mockDocument,
-        'Another Form'
-      )
+      const result = constructExpiryReminderEmailContent(mockDocument, {
+        title: 'Another Form',
+        slug: 'another-form'
+      })
 
       // Should round down to 36 hours, not 37
       expect(result.personalisation.body).toContain('in 36 hours')
@@ -164,10 +165,10 @@ describe('expiring-save-and-exit', () => {
         }
       })
 
-      const result = constructExpiryReminderEmailContent(
-        mockDocument,
-        'Third Form'
-      )
+      const result = constructExpiryReminderEmailContent(mockDocument, {
+        title: 'Third Form',
+        slug: 'third-form'
+      })
 
       // Should round down to 1 hour
       expect(result.personalisation.body).toContain('in 1 hour')
@@ -191,7 +192,7 @@ describe('expiring-save-and-exit', () => {
       expect(mockMarkExpiryEmailSent).not.toHaveBeenCalled()
     })
 
-    test('should process expiring records successfully with title in document', async () => {
+    test('should process expiring records successfully with title in cache', async () => {
       const expireAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
 
       const mockRecords = [
@@ -273,10 +274,12 @@ describe('expiring-save-and-exit', () => {
         'test-link-2',
         mockRuntimeId
       )
-      expect(mockGetFormMetadataById).not.toHaveBeenCalled()
+      expect(mockGetFormMetadataById).toHaveBeenCalledTimes(2)
+      expect(mockGetFormMetadataById).toHaveBeenNthCalledWith(1, 'form-1')
+      expect(mockGetFormMetadataById).toHaveBeenNthCalledWith(2, 'form-2')
     })
 
-    test('should fetch form title from API when not in document', async () => {
+    test('should fetch form title from API when not in cache', async () => {
       const expireAt = new Date(Date.now() + 48 * 60 * 60 * 1000)
 
       const mockRecords = [
@@ -593,6 +596,75 @@ describe('expiring-save-and-exit', () => {
       expect(markExpiryEmailSent).toHaveBeenCalledWith(
         'test-link-2',
         mockRuntimeId
+      )
+    })
+  })
+
+  describe('getResumeLink', () => {
+    const magicLinkDocument = {
+      magicLinkId: 'magic-link-id',
+      form: {
+        id: 'form-id',
+        isPreview: false,
+        status: FormStatus.Live,
+        baseUrl: 'http://local-runner.com'
+      }
+    }
+    const liveDocument = {
+      auth: {
+        sub: 'auth-sub',
+        issuer: 'auth-issuer'
+      },
+      form: {
+        isPreview: false,
+        status: FormStatus.Live,
+        baseUrl: 'http://local-runner.com'
+      }
+    }
+    const livePreviewDocument = {
+      auth: {
+        sub: 'auth-sub',
+        issuer: 'auth-issuer'
+      },
+      form: {
+        isPreview: true,
+        status: FormStatus.Live,
+        baseUrl: 'http://local-runner.com'
+      }
+    }
+    const draftPreviewDocument = {
+      auth: {
+        sub: 'auth-sub',
+        issuer: 'auth-issuer'
+      },
+      form: {
+        isPreview: true,
+        status: FormStatus.Draft,
+        baseUrl: 'http://local-runner.com'
+      }
+    }
+    const titleAndSlug = {
+      title: 'My form',
+      slug: 'my-form'
+    }
+    test('should get link to resume using magic link', () => {
+      expect(getResumeLink(magicLinkDocument, titleAndSlug)).toBe(
+        'http://local-runner.com/resume-form/form-id/magic-link-id'
+      )
+    })
+    test('should get link to resume using homepage live non-preview', () => {
+      expect(getResumeLink(liveDocument, titleAndSlug)).toBe(
+        'http://local-runner.com/homepage/my-form'
+      )
+    })
+    test('should get link to resume using homepage draft preview', () => {
+      expect(getResumeLink(draftPreviewDocument, titleAndSlug)).toBe(
+        'http://local-runner.com/homepage/preview/draft/my-form'
+      )
+    })
+    test('should get link to resume using homepage live preview', () => {
+      expect(getResumeLink(livePreviewDocument, titleAndSlug)).toBe(
+        'http://local-runner.com/homepage/preview/live/my-form'
       )
     })
   })
