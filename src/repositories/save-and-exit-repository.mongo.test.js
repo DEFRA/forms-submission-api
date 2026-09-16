@@ -291,6 +291,17 @@ describe('findSaveAndExitRecordForUser', () => {
       findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
     ).resolves.toBeNull()
   })
+
+  it('returns nothing for a record that has been consumed', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne({ magicLinkId: LINK }, { $set: { consumed: true } })
+
+    await expect(
+      findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+    ).resolves.toBeNull()
+  })
 })
 
 /**
