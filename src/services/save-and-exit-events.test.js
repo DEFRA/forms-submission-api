@@ -1,4 +1,5 @@
 import {
+  FormStatus,
   SecurityQuestionsEnum,
   SubmissionEventMessageCategory,
   SubmissionEventMessageSource,
@@ -19,6 +20,7 @@ import {
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import {
+  mapSaveAndExitDataToDocumentV2,
   mapSaveAndExitMessageToData,
   processSaveAndExitEvents
 } from '~/src/services/save-and-exit-events.js'
@@ -327,6 +329,7 @@ describe('events', () => {
           formField2: 'val2'
         },
         magicLinkId: expect.any(String),
+        magicLinkGroupId: '',
         createdAt: expect.any(Date),
         version: 1,
         notify: {
@@ -398,6 +401,50 @@ describe('events', () => {
       expect(result.failed).toHaveLength(2)
       expect(result.failed).toContainEqual(new Error('error in create'))
       expect(result.failed).toContainEqual(new Error('error in delete'))
+    })
+  })
+
+  describe('mapSaveAndExitDataToDocumentV2', () => {
+    const messageData = {
+      form: {
+        id: '689b3b1a7f8e2d0012a4b7c1',
+        title: 'My First Form',
+        status: FormStatus.Live,
+        isPreview: false,
+        baseUrl: 'http://localhost:3009'
+      },
+      email: 'my-email@test.com',
+      auth: { sub: 'auth-sub', issuer: 'https://identity.test' },
+      state: { formField1: 'val1' }
+    }
+
+    it('takes the link id from the queue message, so the record can be resumed', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
+        parsedContent: { data: messageData }
+      })
+
+      expect(document.magicLinkId).toBe('fd4e6453-fb32-43e4-b4cf-12b381a713de')
+    })
+
+    it('leaves the group id empty when the form is saved for the first time', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
+        parsedContent: { data: messageData }
+      })
+
+      expect(document.magicLinkGroupId).toBe('')
+    })
+
+    it('keeps the group id of a resumed form, so the earlier record is superseded', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
+        parsedContent: {
+          data: { ...messageData, magicLinkGroupId: 'group-1' }
+        }
+      })
+
+      expect(document.magicLinkGroupId).toBe('group-1')
     })
   })
 })
