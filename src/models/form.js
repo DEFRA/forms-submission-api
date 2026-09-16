@@ -18,8 +18,9 @@ export const getSavedLinkResponseSchema = Joi.object({
     isPreview: Joi.boolean().required(),
     baseUrl: Joi.string().required()
   },
-  question: Joi.string().required(),
-  invalidPasswordAttempts: Joi.number().min(0).required()
+  authType: Joi.string().valid('citizenSignIn', 'memorableWord').required(),
+  question: Joi.string().optional(),
+  invalidPasswordAttempts: Joi.number().min(0).optional()
 }).label('getSavedLinkResponse')
 
 export const getSaveAndExitRecordsResponseSchema = Joi.array()
