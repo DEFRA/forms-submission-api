@@ -6,6 +6,7 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
+  findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
@@ -15,6 +16,7 @@ import {
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   cleanUpSaveAndExit,
+  getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
   resetSaveAndExitLink,
@@ -287,6 +289,35 @@ describe('save-and-exit service', () => {
         sub,
         iss,
         'another-form'
+      )
+    })
+  })
+
+  describe('getSaveAndExitRecordForUser', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+    const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+    test('should return the saved answers of the record the repository finds', async () => {
+      jest.mocked(findSaveAndExitRecordForUser).mockResolvedValueOnce({
+        state: { formField1: 'val1' },
+        magicLinkGroupId: 'group-1'
+      })
+
+      const record = await getSaveAndExitRecordForUser(sub, iss, link)
+
+      expect(findSaveAndExitRecordForUser).toHaveBeenCalledWith(sub, iss, link)
+      expect(record).toEqual({
+        state: { formField1: 'val1' },
+        magicLinkGroupId: 'group-1'
+      })
+    })
+
+    test('should throw the same not-found error the repository returns nothing for', async () => {
+      jest.mocked(findSaveAndExitRecordForUser).mockResolvedValueOnce(null)
+
+      await expect(getSaveAndExitRecordForUser(sub, iss, link)).rejects.toThrow(
+        'Invalid magic link'
       )
     })
   })
