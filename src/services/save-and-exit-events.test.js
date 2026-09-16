@@ -1,5 +1,4 @@
 import {
-  FormStatus,
   SecurityQuestionsEnum,
   SubmissionEventMessageCategory,
   SubmissionEventMessageSource,
@@ -404,43 +403,35 @@ describe('events', () => {
     })
   })
 
-  describe('mapSaveAndExitDataToDocumentV2', () => {
-    const messageData = {
-      form: {
-        id: '689b3b1a7f8e2d0012a4b7c1',
-        title: 'My First Form',
-        status: FormStatus.Live,
-        isPreview: false,
-        baseUrl: 'http://localhost:3009'
-      },
-      email: 'my-email@test.com',
-      auth: { sub: 'auth-sub', issuer: 'https://identity.test' },
-      state: { formField1: 'val1' }
-    }
+  const LINK_ID = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
 
+  describe('mapSaveAndExitDataToDocumentV2', () => {
     it('takes the link id from the queue message, so the record can be resumed', () => {
       const document = mapSaveAndExitDataToDocumentV2({
-        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
-        parsedContent: { data: messageData }
+        messageId: LINK_ID,
+        parsedContent: buildSaveAndExitV2Message()
       })
 
-      expect(document.magicLinkId).toBe('fd4e6453-fb32-43e4-b4cf-12b381a713de')
+      expect(document.magicLinkId).toBe(LINK_ID)
     })
 
     it('leaves the group id empty when the form is saved for the first time', () => {
       const document = mapSaveAndExitDataToDocumentV2({
-        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
-        parsedContent: { data: messageData }
+        messageId: LINK_ID,
+        parsedContent: buildSaveAndExitV2Message()
       })
 
       expect(document.magicLinkGroupId).toBe('')
     })
 
     it('keeps the group id of a resumed form, so the earlier record is superseded', () => {
+      const message = buildSaveAndExitV2Message()
+
       const document = mapSaveAndExitDataToDocumentV2({
-        messageId: 'fd4e6453-fb32-43e4-b4cf-12b381a713de',
+        messageId: LINK_ID,
         parsedContent: {
-          data: { ...messageData, magicLinkGroupId: 'group-1' }
+          ...message,
+          data: { ...message.data, magicLinkGroupId: 'group-1' }
         }
       })
 
