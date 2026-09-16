@@ -1,6 +1,9 @@
-import { SecurityQuestionsEnum } from '@defra/forms-model'
+import { FormStatus, SecurityQuestionsEnum } from '@defra/forms-model'
 
-import { buildDbDocumentV1 } from '~/src/repositories/__stubs__/save-and-exit.js'
+import {
+  buildDbDocumentV1,
+  buildDbDocumentV2
+} from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
   findSaveAndExitRecordsForUser,
@@ -38,6 +41,13 @@ describe('save-and-exit service', () => {
       await expect(validateSavedLinkCredentials({})).rejects.toThrow(
         'Invalid magic link'
       )
+    })
+
+    test('should throw if the link points at an account record', async () => {
+      jest.mocked(getSaveAndExitRecord).mockResolvedValue(buildDbDocumentV2())
+      await expect(
+        validateSavedLinkCredentials('link-1', 'some-answer')
+      ).rejects.toThrow('Invalid magic link')
     })
 
     test('should return error result if incorrect security answer (invalid encryption)', async () => {
@@ -141,7 +151,48 @@ describe('save-and-exit service', () => {
         }
       })
       const res = await getSavedLinkDetails('123456')
-      expect(res).toEqual({ form: { id: '1234' }, question: 'memorable-place' })
+      expect(res).toEqual({
+        form: { id: '1234' },
+        authType: 'memorableWord',
+        question: 'memorable-place'
+      })
+    })
+  })
+
+  describe('getSavedLinkDetails authType', () => {
+    const form = {
+      id: '689b3b1a7f8e2d0012a4b7c1',
+      status: FormStatus.Live,
+      isPreview: false,
+      baseUrl: 'http://localhost:3009'
+    }
+
+    it('reports a memorable word record, with the question to ask', async () => {
+      jest.mocked(getSaveAndExitRecord).mockResolvedValueOnce({
+        ...buildDbDocumentV1(),
+        form,
+        invalidPasswordAttempts: 0
+      })
+
+      await expect(getSavedLinkDetails('link-1')).resolves.toEqual({
+        form,
+        authType: 'memorableWord',
+        question: SecurityQuestionsEnum.MemorablePlace,
+        invalidPasswordAttempts: 0
+      })
+    })
+
+    it('reports an account record without naming the citizen who owns it', async () => {
+      jest.mocked(getSaveAndExitRecord).mockResolvedValueOnce({
+        ...buildDbDocumentV2(),
+        form
+      })
+
+      const details = await getSavedLinkDetails('link-1')
+
+      expect(details).toEqual({ form, authType: 'citizenSignIn' })
+      expect(details).not.toHaveProperty('auth')
+      expect(details).not.toHaveProperty('state')
     })
   })
 

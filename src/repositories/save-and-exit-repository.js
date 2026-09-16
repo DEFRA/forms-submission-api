@@ -17,7 +17,7 @@ const maxInvalidPasswordAttempts = 5
 /**
  * Gets a save and exit record based on magic link id
  * @param {string} id
- * @returns { Promise<WithId<SaveAndExitV1Document> | null> }
+ * @returns { Promise<WithId<SaveAndExitV1Document | SaveAndExitV2Document> | null> }
  */
 export async function getSaveAndExitRecord(id) {
   const event = {
@@ -27,9 +27,10 @@ export async function getSaveAndExitRecord(id) {
   }
   logger.info({ event }, 'Reading save and exit record')
 
-  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
+  const coll =
+    /** @type {Collection<SaveAndExitV1Document | SaveAndExitV2Document>} */ (
+      db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+    )
 
   try {
     const timer = createTimer()

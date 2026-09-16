@@ -40,8 +40,19 @@ export async function getSavedLinkDetails(magicLinkId) {
     throw boomError
   }
 
+  // An account record carries `auth` and a memorable word record carries
+  // `security`, so the presence of `auth` says which one this is. `version` is
+  // 1 on both, so it cannot tell them apart.
+  if ('auth' in record) {
+    return {
+      form: record.form,
+      authType: 'citizenSignIn'
+    }
+  }
+
   return {
     form: record.form,
+    authType: 'memorableWord',
     question: record.security.question,
     invalidPasswordAttempts: record.invalidPasswordAttempts
   }
@@ -61,6 +72,12 @@ export async function validateSavedLinkCredentials(
   if (!record) {
     // Invalid magic link
     throw Boom.notFound('Invalid magic link')
+  }
+
+  if ('auth' in record) {
+    // An account record has no memorable word to check, so the caller gets
+    // the same answer as for a link that does not exist.
+    throw Boom.notFound(INVALID_MAGIC_LINK)
   }
 
   let validPassword = false

@@ -163,6 +163,7 @@ describe('Forms route', () => {
           status: FormStatus.Draft,
           baseUrl: 'http://localhost:3009'
         },
+        authType: 'memorableWord',
         question: SecurityQuestionsEnum.MemorablePlace,
         invalidPasswordAttempts: 0
       })
@@ -178,8 +179,36 @@ describe('Forms route', () => {
           isPreview: false,
           status: 'draft'
         },
+        authType: 'memorableWord',
         question: 'memorable-place'
       })
+    })
+
+    test('Testing GET /save-and-exit route returns account-linked record without a question', async () => {
+      jest.mocked(getSavedLinkDetails).mockResolvedValueOnce({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        authType: 'citizenSignIn'
+      })
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/${GUID_EMPTY}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: 'draft'
+        },
+        authType: 'citizenSignIn'
+      })
+      expect(response.result).not.toHaveProperty('question')
     })
 
     test('Testing GET /save-and-exit route returns record with latest id when current one is consumed', async () => {
