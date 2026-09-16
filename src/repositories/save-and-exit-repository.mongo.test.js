@@ -302,6 +302,17 @@ describe('findSaveAndExitRecordForUser', () => {
       findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
     ).resolves.toBeNull()
   })
+
+  it('returns nothing for a record with no group, so it is not resumed into an undefined group', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne({ magicLinkId: LINK }, { $unset: { magicLinkGroupId: '' } })
+
+    await expect(
+      findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+    ).resolves.toBeNull()
+  })
 })
 
 /**

@@ -227,7 +227,13 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
       `Read save and exit record for user (${timer.elapsed}ms)`
     )
 
-    return result
+    // Every record written for an account carries a group. One without a group
+    // cannot be resumed into the right group later, so treat it as a miss.
+    if (!result?.magicLinkGroupId) {
+      return null
+    }
+
+    return { state: result.state, magicLinkGroupId: result.magicLinkGroupId }
   } catch (err) {
     logger.error(
       { err, event },
