@@ -303,6 +303,27 @@ describe('findSaveAndExitRecordForUser', () => {
     ).resolves.toBeNull()
   })
 
+  it('returns a record saved for the first time, which has no group of its own yet', async () => {
+    const firstSaveLink = 'a5f2d4e0-6b7a-4a3d-9f1e-000000000002'
+
+    // The message of a first save carries no group, so the insert supplies
+    // one, so that the citizen can resume the form later.
+    await createSaveAndExitRecord(
+      buildRecordFromMessage(firstSaveLink),
+      session
+    )
+
+    const record = await findSaveAndExitRecordForUser(
+      SUBJECT,
+      ISSUER_URL,
+      firstSaveLink
+    )
+
+    expect(record).not.toBeNull()
+    expect(record?.magicLinkGroupId).toEqual(expect.any(String))
+    expect(record?.magicLinkGroupId.length).toBeGreaterThan(0)
+  })
+
   it('returns nothing for a record with no group, so it is not resumed into an undefined group', async () => {
     await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
     await db
