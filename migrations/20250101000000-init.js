@@ -71,29 +71,23 @@ export const up = async (db) => {
 
 /**
  * Drop the initial collections
- * @param {Db} db - the Mongo Db instance
  */
-export const down = async (db) => {
-  /**
-   * @type {Collection<FormFileUploadStatus>}
-   */
-  const filesColl = db.collection(FILES_COLLECTION_NAME)
-
-  await filesColl.drop()
-
-  /**
-   * @type {Collection<SaveAndExitDocument>}
-   */
-  const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-
-  await saveColl.drop()
-
-  /**
-   * @type {Collection<FormSubmissionDocument>}
-   */
-  const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
-
-  await submissionsColl.drop()
+export const down = async () => {
+  // /**
+  //  * @type {Collection<FormFileUploadStatus>}
+  //  */
+  // const filesColl = db.collection(FILES_COLLECTION_NAME)
+  // await filesColl.drop()
+  // /**
+  //  * @type {Collection<SaveAndExitDocument>}
+  //  */
+  // const saveColl = db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  // await saveColl.drop()
+  // /**
+  //  * @type {Collection<FormSubmissionDocument>}
+  //  */
+  // const submissionsColl = db.collection(SUBMISSIONS_COLLECTION_NAME)
+  // await submissionsColl.drop()
 }
 
 /**
