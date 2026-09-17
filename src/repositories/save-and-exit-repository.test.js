@@ -9,6 +9,7 @@ import {
   createSaveAndExitRecord,
   deleteSaveAndExitGroup,
   findExpiringRecords,
+  findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
@@ -437,6 +438,21 @@ describe('save-and-exit-repository', () => {
       await expect(
         deleteSaveAndExitGroup('group-id', mockSession)
       ).rejects.toThrow(new Error('Failed'))
+    })
+  })
+
+  describe('findSaveAndExitRecordsForUser', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+
+    it('should handle read failures', async () => {
+      mockCollection.aggregate.mockImplementation(() => {
+        throw new Error('an error')
+      })
+
+      await expect(
+        findSaveAndExitRecordsForUser(sub, iss, 'form-id')
+      ).rejects.toThrow(new Error('an error'))
     })
   })
 })

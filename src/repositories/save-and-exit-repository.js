@@ -97,6 +97,95 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
+ * Finds the open save-and-exit records of one citizen for one form.
+ * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} formId - the form the records belong to
+ * @returns {Promise<SaveAndExitRecordSummary[]>}
+ */
+export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'read-records-for-user'
+  }
+  logger.info({ event }, 'Reading save and exit records for user')
+
+  const coll = /** @type {Collection<SaveAndExitV2Document>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const results = /** @type {SaveAndExitRecordSummary[]} */ (
+      await coll
+        .aggregate([
+          // Get the records of this citizen for this form that are not
+          // consumed. A subject is unique only for one issuer, thus match the
+          // two values.
+          {
+            $match: {
+              'auth.sub': sub,
+              'auth.issuer': iss,
+              consumed: { $ne: true },
+              'form.id': formId
+            }
+          },
+          // Each save of a form writes a new record in the same group. Keep
+          // only the newest record of each group.
+          {
+            $group: {
+              _id: '$magicLinkGroupId',
+              latest: {
+                $top: { sortBy: { createdAt: -1 }, output: '$$ROOT' }
+              }
+            }
+          },
+          // Use the newest record as the document.
+          { $replaceRoot: { newRoot: '$latest' } },
+          // Order by expiry: the records that have not expired first, then the
+          // expired records. In each set, the record that expires first is at
+          // the top. The order key is used only here, and the projection below
+          // leaves it out of the result.
+          {
+            $set: {
+              expiryOrder: { $cond: [{ $lte: ['$expireAt', '$$NOW'] }, 1, 0] }
+            }
+          },
+          { $sort: { expiryOrder: 1, expireAt: 1 } },
+          // Return only the fields that the citizen dashboard shows.
+          {
+            $project: {
+              magicLinkId: 1,
+              'form.title': 1,
+              createdAt: 1,
+              expireAt: 1,
+              // The key of the reference number starts with `$`, thus read it
+              // with `$getField`. If the saved answers have no reference
+              // number, the result does not have this field.
+              referenceNumber: {
+                $getField: {
+                  field: { $literal: '$$__referenceNumber' },
+                  input: '$state'
+                }
+              }
+            }
+          }
+        ])
+        .toArray()
+    )
+
+    logger.info({ event }, `Read ${results.length} save and exit records`)
+
+    return results
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to read save and exit records for user - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Creates a save and exit V1 record from SubmissionRecordInput
  * @param {Omit<SaveAndExitV1Document, 'expireAt'> | Omit<SaveAndExitV2Document, 'expireAt'>} recordInput
  * @param {ClientSession} session
@@ -529,4 +618,14 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 /**
  * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
+ */
+
+/**
+ * One saved form, as the dashboard needs it.
+ * @typedef {object} SaveAndExitRecordSummary
+ * @property {string} magicLinkId - the link that opens the saved form
+ * @property {{ title?: string }} form - the form of the record
+ * @property {Date} createdAt - when the citizen saved the form
+ * @property {Date} expireAt - when the record expires
+ * @property {string} [referenceNumber] - the reference number, if the saved answers have one
  */
