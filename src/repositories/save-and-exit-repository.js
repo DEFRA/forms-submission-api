@@ -227,14 +227,7 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
       `Read save and exit record for user (${timer.elapsed}ms)`
     )
 
-    // A group ties together the saves that share lineage, and some records
-    // have none. A record with no group cannot be resumed into a group, so
-    // treat it as a miss rather than send back an undefined group id.
-    if (!result?.magicLinkGroupId) {
-      return null
-    }
-
-    return { state: result.state, magicLinkGroupId: result.magicLinkGroupId }
+    return result
   } catch (err) {
     logger.error(
       { err, event },
@@ -693,5 +686,5 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
  * One saved record, as the resume journey needs it.
  * @typedef {object} SaveAndExitRecordForResume
  * @property {object} state - the saved answers
- * @property {string} magicLinkGroupId - the group the record belongs to
+ * @property {string} [magicLinkGroupId] - the group the record belongs to, if it has one
  */

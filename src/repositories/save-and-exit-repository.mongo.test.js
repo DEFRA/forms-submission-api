@@ -321,18 +321,19 @@ describe('findSaveAndExitRecordForUser', () => {
 
     expect(record).not.toBeNull()
     expect(record?.magicLinkGroupId).toEqual(expect.any(String))
-    expect(record?.magicLinkGroupId.length).toBeGreaterThan(0)
+    expect(record?.magicLinkGroupId).toHaveLength(36)
   })
 
-  it('returns nothing for a record with no group, so it is not resumed into an undefined group', async () => {
+  it('returns a record with no group, since the link alone decides whether a record is found', async () => {
     await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
     await db
       .collection(SAVE_AND_EXIT_COLLECTION_NAME)
       .updateOne({ magicLinkId: LINK }, { $unset: { magicLinkGroupId: '' } })
 
-    await expect(
-      findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
-    ).resolves.toBeNull()
+    const record = await findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+
+    expect(record).not.toBeNull()
+    expect(record?.magicLinkGroupId).toBeUndefined()
   })
 })
 
