@@ -6,6 +6,7 @@ import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
+  getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
   validateSavedLinkCredentials
@@ -163,6 +164,7 @@ describe('Forms route', () => {
           status: FormStatus.Draft,
           baseUrl: 'http://localhost:3009'
         },
+        authType: 'memorableWord',
         question: SecurityQuestionsEnum.MemorablePlace,
         invalidPasswordAttempts: 0
       })
@@ -178,8 +180,36 @@ describe('Forms route', () => {
           isPreview: false,
           status: 'draft'
         },
+        authType: 'memorableWord',
         question: 'memorable-place'
       })
+    })
+
+    test('Testing GET /save-and-exit route returns account-linked record without a question', async () => {
+      jest.mocked(getSavedLinkDetails).mockResolvedValueOnce({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: FormStatus.Draft,
+          baseUrl: 'http://localhost:3009'
+        },
+        authType: 'citizenSignIn'
+      })
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/${GUID_EMPTY}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toMatchObject({
+        form: {
+          id: '12345',
+          isPreview: false,
+          status: 'draft'
+        },
+        authType: 'citizenSignIn'
+      })
+      expect(response.result).not.toHaveProperty('question')
     })
 
     test('Testing GET /save-and-exit route returns record with latest id when current one is consumed', async () => {
@@ -330,6 +360,65 @@ describe('Forms route', () => {
         statusCode: StatusCodes.UNAUTHORIZED,
         error: 'Unauthorized'
       })
+    })
+
+    const LINK = '3b3ba0e1-45cf-4b2b-9a3a-8f0f9a1c33aa'
+
+    test('Testing GET /save-and-exit/records/{link} returns the saved state of the owner', async () => {
+      jest.mocked(getSaveAndExitRecordForUser).mockResolvedValueOnce({
+        state: { formField1: 'val1' },
+        magicLinkGroupId: 'group-1'
+      })
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/records/${LINK}`,
+        auth: authCitizen
+      })
+
+      expect(getSaveAndExitRecordForUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        LINK
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual({
+        state: { formField1: 'val1' },
+        magicLinkGroupId: 'group-1'
+      })
+    })
+
+    test('Testing GET /save-and-exit/records/{link} hides a record of another citizen', async () => {
+      jest
+        .mocked(getSaveAndExitRecordForUser)
+        .mockRejectedValueOnce(Boom.notFound('Invalid magic link'))
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/records/${LINK}`,
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.NOT_FOUND)
+    })
+
+    test('Testing GET /save-and-exit/records/{link} is not reachable without a citizen token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/save-and-exit/records/${LINK}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+
+    test('Testing GET /save-and-exit/records/{link} refuses a link that is not a uuid', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records/not-a-uuid',
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
     })
   })
 })

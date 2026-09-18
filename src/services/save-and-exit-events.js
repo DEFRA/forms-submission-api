@@ -115,7 +115,8 @@ export function mapSaveAndExitDataToDocumentV1(message) {
  * @returns { Omit<SaveAndExitV2Document, 'expireAt'> }
  */
 export function mapSaveAndExitDataToDocumentV2(message) {
-  const { form, state, auth, email } = message.parsedContent.data
+  const { form, state, auth, email, magicLinkGroupId } =
+    message.parsedContent.data
 
   return {
     form: {
@@ -128,7 +129,8 @@ export function mapSaveAndExitDataToDocumentV2(message) {
     auth,
     email,
     state,
-    magicLinkId: '',
+    magicLinkId: message.messageId,
+    magicLinkGroupId: magicLinkGroupId ?? '',
     createdAt: new Date(),
     version: 1,
     notify: {

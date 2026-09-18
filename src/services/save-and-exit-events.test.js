@@ -19,6 +19,7 @@ import {
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import {
+  mapSaveAndExitDataToDocumentV2,
   mapSaveAndExitMessageToData,
   processSaveAndExitEvents
 } from '~/src/services/save-and-exit-events.js'
@@ -327,6 +328,7 @@ describe('events', () => {
           formField2: 'val2'
         },
         magicLinkId: expect.any(String),
+        magicLinkGroupId: '',
         createdAt: expect.any(Date),
         version: 1,
         notify: {
@@ -398,6 +400,42 @@ describe('events', () => {
       expect(result.failed).toHaveLength(2)
       expect(result.failed).toContainEqual(new Error('error in create'))
       expect(result.failed).toContainEqual(new Error('error in delete'))
+    })
+  })
+
+  const LINK_ID = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+  describe('mapSaveAndExitDataToDocumentV2', () => {
+    it('takes the link id from the queue message, so the record can be resumed', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: buildSaveAndExitV2Message()
+      })
+
+      expect(document.magicLinkId).toBe(LINK_ID)
+    })
+
+    it('leaves the group id empty when the form is saved for the first time', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: buildSaveAndExitV2Message()
+      })
+
+      expect(document.magicLinkGroupId).toBe('')
+    })
+
+    it('keeps the group id of a resumed form, so the earlier record is superseded', () => {
+      const message = buildSaveAndExitV2Message()
+
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: {
+          ...message,
+          data: { ...message.data, magicLinkGroupId: 'group-1' }
+        }
+      })
+
+      expect(document.magicLinkGroupId).toBe('group-1')
     })
   })
 })

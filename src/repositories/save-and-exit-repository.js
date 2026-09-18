@@ -17,7 +17,7 @@ const maxInvalidPasswordAttempts = 5
 /**
  * Gets a save and exit record based on magic link id
  * @param {string} id
- * @returns { Promise<WithId<SaveAndExitV1Document> | null> }
+ * @returns { Promise<WithId<SaveAndExitV1Document | SaveAndExitV2Document> | null> }
  */
 export async function getSaveAndExitRecord(id) {
   const event = {
@@ -27,9 +27,10 @@ export async function getSaveAndExitRecord(id) {
   }
   logger.info({ event }, 'Reading save and exit record')
 
-  const coll = /** @type {Collection<SaveAndExitV1Document>} */ (
-    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
-  )
+  const coll =
+    /** @type {Collection<SaveAndExitV1Document | SaveAndExitV2Document>} */ (
+      db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+    )
 
   try {
     const timer = createTimer()
@@ -180,6 +181,57 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
     logger.error(
       { err, event },
       `Failed to read save and exit records for user - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * Finds one open save-and-exit record of a citizen by its link id. A subject is
+ * unique only for one issuer, thus match the two values. A record that is
+ * consumed, expired or owned by another citizen is not returned, so the caller
+ * cannot tell those cases apart.
+ * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} magicLinkId - the link that opens the saved form
+ * @returns {Promise<SaveAndExitRecordForResume | null>}
+ */
+export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'read-record-for-user',
+    reference: magicLinkId
+  }
+  logger.info({ event }, 'Reading save and exit record for user')
+
+  const coll = /** @type {Collection<SaveAndExitV2Document>} */ (
+    db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+  )
+
+  try {
+    const timer = createTimer()
+    const result = await coll.findOne(
+      {
+        magicLinkId,
+        'auth.sub': sub,
+        'auth.issuer': iss,
+        consumed: { $ne: true },
+        expireAt: { $gt: new Date() }
+      },
+      // Return the saved answers and the group, and leave `_id` out.
+      { projection: { _id: 0, state: 1, magicLinkGroupId: 1 } }
+    )
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Read save and exit record for user (${timer.elapsed}ms)`
+    )
+
+    return result
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to read save and exit record for user - ${getErrorMessage(err)}`
     )
     throw err
   }
@@ -628,4 +680,11 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
  * @property {Date} createdAt - when the citizen saved the form
  * @property {Date} expireAt - when the record expires
  * @property {string} [referenceNumber] - the reference number, if the saved answers have one
+ */
+
+/**
+ * One saved record, as the resume journey needs it.
+ * @typedef {object} SaveAndExitRecordForResume
+ * @property {object} state - the saved answers
+ * @property {string} [magicLinkGroupId] - the group the record belongs to, if it has one
  */
