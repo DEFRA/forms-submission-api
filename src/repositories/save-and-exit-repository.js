@@ -227,8 +227,9 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
       `Read save and exit record for user (${timer.elapsed}ms)`
     )
 
-    // Every record written for an account carries a group. One without a group
-    // cannot be resumed into the right group later, so treat it as a miss.
+    // A group ties together the saves that share lineage, and some records
+    // have none. A record with no group cannot be resumed into a group, so
+    // treat it as a miss rather than send back an undefined group id.
     if (!result?.magicLinkGroupId) {
       return null
     }
