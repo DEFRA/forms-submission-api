@@ -37,7 +37,7 @@ export const getSaveAndExitRecordsResponseSchema = Joi.array()
 
 export const getSaveAndExitRecordResponseSchema = Joi.object({
   state: Joi.object().required(),
-  magicLinkGroupId: Joi.string().required()
+  magicLinkGroupId: Joi.string().optional()
 }).label('getSaveAndExitRecordResponse')
 
 export const getSavedLinkGoneSchema = Joi.object({
