@@ -80,6 +80,26 @@ mongoErrorMock.errorResponse = {
 }
 mongoErrorMock.toString = () => 'dummy'
 
+/**
+ * Resolves true as soon as the predicate holds, or false once the timeout
+ * elapses. Used to prove two operations were in flight at the same time.
+ * @param {() => boolean} predicate
+ * @param {number} [timeoutMs]
+ */
+async function waitFor(predicate, timeoutMs = 250) {
+  const deadline = Date.now() + timeoutMs
+
+  while (Date.now() < deadline) {
+    if (predicate()) {
+      return true
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+
+  return predicate()
+}
+
 describe('Files service', () => {
   beforeAll(async () => {
     await prepareDb(pino())
@@ -373,6 +393,80 @@ describe('Files service', () => {
 
       expect(hash).toHaveBeenCalledTimes(1)
       expect(hash).toHaveBeenCalledWith('test@example.com')
+    })
+
+    it('should check the file exists in S3 while the retrieval key is still being hashed', async () => {
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      let headCalled = false
+      let headSeenWhileHashPending = false
+
+      s3Mock.on(HeadObjectCommand).callsFake(() => {
+        headCalled = true
+        return {}
+      })
+      jest.mocked(hash).mockImplementationOnce(async () => {
+        headSeenWhileHashPending = await waitFor(() => headCalled)
+        return 'dummy'
+      })
+      jest.mocked(repository.create).mockResolvedValue()
+
+      await ingestFile(uploadPayload)
+
+      expect(headSeenWhileHashPending).toBe(true)
+    })
+
+    it('should report the hashing error, not an unhandled rejection, when hashing and every S3 check fail', async () => {
+      /**
+       * @type {UploadPayload}
+       */
+      const uploadPayload = {
+        form: {
+          file: successfulFile
+        },
+        metadata: {
+          retrievalKey: 'test'
+        },
+        numberOfRejectedFiles: 0,
+        uploadStatus: 'ready'
+      }
+
+      const hashError = new Error('hash failed')
+      const unhandled = jest.fn()
+
+      process.on('unhandledRejection', unhandled)
+
+      try {
+        jest.mocked(hash).mockRejectedValueOnce(hashError)
+        s3Mock.on(HeadObjectCommand).rejectsOnce(
+          new NotFound({
+            message: 'Not found',
+            $metadata: {}
+          })
+        )
+
+        await expect(ingestFile(uploadPayload)).rejects.toThrow(hashError)
+
+        // Give the event loop a turn so any unhandled rejection would surface
+        await new Promise((resolve) => setImmediate(resolve))
+
+        expect(unhandled).not.toHaveBeenCalled()
+        expect(repository.create).not.toHaveBeenCalled()
+      } finally {
+        process.off('unhandledRejection', unhandled)
+      }
     })
 
     it('should throw if any file in a multi-file payload does not exist in S3', async () => {
@@ -757,6 +851,77 @@ describe('Files service', () => {
 
       expect(s3Mock).toHaveReceivedCommandTimes(DeleteObjectCommand, 1)
       expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: dummyData.s3Key
+      })
+    })
+
+    it('should hash the persisted retrieval key while files are still being copied', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      let hashStartedDuringCopy = false
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      s3Mock.on(CopyObjectCommand).callsFake(async () => {
+        hashStartedDuringCopy = await waitFor(
+          () => jest.mocked(hash).mock.calls.length > 0
+        )
+        return {}
+      })
+
+      await persistFiles(
+        [
+          {
+            fileId: dummyData.fileId,
+            initiatedRetrievalKey: dummyData.retrievalKey
+          }
+        ],
+        newRetrievalKey
+      )
+
+      expect(hashStartedDuringCopy).toBe(true)
+    })
+
+    it('should remove the copied files and leave the database untouched when hashing fails', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'test'
+      }
+
+      jest.mocked(verify).mockResolvedValueOnce(true)
+      jest.mocked(hash).mockRejectedValueOnce(new Error('hash failed'))
+      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+
+      await expect(
+        persistFiles(
+          [
+            {
+              fileId: dummyData.fileId,
+              initiatedRetrievalKey: dummyData.retrievalKey
+            }
+          ],
+          newRetrievalKey
+        )
+      ).rejects.toThrow('hash failed')
+
+      expect(repository.updateS3Keys).not.toHaveBeenCalled()
+      expect(repository.updateRetrievalKeys).not.toHaveBeenCalled()
+
+      // The newly copied file is removed; the original staging file is kept
+      expect(s3Mock).toHaveReceivedCommandWith(DeleteObjectCommand, {
+        Bucket: successfulFile.s3Bucket,
+        Key: 'loaded/dummy-file-123.txt'
+      })
+      expect(s3Mock).not.toHaveReceivedCommandWith(DeleteObjectCommand, {
         Bucket: successfulFile.s3Bucket,
         Key: dummyData.s3Key
       })
@@ -1289,8 +1454,66 @@ describe('Files service', () => {
       expect(dbOperationArgs[2][0]).toMatchObject(dbCreateMatch)
     })
 
+    /**
+     * Records the S3 key of the main CSV as it is uploaded. The main and
+     * repeater files are saved concurrently, so failures must be aimed at a
+     * file by its content rather than by the order the saves happen to run in.
+     */
+    function trackMainCsvKey() {
+      /** @type {{ key: string | undefined }} */
+      const main = { key: undefined }
+
+      s3Mock.on(PutObjectCommand).callsFake((input) => {
+        if (
+          typeof input.Body === 'string' &&
+          input.Body.includes('Do you have any food allergies?')
+        ) {
+          main.key = input.Key
+        }
+
+        return {}
+      })
+
+      return main
+    }
+
+    it('should save the main and repeater files concurrently', async () => {
+      jest.mocked(hash).mockResolvedValue('dummy')
+
+      let repeaterUploadStarted = false
+      let repeaterStartedWhileMainUploading = false
+
+      s3Mock.on(PutObjectCommand).callsFake(async (input) => {
+        const isMain =
+          typeof input.Body === 'string' &&
+          input.Body.includes('Do you have any food allergies?')
+
+        if (isMain) {
+          repeaterStartedWhileMainUploading = await waitFor(
+            () => repeaterUploadStarted
+          )
+        } else {
+          repeaterUploadStarted = true
+        }
+
+        return {}
+      })
+
+      await submit(submitPayload)
+
+      expect(repeaterStartedWhileMainUploading).toBe(true)
+    })
+
     it('should throw 500 internal server error if main save fails', async () => {
-      jest.mocked(repository.create).mockRejectedValueOnce(mongoErrorMock)
+      const main = trackMainCsvKey()
+
+      jest
+        .mocked(repository.create)
+        .mockImplementation((fileStatus) =>
+          fileStatus.s3Key === main.key
+            ? Promise.reject(mongoErrorMock)
+            : Promise.resolve()
+        )
 
       await expect(submit(submitPayload)).rejects.toThrow(
         Boom.internal(
@@ -1300,13 +1523,28 @@ describe('Files service', () => {
     })
 
     it('should throw 500 internal server error if repeater save fails', async () => {
+      const main = trackMainCsvKey()
+
       jest
         .mocked(repository.create)
-        .mockResolvedValueOnce()
-        .mockRejectedValueOnce(mongoErrorMock)
+        .mockImplementation((fileStatus) =>
+          fileStatus.s3Key === main.key
+            ? Promise.resolve()
+            : Promise.reject(mongoErrorMock)
+        )
 
       await expect(submit(submitPayload)).rejects.toThrow(
         Boom.internal('Failed to save repeater files')
+      )
+    })
+
+    it('should report the main file failure when both main and repeater saves fail', async () => {
+      jest.mocked(repository.create).mockRejectedValue(mongoErrorMock)
+
+      await expect(submit(submitPayload)).rejects.toThrow(
+        Boom.internal(
+          "Failed to save files for session ID '7c675a34-a887-49fc-a1eb-c21006c72a1d'."
+        )
       )
     })
   })

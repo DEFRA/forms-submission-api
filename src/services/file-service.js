@@ -53,45 +53,76 @@ export async function ingestFile(uploadPayload) {
 
   // Force new files to use a case insensitive password match
   const retrievalKeyIsCaseSensitive = false
-  const hashed = await argon2.hash(retrievalKey.toLowerCase())
 
-  for (const fileContainer of completeFiles) {
-    await assertFileExists(
-      fileContainer,
-      Boom.badRequest('File does not exist in S3'),
-      false
+  // The hash is CPU-bound and the S3 existence checks are I/O-bound, so start
+  // hashing first and let the checks run while it computes. It is included in
+  // the settled set so a rejection is always handled, even if every file fails
+  // its S3 check before anything awaits the hash; and being first in the list,
+  // a hashing error is reported ahead of any per-file error.
+  const hashing = argon2.hash(retrievalKey.toLowerCase())
+
+  const results = await Promise.allSettled([
+    hashing,
+    ...completeFiles.map((fileContainer) =>
+      ingestCompleteFile(fileContainer, hashing, retrievalKeyIsCaseSensitive)
     )
+  ])
 
-    /** @type {FormFileUploadStatus} */
-    const dataToSave = {
-      fileId: fileContainer.fileId,
-      filename: fileContainer.filename,
-      contentType: fileContainer.contentType,
-      s3Key: fileContainer.s3Key,
-      s3Bucket: fileContainer.s3Bucket,
-      retrievalKey: hashed,
-      retrievalKeyIsCaseSensitive
+  const failed = results.find((result) => result.status === 'rejected')
+
+  if (failed) {
+    throw failed.reason
+  }
+}
+
+/**
+ * Verifies a single complete file exists in S3 and stores its status.
+ * @param {FileUploadStatus} fileContainer
+ * @param {Promise<string>} hashing - the in-flight hash of the retrieval key
+ * @param {boolean} retrievalKeyIsCaseSensitive
+ */
+async function ingestCompleteFile(
+  fileContainer,
+  hashing,
+  retrievalKeyIsCaseSensitive
+) {
+  await assertFileExists(
+    fileContainer,
+    Boom.badRequest('File does not exist in S3'),
+    false
+  )
+
+  const hashed = await hashing
+
+  /** @type {FormFileUploadStatus} */
+  const dataToSave = {
+    fileId: fileContainer.fileId,
+    filename: fileContainer.filename,
+    contentType: fileContainer.contentType,
+    s3Key: fileContainer.s3Key,
+    s3Bucket: fileContainer.s3Bucket,
+    retrievalKey: hashed,
+    retrievalKeyIsCaseSensitive
+  }
+
+  try {
+    await repository.create(dataToSave)
+  } catch (err) {
+    if (
+      err instanceof MongoServerError &&
+      err.errorResponse.code === MONGO_DUPLICATE_KEY_ERROR
+    ) {
+      const message = `File ID '${fileContainer.fileId}' has already been ingested`
+
+      logger.error(
+        err,
+        `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${MONGO_DUPLICATE_KEY_ERROR}`
+      )
+
+      throw Boom.badRequest(message)
     }
 
-    try {
-      await repository.create(dataToSave)
-    } catch (err) {
-      if (
-        err instanceof MongoServerError &&
-        err.errorResponse.code === MONGO_DUPLICATE_KEY_ERROR
-      ) {
-        const message = `File ID '${fileContainer.fileId}' has already been ingested`
-
-        logger.error(
-          err,
-          `[duplicateFileIngestion] ${message} - fileId: ${fileContainer.fileId} - code: ${MONGO_DUPLICATE_KEY_ERROR}`
-        )
-
-        throw Boom.badRequest(message)
-      }
-
-      throw err
-    }
+    throw err
   }
 }
 
@@ -188,21 +219,35 @@ export async function submit(submitPayload) {
   const hashedRetrievalKey = await argon2.hash(retrievalKey)
 
   try {
-    const mainFileId = await createMainCsvFile(
-      main,
-      hashedRetrievalKey,
-      retrievalKeyIsCaseSensitive,
-      referenceNumber
-    )
-    const repeaterFileIds = await processRepeaterFiles(
-      repeaters,
-      hashedRetrievalKey,
-      retrievalKeyIsCaseSensitive
-    )
+    // The main and repeater files are independent, so save them together.
+    // allSettled (rather than all) keeps the error reported deterministic: a
+    // main file failure always wins over a repeater failure, as when these
+    // ran one after the other.
+    const [mainResult, repeaterResult] = await Promise.allSettled([
+      createMainCsvFile(
+        main,
+        hashedRetrievalKey,
+        retrievalKeyIsCaseSensitive,
+        referenceNumber
+      ),
+      processRepeaterFiles(
+        repeaters,
+        hashedRetrievalKey,
+        retrievalKeyIsCaseSensitive
+      )
+    ])
+
+    if (mainResult.status === 'rejected') {
+      throw mainResult.reason
+    }
+
+    if (repeaterResult.status === 'rejected') {
+      throw repeaterResult.reason
+    }
 
     return {
-      main: mainFileId,
-      repeaters: repeaterFileIds
+      main: mainResult.value,
+      repeaters: repeaterResult.value
     }
   } catch (err) {
     const error = err instanceof Error ? err : new Error('Unknown error')
@@ -221,5 +266,5 @@ export async function submit(submitPayload) {
 
 /**
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
+ * @import { FileUploadStatus, FormFileUploadStatus, UploadPayload } from '~/src/api/types.js'
  */

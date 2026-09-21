@@ -8,6 +8,7 @@ import * as repository from '~/src/repositories/file-repository.js'
 import {
   cleanupOriginalFiles,
   handlePersistFilesFailure,
+  hashPersistedRetrievalKey,
   runPersistTransaction,
   withPersistFlowCompletionLogging
 } from '~/src/services/file-persist-flow.js'
@@ -56,11 +57,20 @@ export async function persistFiles(files, persistedRetrievalKey) {
     )
 
     try {
-      copiedFiles = await completePreTransactionPhase(updateFiles, perfLogger)
+      // Hashing doesn't depend on the copies, so run it alongside them. If
+      // either fails, Promise.all rejects and the rollback below removes any
+      // files that were copied.
+      const [copied, persistedRetrievalKeyHashed] = await Promise.all([
+        completePreTransactionPhase(updateFiles, perfLogger),
+        hashPersistedRetrievalKey(persistedRetrievalKey, perfLogger)
+      ])
+
+      copiedFiles = copied
+
       await runPersistTransaction(
         files,
         copiedFiles,
-        persistedRetrievalKey,
+        persistedRetrievalKeyHashed,
         session,
         perfLogger
       )

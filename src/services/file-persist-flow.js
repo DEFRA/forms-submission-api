@@ -66,17 +66,20 @@ export async function withPersistFlowCompletionLogging(
 }
 
 /**
- * Runs the Mongo transaction that persists copied file state.
+ * Runs the Mongo transaction that persists copied file state. The retrieval
+ * key must already be hashed: hashing is CPU-heavy, so it is done outside the
+ * transaction (and concurrently with the S3 copies) to keep the transaction
+ * short and to avoid re-hashing if Mongo retries the transaction callback.
  * @param {PersistFileRequest[]} files
  * @param {PersistFileResult[]} copiedFiles
- * @param {string} persistedRetrievalKey
+ * @param {string} persistedRetrievalKeyHashed
  * @param {import('mongodb').ClientSession} session
  * @param {Logger} perfLogger
  */
 export async function runPersistTransaction(
   files,
   copiedFiles,
-  persistedRetrievalKey,
+  persistedRetrievalKeyHashed,
   session,
   perfLogger
 ) {
@@ -86,11 +89,6 @@ export async function runPersistTransaction(
     logger.info(`Persisting ${files.length} files`)
 
     await updatePersistedS3Keys(copiedFiles, session, perfLogger)
-
-    const persistedRetrievalKeyHashed = await hashPersistedRetrievalKey(
-      persistedRetrievalKey,
-      perfLogger
-    )
 
     await updatePersistedRetrievalKeys(
       files,
@@ -222,7 +220,10 @@ async function updatePersistedS3Keys(copiedFiles, session, perfLogger) {
  * @param {string} persistedRetrievalKey
  * @param {Logger} perfLogger
  */
-async function hashPersistedRetrievalKey(persistedRetrievalKey, perfLogger) {
+export async function hashPersistedRetrievalKey(
+  persistedRetrievalKey,
+  perfLogger
+) {
   const hashTimer = createTimer()
   const persistedRetrievalKeyHashed = await argon2.hash(
     persistedRetrievalKey.toLowerCase()
