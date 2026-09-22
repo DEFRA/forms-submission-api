@@ -166,6 +166,18 @@ jobs:
           key: mongodb-binaries-${{ runner.os }}-6.0.14
           path: ~/.cache/mongodb-binaries
 
+      # Copies mongod out of the official image rather than downloading it from
+      # fastdl.mongodb.org, so that the unit tests do not depend on a host that
+      # often aborts downloads from CI runners. MONGOMS_SYSTEM_BINARY applies to
+      # this job only, so local runs keep the default download. The tag follows
+      # MONGO_VERSION in src/mongo.test.js
+      - name: Provide MongoDB binary
+        run: |
+          docker create --name mongod-source mongo:6.0.14
+          docker cp mongod-source:/usr/bin/mongod "$RUNNER_TEMP/mongod"
+          docker rm mongod-source
+          echo "MONGOMS_SYSTEM_BINARY=$RUNNER_TEMP/mongod" >> "$GITHUB_ENV"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
