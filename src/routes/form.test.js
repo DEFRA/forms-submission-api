@@ -6,9 +6,11 @@ import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
+  getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
+import { authCitizen } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
 jest.mock('~/src/services/file-service.js')
@@ -269,6 +271,64 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toMatchObject({
         timeline: []
+      })
+    })
+  })
+
+  describe('Save and exit records', () => {
+    const record = {
+      magicLinkId: '3b3ba0e1-45cf-4b2b-9a3a-8f0f9a1c33aa',
+      referenceNumber: '123-456-789',
+      formTitle: 'My FirstForm',
+      createdAt: new Date('2026-09-01T09:00:00.000Z'),
+      expireAt: new Date('2026-09-29T09:00:00.000Z')
+    }
+
+    test('Testing GET /save-and-exit/records returns the records of the signed-in citizen', async () => {
+      jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValueOnce([record])
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc',
+        auth: authCitizen
+      })
+
+      expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        '688131eeff67f889d52c66cc'
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual([
+        { ...record, createdAt: record.createdAt, expireAt: record.expireAt }
+      ])
+    })
+
+    test('Testing GET /save-and-exit/records refuses a request without a form id', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records',
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        statusCode: StatusCodes.BAD_REQUEST,
+        error: 'Bad Request',
+        message: '"formId" is required'
+      })
+    })
+
+    test('Testing GET /save-and-exit/records is not reachable without a citizen token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+      expect(response.result).toMatchObject({
+        statusCode: StatusCodes.UNAUTHORIZED,
+        error: 'Unauthorized'
       })
     })
   })

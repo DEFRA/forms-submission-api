@@ -1,9 +1,11 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
+import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
 import {
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
+  getSaveAndExitRecordsResponseSchema,
   getSavedLinkGoneSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
@@ -12,6 +14,7 @@ import {
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
+  getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
@@ -42,6 +45,37 @@ export default [
       response: {
         status: {
           200: formSubmitResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
+   * @type {ServerRoute<GetSaveAndExitRecordsRequest>}
+   */
+  ({
+    method: 'GET',
+    path: '/save-and-exit/records',
+    handler(request) {
+      const { sub, iss } = request.auth.credentials.user
+      const { formId } = request.query
+
+      return getSaveAndExitRecordsForUser(sub, iss, formId)
+    },
+    options: {
+      tags: ['api'],
+      // The token names the citizen, so the request carries no identifier.
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
+      validate: {
+        query: Joi.object()
+          .keys({
+            formId: Joi.string().required()
+          })
+          .label('getSaveAndExitRecordsQuery')
+      },
+      response: {
+        status: {
+          200: getSaveAndExitRecordsResponseSchema
         }
       }
     }
@@ -145,5 +179,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit } from '~/src/api/types.js'
  */

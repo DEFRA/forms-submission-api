@@ -97,6 +97,13 @@
  */
 
 /**
+ * The citizen-access-token strategy always sets these credentials, so the
+ * route reads them as present.
+ * @typedef {{ sub: string, iss: string }} CitizenCredentials
+ * @typedef {{ Query: { formId: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
+ */
+
+/**
  * @typedef {Pick<Translator, 't' | 'language'>} SubmissionTranslator
  */
 
