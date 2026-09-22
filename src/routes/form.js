@@ -10,6 +10,7 @@ import {
   getSavedLinkGoneSchema,
   getSavedLinkResponseSchema,
   magicLinkSchema,
+  previewSchema,
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
@@ -60,9 +61,9 @@ export default [
     path: '/save-and-exit/records',
     handler(request) {
       const { sub, iss } = request.auth.credentials.user
-      const { formId } = request.query
+      const { formId, preview } = request.query
 
-      return getSaveAndExitRecordsForUser(sub, iss, formId)
+      return getSaveAndExitRecordsForUser(sub, iss, formId, preview)
     },
     options: {
       tags: ['api'],
@@ -71,7 +72,8 @@ export default [
       validate: {
         query: Joi.object()
           .keys({
-            formId: Joi.string().required()
+            formId: Joi.string().required(),
+            preview: previewSchema
           })
           .label('getSaveAndExitRecordsQuery')
       },
@@ -92,8 +94,9 @@ export default [
     handler(request) {
       const { sub, iss } = request.auth.credentials.user
       const { link } = request.params
+      const { preview } = request.query
 
-      return getSaveAndExitRecordForUser(sub, iss, link)
+      return getSaveAndExitRecordForUser(sub, iss, link, preview)
     },
     options: {
       tags: ['api'],
@@ -104,7 +107,12 @@ export default [
           .keys({
             link: magicLinkSchema
           })
-          .label('getSaveAndExitRecordParams')
+          .label('getSaveAndExitRecordParams'),
+        query: Joi.object()
+          .keys({
+            preview: previewSchema
+          })
+          .label('getSaveAndExitRecordQuery')
       },
       response: {
         status: {

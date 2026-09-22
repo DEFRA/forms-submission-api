@@ -74,6 +74,39 @@ function buildRecord(magicLinkId, overrides = {}) {
   }
 }
 
+/**
+ * A record for each origin. A live form and a preview of the live form both
+ * have the status `live`, so only `isPreview` tells them apart.
+ */
+const ORIGINS = [
+  { link: 'live', preview: undefined, status: 'live', isPreview: false },
+  {
+    link: 'preview-draft',
+    preview: FormStatus.Draft,
+    status: 'draft',
+    isPreview: true
+  },
+  {
+    link: 'preview-live',
+    preview: FormStatus.Live,
+    status: 'live',
+    isPreview: true
+  }
+]
+
+/**
+ * @param {{ link: string, status: string, isPreview: boolean }} origin
+ * @param {string} [magicLinkId]
+ */
+function buildRecordForOrigin(origin, magicLinkId = origin.link) {
+  const record = buildRecord(magicLinkId, { expireAt: daysFromNow(28) })
+
+  return {
+    ...record,
+    form: { ...record.form, status: origin.status, isPreview: origin.isPreview }
+  }
+}
+
 /** @type {MongoMemoryServer} */
 let mongod
 
@@ -172,6 +205,38 @@ describe('findSaveAndExitRecordsForUser', () => {
     const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
 
     expect(records).toEqual([])
+  })
+
+  it.each(ORIGINS)(
+    'should return only the records of the $link origin',
+    async ({ link, preview }) => {
+      await insert(ORIGINS.map((origin) => buildRecordForOrigin(origin)))
+
+      const records = await findSaveAndExitRecordsForUser(
+        SUB,
+        ISSUER,
+        FORM_ID,
+        preview
+      )
+
+      expect(records.map((record) => record.magicLinkId)).toEqual([link])
+    }
+  )
+
+  it('should return a live record that has no isPreview field', async () => {
+    await insert([buildRecord('no-preview-field')])
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne(
+        { magicLinkId: 'no-preview-field' },
+        { $unset: { 'form.isPreview': '' } }
+      )
+
+    const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
+
+    expect(records.map((result) => result.magicLinkId)).toEqual([
+      'no-preview-field'
+    ])
   })
 
   it('should return only the fields the citizen dashboard shows', async () => {
@@ -323,6 +388,44 @@ describe('findSaveAndExitRecordForUser', () => {
     expect(record?.magicLinkGroupId).toEqual(expect.any(String))
     expect(record?.magicLinkGroupId).toHaveLength(36)
   })
+
+  it.each(ORIGINS)(
+    'returns a record of the $link origin to a request for the same origin',
+    async (origin) => {
+      await db
+        .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+        .insertOne(buildRecordForOrigin(origin, LINK))
+
+      const record = await findSaveAndExitRecordForUser(
+        SUB,
+        ISSUER,
+        LINK,
+        origin.preview
+      )
+
+      expect(record?.state).toEqual({ formField1: 'val1' })
+    }
+  )
+
+  it.each(
+    ORIGINS.flatMap((saved) =>
+      ORIGINS.filter((requested) => requested !== saved).map((requested) => ({
+        saved,
+        requested
+      }))
+    )
+  )(
+    'returns nothing for a record of the $saved.link origin to a request for the $requested.link origin',
+    async ({ saved, requested }) => {
+      await db
+        .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+        .insertOne(buildRecordForOrigin(saved, LINK))
+
+      await expect(
+        findSaveAndExitRecordForUser(SUB, ISSUER, LINK, requested.preview)
+      ).resolves.toBeNull()
+    }
+  )
 
   it('returns a record with no group, since the link alone decides whether a record is found', async () => {
     await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)

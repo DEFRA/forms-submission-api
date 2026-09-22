@@ -98,13 +98,26 @@ export async function getLatestSaveAndExitByGroup(groupId) {
 }
 
 /**
+ * The filter for the origin of a record. A live form and a preview of the live
+ * form both have the status `live`, thus the filter uses the two fields.
+ * A live record can have no `isPreview` field, thus the filter uses `$ne`.
+ * @param {FormStatus} [preview] - the preview state, or none for a live form
+ */
+function originFilter(preview) {
+  return preview
+    ? { 'form.isPreview': true, 'form.status': preview }
+    : { 'form.isPreview': { $ne: true } }
+}
+
+/**
  * Finds the open save-and-exit records of one citizen for one form.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} formId - the form the records belong to
+ * @param {FormStatus} [preview] - the preview state, or none for a live form
  * @returns {Promise<SaveAndExitRecordSummary[]>}
  */
-export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
+export async function findSaveAndExitRecordsForUser(sub, iss, formId, preview) {
   const event = {
     category: saveAndExitLabel,
     action: 'read-records-for-user'
@@ -119,15 +132,16 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
     const results = /** @type {SaveAndExitRecordSummary[]} */ (
       await coll
         .aggregate([
-          // Get the records of this citizen for this form that are not
-          // consumed. A subject is unique only for one issuer, thus match the
-          // two values.
+          // Get the records of this citizen for this form and origin that are
+          // not consumed. A subject is unique only for one issuer, thus match
+          // the two values.
           {
             $match: {
               'auth.sub': sub,
               'auth.issuer': iss,
               consumed: { $ne: true },
-              'form.id': formId
+              'form.id': formId,
+              ...originFilter(preview)
             }
           },
           // Each save of a form writes a new record in the same group. Keep
@@ -189,14 +203,20 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId) {
 /**
  * Finds one open save-and-exit record of a citizen by its link id. A subject is
  * unique only for one issuer, thus match the two values. A record that is
- * consumed, expired or owned by another citizen is not returned, so the caller
- * cannot tell those cases apart.
+ * consumed, expired, owned by another citizen or from another origin is not
+ * returned, so the caller cannot tell those cases apart.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} magicLinkId - the link that opens the saved form
+ * @param {FormStatus} [preview] - the preview state, or none for a live form
  * @returns {Promise<SaveAndExitRecordForResume | null>}
  */
-export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
+export async function findSaveAndExitRecordForUser(
+  sub,
+  iss,
+  magicLinkId,
+  preview
+) {
   const event = {
     category: saveAndExitLabel,
     action: 'read-record-for-user',
@@ -216,7 +236,8 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
         'auth.sub': sub,
         'auth.issuer': iss,
         consumed: { $ne: true },
-        expireAt: { $gt: new Date() }
+        expireAt: { $gt: new Date() },
+        ...originFilter(preview)
       },
       // Return the saved answers and the group, and leave `_id` out.
       { projection: { _id: 0, state: 1, magicLinkGroupId: 1 } }
@@ -668,6 +689,7 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
 }
 
 /**
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { ClientSession, Collection, ObjectId, WithId } from 'mongodb'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */
