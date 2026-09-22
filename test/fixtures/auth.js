@@ -1,5 +1,7 @@
 import { Roles, Scopes } from '@defra/forms-model'
 
+import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
+
 export const authSuperadmin = {
   strategy: 'azure-oidc-token',
   credentials: {
@@ -105,7 +107,7 @@ export const appAuth = {
 }
 
 export const authCitizen = {
-  strategy: 'citizen-access-token',
+  strategy: CITIZEN_ACCESS_TOKEN_STRATEGY,
   credentials: {
     user: {
       sub: 'a3f1c0de-0000-4000-8000-000000000001',

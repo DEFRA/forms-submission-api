@@ -2,6 +2,7 @@ import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
+import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
 
@@ -72,7 +73,7 @@ export const auth = {
       })
 
       // `aud` names this API, so a token minted for another API is refused.
-      server.auth.strategy('citizen-access-token', 'jwt', {
+      server.auth.strategy(CITIZEN_ACCESS_TOKEN_STRATEGY, 'jwt', {
         keys: {
           uri: citizenJwksUri
         },

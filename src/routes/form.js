@@ -1,6 +1,7 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
 import Joi from 'joi'
 
+import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
 import {
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
@@ -64,7 +65,7 @@ export default [
     options: {
       tags: ['api'],
       // The token names the citizen, so the request carries no identifier.
-      auth: 'citizen-access-token',
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
       validate: {
         query: Joi.object()
           .keys({
