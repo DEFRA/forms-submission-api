@@ -75,10 +75,11 @@ function buildRecord(magicLinkId, overrides = {}) {
 }
 
 /**
- * A record for each origin. A live form and a preview of the live form both
- * have the status `live`, so only `isPreview` tells them apart.
+ * A record for each preview state, including none for a live form. A live form
+ * and a preview of the live form both have the status `live`, so only
+ * `isPreview` tells them apart.
  */
-const ORIGINS = [
+const PREVIEW_STATES = [
   { link: 'live', preview: undefined, status: 'live', isPreview: false },
   {
     link: 'preview-draft',
@@ -95,15 +96,22 @@ const ORIGINS = [
 ]
 
 /**
- * @param {{ link: string, status: string, isPreview: boolean }} origin
+ * @param {{ link: string, status: string, isPreview: boolean }} previewState
  * @param {string} [magicLinkId]
  */
-function buildRecordForOrigin(origin, magicLinkId = origin.link) {
+function buildRecordForPreviewState(
+  previewState,
+  magicLinkId = previewState.link
+) {
   const record = buildRecord(magicLinkId, { expireAt: daysFromNow(28) })
 
   return {
     ...record,
-    form: { ...record.form, status: origin.status, isPreview: origin.isPreview }
+    form: {
+      ...record.form,
+      status: previewState.status,
+      isPreview: previewState.isPreview
+    }
   }
 }
 
@@ -207,10 +215,14 @@ describe('findSaveAndExitRecordsForUser', () => {
     expect(records).toEqual([])
   })
 
-  it.each(ORIGINS)(
-    'should return only the records of the $link origin',
+  it.each(PREVIEW_STATES)(
+    'should return only the records of the $link preview state',
     async ({ link, preview }) => {
-      await insert(ORIGINS.map((origin) => buildRecordForOrigin(origin)))
+      await insert(
+        PREVIEW_STATES.map((previewState) =>
+          buildRecordForPreviewState(previewState)
+        )
+      )
 
       const records = await findSaveAndExitRecordsForUser(
         SUB,
@@ -389,18 +401,18 @@ describe('findSaveAndExitRecordForUser', () => {
     expect(record?.magicLinkGroupId).toHaveLength(36)
   })
 
-  it.each(ORIGINS)(
-    'returns a record of the $link origin to a request for the same origin',
-    async (origin) => {
+  it.each(PREVIEW_STATES)(
+    'returns a record of the $link preview state to a request for the same preview state',
+    async (previewState) => {
       await db
         .collection(SAVE_AND_EXIT_COLLECTION_NAME)
-        .insertOne(buildRecordForOrigin(origin, LINK))
+        .insertOne(buildRecordForPreviewState(previewState, LINK))
 
       const record = await findSaveAndExitRecordForUser(
         SUB,
         ISSUER,
         LINK,
-        origin.preview
+        previewState.preview
       )
 
       expect(record?.state).toEqual({ formField1: 'val1' })
@@ -408,18 +420,20 @@ describe('findSaveAndExitRecordForUser', () => {
   )
 
   it.each(
-    ORIGINS.flatMap((saved) =>
-      ORIGINS.filter((requested) => requested !== saved).map((requested) => ({
-        saved,
-        requested
-      }))
+    PREVIEW_STATES.flatMap((saved) =>
+      PREVIEW_STATES.filter((requested) => requested !== saved).map(
+        (requested) => ({
+          saved,
+          requested
+        })
+      )
     )
   )(
-    'returns nothing for a record of the $saved.link origin to a request for the $requested.link origin',
+    'returns nothing for a record of the $saved.link preview state to a request for the $requested.link preview state',
     async ({ saved, requested }) => {
       await db
         .collection(SAVE_AND_EXIT_COLLECTION_NAME)
-        .insertOne(buildRecordForOrigin(saved, LINK))
+        .insertOne(buildRecordForPreviewState(saved, LINK))
 
       await expect(
         findSaveAndExitRecordForUser(SUB, ISSUER, LINK, requested.preview)
