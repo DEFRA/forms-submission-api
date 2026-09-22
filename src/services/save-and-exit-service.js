@@ -5,6 +5,7 @@ import argon2 from 'argon2'
 import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
+  findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
@@ -40,8 +41,19 @@ export async function getSavedLinkDetails(magicLinkId) {
     throw boomError
   }
 
+  // An account record carries `auth` and a memorable word record carries
+  // `security`, so the presence of `auth` says which one this is. `version` is
+  // 1 on both, so it cannot tell them apart.
+  if ('auth' in record) {
+    return {
+      form: record.form,
+      authType: 'citizenSignIn'
+    }
+  }
+
   return {
     form: record.form,
+    authType: 'memorableWord',
     question: record.security.question,
     invalidPasswordAttempts: record.invalidPasswordAttempts
   }
@@ -61,6 +73,12 @@ export async function validateSavedLinkCredentials(
   if (!record) {
     // Invalid magic link
     throw Boom.notFound('Invalid magic link')
+  }
+
+  if ('auth' in record) {
+    // An account record has no memorable word to check, so the caller gets
+    // the same answer as for a link that does not exist.
+    throw Boom.notFound(INVALID_MAGIC_LINK)
   }
 
   let validPassword = false
@@ -107,6 +125,25 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
     createdAt: record.createdAt,
     expireAt: record.expireAt
   }))
+}
+
+/**
+ * The saved answers of one in-progress form, for the citizen who saved it.
+ * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} magicLinkId - the link that opens the saved form
+ */
+export async function getSaveAndExitRecordForUser(sub, iss, magicLinkId) {
+  const record = await findSaveAndExitRecordForUser(sub, iss, magicLinkId)
+
+  if (!record) {
+    throw Boom.notFound(INVALID_MAGIC_LINK)
+  }
+
+  return {
+    state: record.state,
+    magicLinkGroupId: record.magicLinkGroupId
+  }
 }
 
 /**

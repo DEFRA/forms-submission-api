@@ -1,3 +1,4 @@
+import { FormStatus } from '@defra/forms-model'
 import { MongoMemoryServer } from 'mongodb-memory-server'
 
 import { config } from '~/src/config/index.js'
@@ -7,7 +8,13 @@ import {
   db,
   prepareDb
 } from '~/src/mongo.js'
-import { findSaveAndExitRecordsForUser } from '~/src/repositories/save-and-exit-repository.js'
+import { buildSaveAndExitV2Message } from '~/src/repositories/__stubs__/save-and-exit.js'
+import {
+  createSaveAndExitRecord,
+  findSaveAndExitRecordForUser,
+  findSaveAndExitRecordsForUser
+} from '~/src/repositories/save-and-exit-repository.js'
+import { mapSaveAndExitDataToDocumentV2 } from '~/src/services/save-and-exit-events.js'
 
 jest.mock('~/src/helpers/logging/logger.js', () => ({
   logger: {
@@ -67,28 +74,28 @@ function buildRecord(magicLinkId, overrides = {}) {
   }
 }
 
+/** @type {MongoMemoryServer} */
+let mongod
+
+beforeAll(async () => {
+  mongod = await MongoMemoryServer.create({
+    binary: { version: MONGO_VERSION }
+  })
+  config.set('mongo.uri', mongod.getUri())
+
+  await prepareDb(mockLogger)
+}, MONGO_BOOT_TIMEOUT_MS)
+
+afterAll(async () => {
+  await client.close()
+  await mongod.stop()
+})
+
+beforeEach(async () => {
+  await db.collection(SAVE_AND_EXIT_COLLECTION_NAME).deleteMany({})
+})
+
 describe('findSaveAndExitRecordsForUser', () => {
-  /** @type {MongoMemoryServer} */
-  let mongod
-
-  beforeAll(async () => {
-    mongod = await MongoMemoryServer.create({
-      binary: { version: MONGO_VERSION }
-    })
-    config.set('mongo.uri', mongod.getUri())
-
-    await prepareDb(mockLogger)
-  }, MONGO_BOOT_TIMEOUT_MS)
-
-  afterAll(async () => {
-    await client.close()
-    await mongod.stop()
-  })
-
-  beforeEach(async () => {
-    await db.collection(SAVE_AND_EXIT_COLLECTION_NAME).deleteMany({})
-  })
-
   /**
    * @param {Record<string, unknown>[]} records
    */
@@ -195,3 +202,141 @@ describe('findSaveAndExitRecordsForUser', () => {
     expect(record).not.toHaveProperty('referenceNumber')
   })
 })
+
+describe('findSaveAndExitRecordForUser', () => {
+  const SUBJECT = 'auth-sub'
+  const ISSUER_URL = 'https://identity.test'
+  const LINK = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+  /** @type {ClientSession} */
+  let session
+
+  beforeEach(() => {
+    session = client.startSession()
+  })
+
+  afterEach(async () => {
+    await session.endSession()
+  })
+
+  /**
+   * Builds a record the way the queue does, so the test crosses the rename
+   * from the token's `iss` to the record's `auth.issuer`.
+   * @param {string} messageId
+   */
+  function buildRecordFromMessage(messageId) {
+    return mapSaveAndExitDataToDocumentV2({
+      messageId,
+      parsedContent: buildSaveAndExitV2Message({
+        data: {
+          form: {
+            id: '689b3b1a7f8e2d0012a4b7c1',
+            title: 'My First Form',
+            status: FormStatus.Live,
+            isPreview: false,
+            baseUrl: 'http://localhost:3009'
+          },
+          email: 'citizen@example.com',
+          auth: { sub: SUBJECT, issuer: ISSUER_URL },
+          state: { formField1: 'val1' }
+        }
+      })
+    })
+  }
+
+  it('returns the saved answers to the citizen who saved them', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+
+    const record = await findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+
+    expect(record?.state).toEqual({ formField1: 'val1' })
+    expect(record?.magicLinkGroupId).toEqual(expect.any(String))
+  })
+
+  it('leaves `_id` out, so the caller cannot mistake it for a link', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+
+    const record = await findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+
+    expect(record).not.toHaveProperty('_id')
+  })
+
+  it('returns nothing for a citizen who does not own the record', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+
+    await expect(
+      findSaveAndExitRecordForUser('another-sub', ISSUER_URL, LINK)
+    ).resolves.toBeNull()
+  })
+
+  it('returns nothing when the subject matches but the issuer does not', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+
+    await expect(
+      findSaveAndExitRecordForUser(SUBJECT, 'https://elsewhere.test', LINK)
+    ).resolves.toBeNull()
+  })
+
+  it('returns nothing for a record that has expired', async () => {
+    const record = buildRecordFromMessage(LINK)
+    await createSaveAndExitRecord(record, session)
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne(
+        { magicLinkId: LINK },
+        { $set: { expireAt: new Date('2020-01-01T00:00:00.000Z') } }
+      )
+
+    await expect(
+      findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+    ).resolves.toBeNull()
+  })
+
+  it('returns nothing for a record that has been consumed', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne({ magicLinkId: LINK }, { $set: { consumed: true } })
+
+    await expect(
+      findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+    ).resolves.toBeNull()
+  })
+
+  it('returns a record saved for the first time, which has no group of its own yet', async () => {
+    const firstSaveLink = 'a5f2d4e0-6b7a-4a3d-9f1e-000000000002'
+
+    // The message of a first save carries no group, so the insert supplies
+    // one, so that the citizen can resume the form later.
+    await createSaveAndExitRecord(
+      buildRecordFromMessage(firstSaveLink),
+      session
+    )
+
+    const record = await findSaveAndExitRecordForUser(
+      SUBJECT,
+      ISSUER_URL,
+      firstSaveLink
+    )
+
+    expect(record).not.toBeNull()
+    expect(record?.magicLinkGroupId).toEqual(expect.any(String))
+    expect(record?.magicLinkGroupId).toHaveLength(36)
+  })
+
+  it('returns a record with no group, since the link alone decides whether a record is found', async () => {
+    await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne({ magicLinkId: LINK }, { $unset: { magicLinkGroupId: '' } })
+
+    const record = await findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
+
+    expect(record).not.toBeNull()
+    expect(record?.magicLinkGroupId).toBeUndefined()
+  })
+})
+
+/**
+ * @import { ClientSession } from 'mongodb'
+ */
