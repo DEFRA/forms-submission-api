@@ -5,6 +5,7 @@ import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
   create,
   getByFileId,
+  getByFileIds,
   updateRetrievalKeys,
   updateS3Keys
 } from '~/src/repositories/file-repository.js'
@@ -108,6 +109,67 @@ describe('file repository', () => {
         .mockReturnValueOnce(undefined)
       const fileRecord = await getByFileId(fileDocument.fileId)
       expect(fileRecord).toBeUndefined()
+    })
+  })
+
+  describe('getByFileIds', () => {
+    it('should fetch all records in a single primary-collection query', async () => {
+      const secondFile = { ...fileDocument, fileId: '999999' }
+
+      mockCollection.find.mockReturnValueOnce({
+        toArray: () => Promise.resolve([fileDocument, secondFile])
+      })
+
+      const results = await getByFileIds([
+        fileDocument.fileId,
+        secondFile.fileId
+      ])
+
+      expect(mockCollection.find).toHaveBeenCalledTimes(1)
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        fileId: { $in: [fileDocument.fileId, secondFile.fileId] }
+      })
+      expect(results.get(fileDocument.fileId)).toEqual(fileDocument)
+      expect(results.get(secondFile.fileId)).toEqual(secondFile)
+    })
+
+    it('should query the fallback collection only for file IDs missing from the primary collection', async () => {
+      const missingFile = { ...fileDocument, fileId: '999999' }
+
+      mockCollection.find
+        .mockReturnValueOnce({ toArray: () => Promise.resolve([fileDocument]) })
+        .mockReturnValueOnce({ toArray: () => Promise.resolve([missingFile]) })
+
+      const results = await getByFileIds([
+        fileDocument.fileId,
+        missingFile.fileId
+      ])
+
+      expect(mockCollection.find).toHaveBeenCalledTimes(2)
+      expect(mockCollection.find).toHaveBeenNthCalledWith(2, {
+        fileId: { $in: [missingFile.fileId] }
+      })
+      expect(results.get(missingFile.fileId)).toEqual(missingFile)
+    })
+
+    it('should not query the fallback collection when nothing is missing', async () => {
+      mockCollection.find.mockReturnValueOnce({
+        toArray: () => Promise.resolve([fileDocument])
+      })
+
+      await getByFileIds([fileDocument.fileId])
+
+      expect(mockCollection.find).toHaveBeenCalledTimes(1)
+    })
+
+    it('should return an empty map for file IDs not found in either collection', async () => {
+      mockCollection.find
+        .mockReturnValueOnce({ toArray: () => Promise.resolve([]) })
+        .mockReturnValueOnce({ toArray: () => Promise.resolve([]) })
+
+      const results = await getByFileIds(['does-not-exist'])
+
+      expect(results.size).toBe(0)
     })
   })
 

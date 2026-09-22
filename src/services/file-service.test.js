@@ -25,6 +25,7 @@ import {
   completePreTransactionPhase,
   createPersistCopyTasks
 } from '~/src/services/file-persist-s3copy.js'
+import { batchGetFileStatuses } from '~/src/services/file-persist-service.js'
 import {
   checkFileStatus,
   getPresignedLink,
@@ -764,6 +765,120 @@ describe('Files service', () => {
       s3Mock.reset()
     })
 
+    it('should look up all files in the batch with a single call to getByFileIds', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        fileId: 'file-1',
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'hash-1'
+      }
+      /** @type {FormFileUploadStatus} */
+      const dummyData2 = {
+        ...successfulFile,
+        fileId: 'file-2',
+        s3Key: 'staging/dummy-file-456.txt',
+        retrievalKey: 'hash-2'
+      }
+
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(verify).mockResolvedValue(true)
+      jest.mocked(repository.getByFileIds).mockResolvedValueOnce(
+        new Map([
+          [dummyData.fileId, dummyData],
+          [dummyData2.fileId, dummyData2]
+        ])
+      )
+
+      await persistFiles(
+        [
+          { fileId: dummyData.fileId, initiatedRetrievalKey: 'key-1' },
+          { fileId: dummyData2.fileId, initiatedRetrievalKey: 'key-2' }
+        ],
+        newRetrievalKey
+      )
+
+      expect(repository.getByFileIds).toHaveBeenCalledTimes(1)
+      expect(repository.getByFileIds).toHaveBeenCalledWith([
+        dummyData.fileId,
+        dummyData2.fileId
+      ])
+      expect(repository.getByFileId).not.toHaveBeenCalled()
+    })
+
+    it('should only call argon2.verify once for files sharing an identical stored hash and plaintext key', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        fileId: 'file-1',
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'shared-hash'
+      }
+      /** @type {FormFileUploadStatus} */
+      const dummyData2 = {
+        ...successfulFile,
+        fileId: 'file-2',
+        s3Key: 'staging/dummy-file-456.txt',
+        retrievalKey: 'shared-hash'
+      }
+
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(verify).mockResolvedValue(true)
+      jest.mocked(repository.getByFileIds).mockResolvedValueOnce(
+        new Map([
+          [dummyData.fileId, dummyData],
+          [dummyData2.fileId, dummyData2]
+        ])
+      )
+
+      await persistFiles(
+        [
+          { fileId: dummyData.fileId, initiatedRetrievalKey: 'same-key' },
+          { fileId: dummyData2.fileId, initiatedRetrievalKey: 'same-key' }
+        ],
+        newRetrievalKey
+      )
+
+      expect(verify).toHaveBeenCalledTimes(1)
+      expect(verify).toHaveBeenCalledWith('shared-hash', 'same-key')
+    })
+
+    it('should call argon2.verify separately for files with different stored hashes', async () => {
+      /** @type {FormFileUploadStatus} */
+      const dummyData = {
+        ...successfulFile,
+        fileId: 'file-1',
+        s3Key: 'staging/dummy-file-123.txt',
+        retrievalKey: 'hash-1'
+      }
+      /** @type {FormFileUploadStatus} */
+      const dummyData2 = {
+        ...successfulFile,
+        fileId: 'file-2',
+        s3Key: 'staging/dummy-file-456.txt',
+        retrievalKey: 'hash-2'
+      }
+
+      jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
+      jest.mocked(verify).mockResolvedValue(true)
+      jest.mocked(repository.getByFileIds).mockResolvedValueOnce(
+        new Map([
+          [dummyData.fileId, dummyData],
+          [dummyData2.fileId, dummyData2]
+        ])
+      )
+
+      await persistFiles(
+        [
+          { fileId: dummyData.fileId, initiatedRetrievalKey: 'same-key' },
+          { fileId: dummyData2.fileId, initiatedRetrievalKey: 'same-key' }
+        ],
+        newRetrievalKey
+      )
+
+      expect(verify).toHaveBeenCalledTimes(2)
+    })
+
     it('should correctly handle case insensitivity for the retrieval key', async () => {
       /** @type {FormFileUploadStatus} */
       const mockData = {
@@ -775,7 +890,9 @@ describe('Files service', () => {
       const caseSensitiveKey = 'Some.Name@gov.uk'
       jest.mocked(hash).mockResolvedValueOnce('caseSensitiveHash')
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[mockData.fileId, mockData]]))
 
       await persistFiles(
         [
@@ -808,7 +925,9 @@ describe('Files service', () => {
 
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await persistFiles(
         [
@@ -868,7 +987,9 @@ describe('Files service', () => {
 
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
       s3Mock.on(CopyObjectCommand).callsFake(async () => {
         hashStartedDuringCopy = await waitFor(
           () => jest.mocked(hash).mock.calls.length > 0
@@ -899,7 +1020,9 @@ describe('Files service', () => {
 
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(hash).mockRejectedValueOnce(new Error('hash failed'))
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await expect(
         persistFiles(
@@ -944,13 +1067,15 @@ describe('Files service', () => {
 
       jest.mocked(verify).mockResolvedValueOnce(true)
       jest.mocked(hash).mockResolvedValueOnce('newKeyHash')
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       s3Mock
         .on(CopyObjectCommand)
         .resolvesOnce({}) // first file succeeds
         .rejectsOnce(
-          // second file is not found so we expect a rollback
+          // second file's copy fails so we expect a rollback
           new NoSuchKey({
             message: 'NoSuchKey',
             $metadata: {}
@@ -992,7 +1117,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(false)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await expect(
         persistFiles(
@@ -1025,7 +1152,9 @@ describe('Files service', () => {
       const expectedNewKey = 'loaded/dummy-file-123.txt'
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await persistFiles(
         [
@@ -1068,7 +1197,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       jest.mocked(hash).mockResolvedValueOnce('caseSensitiveHash')
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -1102,7 +1233,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await expect(
         persistFiles(
@@ -1131,7 +1264,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       await expect(
         persistFiles(
@@ -1159,7 +1294,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       s3Mock.on(CopyObjectCommand).rejectsOnce(
         new NoSuchKey({
@@ -1192,7 +1329,9 @@ describe('Files service', () => {
       const unexpectedError = new Error('Unexpected S3 failure')
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[dummyData.fileId, dummyData]]))
 
       s3Mock.on(CopyObjectCommand).rejectsOnce(unexpectedError)
 
@@ -1221,7 +1360,9 @@ describe('Files service', () => {
 
       jest.mocked(hash).mockResolvedValueOnce('hashedKey')
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[mockData.fileId, mockData]]))
 
       await persistFiles(
         [
@@ -1247,7 +1388,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[mockData.fileId, mockData]]))
 
       // Mock updateMany to return unacknowledged result
       jest.mocked(repository.updateRetrievalKeys).mockImplementationOnce(() => {
@@ -1280,7 +1423,9 @@ describe('Files service', () => {
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
-      jest.mocked(repository.getByFileId).mockResolvedValueOnce(mockData)
+      jest
+        .mocked(repository.getByFileIds)
+        .mockResolvedValueOnce(new Map([[mockData.fileId, mockData]]))
 
       jest.mocked(repository.updateRetrievalKeys).mockImplementationOnce(() => {
         throw new Error(
@@ -1549,6 +1694,76 @@ describe('Files service', () => {
     })
   })
 
+  describe('file persist service helpers', () => {
+    describe('batchGetFileStatuses', () => {
+      it('should report a unique verify count of 1 when files share an identical stored hash and plaintext key', async () => {
+        const perfLoggerFns = { info: jest.fn() }
+        const perfLogger = /** @type {import('pino').Logger} */ (
+          /** @type {unknown} */ (perfLoggerFns)
+        )
+        const fileA = { ...successfulFile, fileId: 'file-a' }
+        const fileB = { ...successfulFile, fileId: 'file-b' }
+
+        jest.mocked(repository.getByFileIds).mockResolvedValueOnce(
+          new Map([
+            [fileA.fileId, { ...fileA, retrievalKey: 'shared-hash' }],
+            [fileB.fileId, { ...fileB, retrievalKey: 'shared-hash' }]
+          ])
+        )
+
+        await batchGetFileStatuses(
+          [
+            { fileId: fileA.fileId, initiatedRetrievalKey: 'same-key' },
+            { fileId: fileB.fileId, initiatedRetrievalKey: 'same-key' }
+          ],
+          perfLogger
+        )
+
+        expect(perfLoggerFns.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event: expect.objectContaining({
+              action: 'files.persist.verify_dedup'
+            })
+          }),
+          '[persistFiles:perf] Retrieval key verification dedup summary (uniqueVerifyCount=1 fileCount=2)'
+        )
+      })
+
+      it('should report a unique verify count of 2 when files have different stored hashes', async () => {
+        const perfLoggerFns = { info: jest.fn() }
+        const perfLogger = /** @type {import('pino').Logger} */ (
+          /** @type {unknown} */ (perfLoggerFns)
+        )
+        const fileA = { ...successfulFile, fileId: 'file-a' }
+        const fileB = { ...successfulFile, fileId: 'file-b' }
+
+        jest.mocked(repository.getByFileIds).mockResolvedValueOnce(
+          new Map([
+            [fileA.fileId, { ...fileA, retrievalKey: 'hash-1' }],
+            [fileB.fileId, { ...fileB, retrievalKey: 'hash-2' }]
+          ])
+        )
+
+        await batchGetFileStatuses(
+          [
+            { fileId: fileA.fileId, initiatedRetrievalKey: 'same-key' },
+            { fileId: fileB.fileId, initiatedRetrievalKey: 'same-key' }
+          ],
+          perfLogger
+        )
+
+        expect(perfLoggerFns.info).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event: expect.objectContaining({
+              action: 'files.persist.verify_dedup'
+            })
+          }),
+          '[persistFiles:perf] Retrieval key verification dedup summary (uniqueVerifyCount=2 fileCount=2)'
+        )
+      })
+    })
+  })
+
   describe('file persist flow helpers', () => {
     it('should skip original file cleanup when no updated files exist', async () => {
       const clientFns = {
@@ -1632,18 +1847,13 @@ describe('Files service', () => {
         }),
         '[persistFiles:perf] Pre-transaction verification and copy phase completed (copiedCount=0 fileCount=0 skippedCopyCount=0)'
       )
-      expect(perfLoggerFns.info).toHaveBeenCalledWith(
+      expect(perfLoggerFns.info).not.toHaveBeenCalledWith(
         expect.objectContaining({
           event: expect.objectContaining({
-            action: 'files.persist.summary.lookup',
-            category: 'database',
-            duration: 0,
-            kind: 'metric',
-            outcome: 'success',
-            type: 'info'
+            action: 'files.persist.summary.lookup'
           })
         }),
-        '[persistFiles:perf] Mongo lookup timing summary (averageMs=0 fileCount=0 maxMs=0)'
+        expect.stringContaining('Mongo lookup timing summary')
       )
       expect(perfLoggerFns.info).toHaveBeenCalledWith(
         expect.objectContaining({

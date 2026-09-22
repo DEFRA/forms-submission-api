@@ -61,19 +61,6 @@ export async function completePreTransactionPhase(updateFiles, perfLogger) {
   perfLogger.info(
     {
       event: {
-        action: 'files.persist.summary.lookup',
-        category: 'database',
-        duration: timingSummary.lookupMs.totalMs,
-        kind: 'metric',
-        outcome: 'success',
-        type: 'info'
-      }
-    },
-    `[persistFiles:perf] Mongo lookup timing summary (averageMs=${timingSummary.lookupMs.averageMs} fileCount=${copiedFiles.length} maxMs=${timingSummary.lookupMs.maxMs})`
-  )
-  perfLogger.info(
-    {
-      event: {
         action: 'files.persist.summary.verify',
         category: 'process',
         duration: timingSummary.verifyMs.totalMs,
@@ -165,9 +152,6 @@ function summariseDurationValues(values) {
  */
 function summariseFileTimings(fileResults) {
   return {
-    lookupMs: summariseDurationValues(
-      fileResults.map((result) => result.timings.lookupMs)
-    ),
     verifyMs: summariseDurationValues(
       fileResults.map((result) => result.timings.verifyMs)
     ),

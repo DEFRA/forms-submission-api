@@ -59,6 +59,53 @@ export async function getByFileId(fileId) {
 }
 
 /**
+ * Retrieves file statuses for multiple file IDs in as few queries as
+ * possible: one `$in` query against the primary collection, then a second
+ * `$in` query against the fallback collection for any file IDs still
+ * missing.
+ * @param {string[]} fileIds
+ * @returns {Promise<Map<string, FormFileUploadStatus>>}
+ */
+export async function getByFileIds(fileIds) {
+  logger.info(`Retrieving file statuses for ${fileIds.length} file ID(s)`)
+
+  const coll = /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+    db.collection(FILES_COLLECTION_NAME)
+  )
+
+  const found = await coll.find({ fileId: { $in: fileIds } }).toArray()
+
+  /** @type {Map<string, FormFileUploadStatus>} */
+  const results = new Map(found.map((doc) => [doc.fileId, doc]))
+  const missingFileIds = fileIds.filter((fileId) => !results.has(fileId))
+
+  if (missingFileIds.length) {
+    logger.info(
+      `${missingFileIds.length} file ID(s) not found in '${FILES_COLLECTION_NAME}' collection, checking 'file-upload-status' collection`
+    )
+
+    const fallbackColl =
+      /** @satisfies {Collection<FormFileUploadStatus>}>} */ (
+        db.collection('file-upload-status')
+      )
+
+    const fallbackFound = await fallbackColl
+      .find({ fileId: { $in: missingFileIds } })
+      .toArray()
+
+    for (const doc of fallbackFound) {
+      results.set(doc.fileId, doc)
+    }
+  }
+
+  logger.info(
+    `Found ${results.size} of ${fileIds.length} requested file status(es)`
+  )
+
+  return results
+}
+
+/**
  * Updates the S3 Keys for a given set of files
  * @param {{ fileId: string; s3Bucket: string; oldS3Key: string | null; newS3Key: string; }[]} updateFiles
  * @param {ClientSession} session

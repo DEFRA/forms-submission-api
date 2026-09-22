@@ -34,15 +34,10 @@ export async function persistFiles(files, persistedRetrievalKey) {
   const totalTimer = createTimer()
 
   return withPersistFlowCompletionLogging(perfLogger, totalTimer, async () => {
-    /** @type {Promise<PersistFileResult>[] } */
-    const updateFiles = createPersistCopyTasks(
-      files,
-      client,
-      perfLogger,
-      getAndVerify
-    )
     /** @type {PersistFileResult[]} */
     let copiedFiles = []
+    /** @type {Promise<PersistFileResult>[] } */
+    let updateFiles = []
 
     perfLogger.info(
       {
@@ -57,6 +52,15 @@ export async function persistFiles(files, persistedRetrievalKey) {
     )
 
     try {
+      const fileStatuses = await batchGetFileStatuses(files, perfLogger)
+
+      updateFiles = createPersistCopyTasks(
+        files,
+        client,
+        perfLogger,
+        createBatchGetAndVerify(fileStatuses)
+      )
+
       // Hashing doesn't depend on the copies, so run it alongside them. If
       // either fails, Promise.all rejects and the rollback below removes any
       // files that were copied.
@@ -126,11 +130,46 @@ export async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
     throw Boom.notFound('File not found')
   }
 
-  const verifyTimer = createTimer()
-  const retrievalKeyCorrect = await argon2.verify(
-    fileStatus.retrievalKey,
-    retrievalKey
+  return verifyRetrievalKey(
+    fileId,
+    fileStatus,
+    retrievalKey,
+    timings,
+    perfLogger
   )
+}
+
+/**
+ * Verifies a retrieval key against a file status already fetched from the
+ * database. When a verifyCache is supplied, argon2.verify calls that share
+ * an identical stored hash and plaintext key are only performed once - the
+ * in-flight/settled promise is reused, so concurrent callers with the same
+ * pair wait on the same verification rather than triggering their own.
+ * @param {string} fileId
+ * @param {FormFileUploadStatus} fileStatus
+ * @param {string} retrievalKey
+ * @param {PersistFileTimings} [timings]
+ * @param {Logger} [perfLogger]
+ * @param {Map<string, Promise<boolean>>} [verifyCache]
+ */
+async function verifyRetrievalKey(
+  fileId,
+  fileStatus,
+  retrievalKey,
+  timings,
+  perfLogger,
+  verifyCache
+) {
+  const verifyTimer = createTimer()
+  const cacheKey = `${fileStatus.retrievalKey}::${retrievalKey}`
+  let verifyPromise = verifyCache?.get(cacheKey)
+
+  if (!verifyPromise) {
+    verifyPromise = argon2.verify(fileStatus.retrievalKey, retrievalKey)
+    verifyCache?.set(cacheKey, verifyPromise)
+  }
+
+  const retrievalKeyCorrect = await verifyPromise
   const verifyMs = verifyTimer.elapsed
 
   if (timings) {
@@ -166,10 +205,98 @@ export async function getAndVerify(fileId, retrievalKey, timings, perfLogger) {
 
   return fileStatus
 }
+
+/**
+ * Fetches file statuses for a persist batch in as few Mongo round trips as
+ * possible, instead of one lookup per file, and reports how many of the
+ * batch's retrieval-key verifications will actually be distinct - files
+ * ingested together share an identical stored hash, so verifying them
+ * collapses to a single argon2.verify call.
+ * @param {PersistFileRequest[]} files
+ * @param {Logger} perfLogger
+ * @returns {Promise<Map<string, FormFileUploadStatus>>}
+ */
+export async function batchGetFileStatuses(files, perfLogger) {
+  const fileIds = files.map(({ fileId }) => fileId)
+  const lookupTimer = createTimer()
+  const fileStatuses = await repository.getByFileIds(fileIds)
+  const lookupMs = lookupTimer.elapsed
+
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.batch_lookup',
+        category: 'database',
+        duration: lookupMs,
+        kind: 'event',
+        outcome: 'success',
+        type: 'end'
+      }
+    },
+    `[persistFiles:perf] Batch file status lookup completed (foundCount=${fileStatuses.size} fileCount=${fileIds.length})`
+  )
+
+  const uniqueVerifyCount = new Set(
+    files.map(
+      ({ fileId, initiatedRetrievalKey }) =>
+        `${fileStatuses.get(fileId)?.retrievalKey}::${initiatedRetrievalKey}`
+    )
+  ).size
+
+  perfLogger.info(
+    {
+      event: {
+        action: 'files.persist.verify_dedup',
+        category: 'process',
+        kind: 'metric',
+        outcome: 'success',
+        type: 'info'
+      }
+    },
+    `[persistFiles:perf] Retrieval key verification dedup summary (uniqueVerifyCount=${uniqueVerifyCount} fileCount=${files.length})`
+  )
+
+  return fileStatuses
+}
+
+/**
+ * Creates a getAndVerify-compatible function that resolves file statuses
+ * from a pre-fetched batch instead of querying Mongo per file, and
+ * memoizes argon2.verify calls within the batch.
+ * @param {Map<string, FormFileUploadStatus>} fileStatuses
+ * @returns {GetAndVerifyFn}
+ */
+function createBatchGetAndVerify(fileStatuses) {
+  /** @type {Map<string, Promise<boolean>>} */
+  const verifyCache = new Map()
+
+  return async function getAndVerifyFromBatch(
+    fileId,
+    retrievalKey,
+    timings,
+    perfLogger
+  ) {
+    const fileStatus = fileStatuses.get(fileId)
+
+    if (!fileStatus) {
+      throw Boom.notFound('File not found')
+    }
+
+    return verifyRetrievalKey(
+      fileId,
+      fileStatus,
+      retrievalKey,
+      timings,
+      perfLogger,
+      verifyCache
+    )
+  }
+}
 /**
  * @import { S3Client } from '@aws-sdk/client-s3'
  * @import { Logger } from 'pino'
  * @import { FormFileUploadStatus } from '~/src/api/types.js'
+ * @import { GetAndVerifyFn } from '~/src/services/file-persist-s3copy.js'
  * @typedef {{ fileId: string, initiatedRetrievalKey: string }} PersistFileRequest
  * @typedef {{ lookupMs: number, verifyMs: number, copyMs: number, totalMs: number }} PersistFileTimings
  * @typedef {{ fileId: string, s3Bucket: string, oldS3Key: string | null, newS3Key: string, timings: PersistFileTimings }} PersistFileResult
