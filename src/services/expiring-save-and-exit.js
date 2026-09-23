@@ -36,26 +36,23 @@ function getNotifyEmailConfig() {
 /**
  * Retrieves form title from document or fetches it from the forms service
  * @param {WithId<SaveAndExitDocument>} record
- * @param {Map<string, string>} formTitleCache
- * @returns {Promise<string>}
+ * @param {Map<string, { title: string, slug: string}>} formTitleCache
+ * @returns {Promise<{ title: string, slug: string}>}
  */
-async function getFormTitle(record, formTitleCache) {
-  // If the document has a title, use it
-  if (record.form.title) {
-    return record.form.title
-  }
-
+async function getFormTitleAndSlug(record, formTitleCache) {
   // Check cache first
   if (formTitleCache.has(record.form.id)) {
-    return /** @type {string} */ (formTitleCache.get(record.form.id))
+    return /** @type {{ title: string, slug: string}} */ (
+      formTitleCache.get(record.form.id)
+    )
   }
 
   // Fetch from forms service and cache it
   try {
     const timer = createTimer()
     const metadata = await getFormMetadataById(record.form.id)
-    const title = metadata.title
-    formTitleCache.set(record.form.id, title)
+    const { title, slug } = metadata
+    formTitleCache.set(record.form.id, { title, slug })
     logger.info(
       {
         event: {
@@ -65,9 +62,9 @@ async function getFormTitle(record, formTitleCache) {
           duration: timer.elapsed
         }
       },
-      `[SAER] Fetched form title for ${record.form.id} (${timer.elapsed}ms)`
+      `[SAER] Fetched form title and slug for ${record.form.id} (${timer.elapsed}ms)`
     )
-    return title
+    return { title, slug }
   } catch (err) {
     logger.warn(
       {
@@ -78,19 +75,40 @@ async function getFormTitle(record, formTitleCache) {
           reference: record.magicLinkId
         }
       },
-      `[SAER] Failed to fetch form title for ${record.form.id}, using fallback`
+      `[SAER] Failed to fetch form title and slug for ${record.form.id}, using fallback`
     )
-    return 'your form'
+    return { title: 'your form', slug: 'unknown' }
   }
+}
+
+/**
+ * The 'resume' link is different depending on whether we're dealing with
+ * a makgic link Save-and-exit, or a logged-in/authenticated save-and-exit
+ * @param {WithId<SaveAndExitDocument>} document
+ * @param {{ title: string, slug: string }} formTitleAndSlug
+ */
+export function getResumeLink(document, formTitleAndSlug) {
+  if ('auth' in document) {
+    // Authenticated save-and-exit
+    const previewDraftStub = document.form.isPreview
+      ? `preview/${document.form.status}/`
+      : ''
+    return `${document.form.baseUrl}/homepage/${previewDraftStub}${formTitleAndSlug.slug}`
+  }
+  // Magic link save-and-exit
+  return `${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId}`
 }
 
 /**
  * Constructs email content for expiry reminder
  * @param {WithId<SaveAndExitDocument>} document
- * @param {string} formTitle
+ * @param {{ title: string, slug: string }} formTitleAndSlug
  * @returns {SendNotificationArgs}
  */
-export function constructExpiryReminderEmailContent(document, formTitle) {
+export function constructExpiryReminderEmailContent(
+  document,
+  formTitleAndSlug
+) {
   const { templateId, emailReplyToId } = getNotifyEmailConfig()
 
   // Calculate hours remaining until expiry (rounded down)
@@ -104,9 +122,9 @@ export function constructExpiryReminderEmailContent(document, formTitle) {
 
   const emailBody = `# Form progress expires soon
 
-Your progress with ${formTitle} expires in ${hoursRemainingText}.
+Your progress with ${formTitleAndSlug.title} expires in ${hoursRemainingText}.
 
-[Continue with your form](${document.form.baseUrl}/resume-form/${document.form.id}/${document.magicLinkId})
+[Continue with your form](${getResumeLink(document, formTitleAndSlug)})
 
 The link is valid for ${hoursRemainingText}. After that time, your saved information will be deleted.
 `
@@ -126,7 +144,7 @@ The link is valid for ${hoursRemainingText}. After that time, your saved informa
  * Process a single expiring record: lock, send email, mark as sent
  * @param {Awaited<ReturnType<typeof findExpiringRecords>>[number]} record
  * @param {string} runtimeId
- * @param {Map<string, string>} formTitleCache
+ * @param {Map<string, { title: string, slug: string }>} formTitleCache
  * @returns {Promise<'processed' | 'skipped' | 'failed'>}
  */
 async function processExpiringRecord(record, runtimeId, formTitleCache) {
@@ -165,10 +183,13 @@ async function processExpiringRecord(record, runtimeId, formTitleCache) {
       return 'skipped'
     }
 
-    const formTitle = await getFormTitle(lockedRecord, formTitleCache)
+    const formTitleAndSlug = await getFormTitleAndSlug(
+      lockedRecord,
+      formTitleCache
+    )
     const emailContent = constructExpiryReminderEmailContent(
       lockedRecord,
-      formTitle
+      formTitleAndSlug
     )
 
     const timer = createTimer()
@@ -282,6 +303,6 @@ export async function processExpiringSaveAndExitRecords(
 
 /**
  * @import { WithId } from 'mongodb'
- * @import { SaveAndExitDocument } from '~/src/api/types.js'
+ * @import { SaveAndExitDocument, SaveAndExitV2Document } from '~/src/api/types.js'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
  */
