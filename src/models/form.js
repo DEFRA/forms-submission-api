@@ -1,13 +1,11 @@
 import { formAdapterSubmissionMessagePayloadSchema } from '@defra/forms-engine-plugin/engine/types/schema.js'
-import { FormStatus } from '@defra/forms-model'
+import { stateSchema } from '@defra/forms-engine-plugin/schema.js'
 import Joi from 'joi'
 
 export const magicLinkSchema = Joi.string().uuid().required()
 
 // The preview state of a form. A request with no value is for the live form.
-export const previewSchema = Joi.string()
-  .valid(FormStatus.Draft, FormStatus.Live)
-  .optional()
+export const previewSchema = stateSchema.optional()
 
 // Response schemas
 export const formSubmitResponseSchema = Joi.object({
