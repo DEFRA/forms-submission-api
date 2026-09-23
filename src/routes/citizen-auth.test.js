@@ -80,7 +80,8 @@ describe('Citizen access token', () => {
     expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
       SUB,
       ISSUER,
-      '688131eeff67f889d52c66cc'
+      '688131eeff67f889d52c66cc',
+      undefined
     )
   })
 

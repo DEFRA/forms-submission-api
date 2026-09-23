@@ -326,12 +326,41 @@ describe('Forms route', () => {
       expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         authCitizen.credentials.user.sub,
         authCitizen.credentials.user.iss,
-        '688131eeff67f889d52c66cc'
+        '688131eeff67f889d52c66cc',
+        undefined
       )
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toEqual([
         { ...record, createdAt: record.createdAt, expireAt: record.expireAt }
       ])
+    })
+
+    test('Testing GET /save-and-exit/records passes the preview state', async () => {
+      jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValueOnce([])
+
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc&preview=draft',
+        auth: authCitizen
+      })
+
+      expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        '688131eeff67f889d52c66cc',
+        FormStatus.Draft
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+    })
+
+    test('Testing GET /save-and-exit/records refuses an unknown preview state', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/save-and-exit/records?formId=688131eeff67f889d52c66cc&preview=other',
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
     })
 
     test('Testing GET /save-and-exit/records refuses a request without a form id', async () => {

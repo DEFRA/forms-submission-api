@@ -251,7 +251,8 @@ describe('save-and-exit service', () => {
       expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
         iss,
-        formId
+        formId,
+        undefined
       )
       expect(records).toEqual([
         {
@@ -280,15 +281,21 @@ describe('save-and-exit service', () => {
       expect(record.formTitle).toBeUndefined()
     })
 
-    test('should pass a form id through to the query', async () => {
+    test('should pass a form id and preview state through to the query', async () => {
       jest.mocked(findSaveAndExitRecordsForUser).mockResolvedValueOnce([])
 
-      await getSaveAndExitRecordsForUser(sub, iss, 'another-form')
+      await getSaveAndExitRecordsForUser(
+        sub,
+        iss,
+        'another-form',
+        FormStatus.Draft
+      )
 
       expect(findSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
         iss,
-        'another-form'
+        'another-form',
+        FormStatus.Draft
       )
     })
   })

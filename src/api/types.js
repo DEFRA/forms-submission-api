@@ -100,7 +100,7 @@
  * The citizen-access-token strategy always sets these credentials, so the
  * route reads them as present.
  * @typedef {{ sub: string, iss: string }} CitizenCredentials
- * @typedef {{ Query: { formId: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
+ * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
  * @typedef {{ Params: { link: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
  */
 
@@ -109,7 +109,7 @@
  */
 
 /**
- * @import { SaveAndExitRecord, SaveAndExitV2Record } from '@defra/forms-model'
+ * @import { FormStatus, SaveAndExitRecord, SaveAndExitV2Record } from '@defra/forms-model'
  * @import { FormAdapterSubmissionMessagePayload } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Translator } from '@defra/forms-engine-plugin/engine/i18n/types.js'
  * @import { Request } from '@hapi/hapi'

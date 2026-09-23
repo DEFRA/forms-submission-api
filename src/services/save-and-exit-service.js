@@ -114,9 +114,10 @@ export async function validateSavedLinkCredentials(
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} formId - the form the records belong to
+ * @param {FormStatus} [preview] - the preview state, or none for a live form
  */
-export async function getSaveAndExitRecordsForUser(sub, iss, formId) {
-  const records = await findSaveAndExitRecordsForUser(sub, iss, formId)
+export async function getSaveAndExitRecordsForUser(sub, iss, formId, preview) {
+  const records = await findSaveAndExitRecordsForUser(sub, iss, formId, preview)
 
   return records.map((record) => ({
     magicLinkId: record.magicLinkId,
@@ -184,6 +185,7 @@ export async function cleanUpSaveAndExit(meta, session) {
 }
 
 /**
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { ClientSession } from 'mongodb'
  * @import { FormAdapterSubmissionMessageMeta } from '@defra/forms-engine-plugin/engine/types.js'
  */

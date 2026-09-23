@@ -74,6 +74,47 @@ function buildRecord(magicLinkId, overrides = {}) {
   }
 }
 
+/**
+ * A record for each preview state, including none for a live form. A live form
+ * and a preview of the live form both have the status `live`, so only
+ * `isPreview` tells them apart.
+ */
+const PREVIEW_STATES = [
+  { link: 'live', preview: undefined, status: 'live', isPreview: false },
+  {
+    link: 'preview-draft',
+    preview: FormStatus.Draft,
+    status: 'draft',
+    isPreview: true
+  },
+  {
+    link: 'preview-live',
+    preview: FormStatus.Live,
+    status: 'live',
+    isPreview: true
+  }
+]
+
+/**
+ * @param {{ link: string, status: string, isPreview: boolean }} previewState
+ * @param {string} [magicLinkId]
+ */
+function buildRecordForPreviewState(
+  previewState,
+  magicLinkId = previewState.link
+) {
+  const record = buildRecord(magicLinkId, { expireAt: daysFromNow(28) })
+
+  return {
+    ...record,
+    form: {
+      ...record.form,
+      status: previewState.status,
+      isPreview: previewState.isPreview
+    }
+  }
+}
+
 /** @type {MongoMemoryServer} */
 let mongod
 
@@ -172,6 +213,42 @@ describe('findSaveAndExitRecordsForUser', () => {
     const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
 
     expect(records).toEqual([])
+  })
+
+  it.each(PREVIEW_STATES)(
+    'should return only the records of the $link preview state',
+    async ({ link, preview }) => {
+      await insert(
+        PREVIEW_STATES.map((previewState) =>
+          buildRecordForPreviewState(previewState)
+        )
+      )
+
+      const records = await findSaveAndExitRecordsForUser(
+        SUB,
+        ISSUER,
+        FORM_ID,
+        preview
+      )
+
+      expect(records.map((record) => record.magicLinkId)).toEqual([link])
+    }
+  )
+
+  it('should return a live record that has no isPreview field', async () => {
+    await insert([buildRecord('no-preview-field')])
+    await db
+      .collection(SAVE_AND_EXIT_COLLECTION_NAME)
+      .updateOne(
+        { magicLinkId: 'no-preview-field' },
+        { $unset: { 'form.isPreview': '' } }
+      )
+
+    const records = await findSaveAndExitRecordsForUser(SUB, ISSUER, FORM_ID)
+
+    expect(records.map((result) => result.magicLinkId)).toEqual([
+      'no-preview-field'
+    ])
   })
 
   it('should return only the fields the citizen dashboard shows', async () => {
