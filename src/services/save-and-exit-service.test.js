@@ -311,19 +311,9 @@ describe('save-and-exit service', () => {
         magicLinkGroupId: 'group-1'
       })
 
-      const record = await getSaveAndExitRecordForUser(
-        sub,
-        iss,
-        link,
-        FormStatus.Live
-      )
+      const record = await getSaveAndExitRecordForUser(sub, iss, link)
 
-      expect(findSaveAndExitRecordForUser).toHaveBeenCalledWith(
-        sub,
-        iss,
-        link,
-        FormStatus.Live
-      )
+      expect(findSaveAndExitRecordForUser).toHaveBeenCalledWith(sub, iss, link)
       expect(record).toEqual({
         state: { formField1: 'val1' },
         magicLinkGroupId: 'group-1'

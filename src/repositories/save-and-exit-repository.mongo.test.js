@@ -401,46 +401,6 @@ describe('findSaveAndExitRecordForUser', () => {
     expect(record?.magicLinkGroupId).toHaveLength(36)
   })
 
-  it.each(PREVIEW_STATES)(
-    'returns a record of the $link preview state to a request for the same preview state',
-    async (previewState) => {
-      await db
-        .collection(SAVE_AND_EXIT_COLLECTION_NAME)
-        .insertOne(buildRecordForPreviewState(previewState, LINK))
-
-      const record = await findSaveAndExitRecordForUser(
-        SUB,
-        ISSUER,
-        LINK,
-        previewState.preview
-      )
-
-      expect(record?.state).toEqual({ formField1: 'val1' })
-    }
-  )
-
-  it.each(
-    PREVIEW_STATES.flatMap((saved) =>
-      PREVIEW_STATES.filter((requested) => requested !== saved).map(
-        (requested) => ({
-          saved,
-          requested
-        })
-      )
-    )
-  )(
-    'returns nothing for a record of the $saved.link preview state to a request for the $requested.link preview state',
-    async ({ saved, requested }) => {
-      await db
-        .collection(SAVE_AND_EXIT_COLLECTION_NAME)
-        .insertOne(buildRecordForPreviewState(saved, LINK))
-
-      await expect(
-        findSaveAndExitRecordForUser(SUB, ISSUER, LINK, requested.preview)
-      ).resolves.toBeNull()
-    }
-  )
-
   it('returns a record with no group, since the link alone decides whether a record is found', async () => {
     await createSaveAndExitRecord(buildRecordFromMessage(LINK), session)
     await db

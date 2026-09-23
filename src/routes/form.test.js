@@ -408,45 +408,13 @@ describe('Forms route', () => {
       expect(getSaveAndExitRecordForUser).toHaveBeenCalledWith(
         authCitizen.credentials.user.sub,
         authCitizen.credentials.user.iss,
-        LINK,
-        undefined
+        LINK
       )
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toEqual({
         state: { formField1: 'val1' },
         magicLinkGroupId: 'group-1'
       })
-    })
-
-    test('Testing GET /save-and-exit/records/{link} passes the preview state', async () => {
-      jest.mocked(getSaveAndExitRecordForUser).mockResolvedValueOnce({
-        state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
-      })
-
-      const response = await server.inject({
-        method: 'GET',
-        url: `/save-and-exit/records/${LINK}?preview=live`,
-        auth: authCitizen
-      })
-
-      expect(getSaveAndExitRecordForUser).toHaveBeenCalledWith(
-        authCitizen.credentials.user.sub,
-        authCitizen.credentials.user.iss,
-        LINK,
-        FormStatus.Live
-      )
-      expect(response.statusCode).toEqual(StatusCodes.OK)
-    })
-
-    test('Testing GET /save-and-exit/records/{link} refuses an unknown preview state', async () => {
-      const response = await server.inject({
-        method: 'GET',
-        url: `/save-and-exit/records/${LINK}?preview=other`,
-        auth: authCitizen
-      })
-
-      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
     })
 
     test('Testing GET /save-and-exit/records/{link} hides a record of another citizen', async () => {

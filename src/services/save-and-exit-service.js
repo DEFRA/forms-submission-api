@@ -133,20 +133,9 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId, preview) {
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} magicLinkId - the link that opens the saved form
- * @param {FormStatus} [preview] - the preview state, or none for a live form
  */
-export async function getSaveAndExitRecordForUser(
-  sub,
-  iss,
-  magicLinkId,
-  preview
-) {
-  const record = await findSaveAndExitRecordForUser(
-    sub,
-    iss,
-    magicLinkId,
-    preview
-  )
+export async function getSaveAndExitRecordForUser(sub, iss, magicLinkId) {
+  const record = await findSaveAndExitRecordForUser(sub, iss, magicLinkId)
 
   if (!record) {
     throw Boom.notFound(INVALID_MAGIC_LINK)

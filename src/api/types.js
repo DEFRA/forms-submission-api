@@ -101,7 +101,7 @@
  * route reads them as present.
  * @typedef {{ sub: string, iss: string }} CitizenCredentials
  * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
- * @typedef {{ Params: { link: string }, Query: { preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
+ * @typedef {{ Params: { link: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
  */
 
 /**

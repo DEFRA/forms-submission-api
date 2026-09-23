@@ -204,20 +204,14 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId, preview) {
 /**
  * Finds one open save-and-exit record of a citizen by its link id. A subject is
  * unique only for one issuer, thus match the two values. A record that is
- * consumed, expired, owned by another citizen or of another preview state is
- * not returned, so the caller cannot tell those cases apart.
+ * consumed, expired or owned by another citizen is not returned, so the caller
+ * cannot tell those cases apart.
  * @param {string} sub - subject claim of the access token
  * @param {string} iss - issuer claim of the access token
  * @param {string} magicLinkId - the link that opens the saved form
- * @param {FormStatus} [preview] - the preview state, or none for a live form
  * @returns {Promise<SaveAndExitRecordForResume | null>}
  */
-export async function findSaveAndExitRecordForUser(
-  sub,
-  iss,
-  magicLinkId,
-  preview
-) {
+export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
   const event = {
     category: saveAndExitLabel,
     action: 'read-record-for-user',
@@ -237,8 +231,7 @@ export async function findSaveAndExitRecordForUser(
         'auth.sub': sub,
         'auth.issuer': iss,
         consumed: { $ne: true },
-        expireAt: { $gt: new Date() },
-        ...previewFilter(preview)
+        expireAt: { $gt: new Date() }
       },
       // Return the saved answers and the group, and leave `_id` out.
       { projection: { _id: 0, state: 1, magicLinkGroupId: 1 } }

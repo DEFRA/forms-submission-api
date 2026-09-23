@@ -94,9 +94,8 @@ export default [
     handler(request) {
       const { sub, iss } = request.auth.credentials.user
       const { link } = request.params
-      const { preview } = request.query
 
-      return getSaveAndExitRecordForUser(sub, iss, link, preview)
+      return getSaveAndExitRecordForUser(sub, iss, link)
     },
     options: {
       tags: ['api'],
@@ -107,12 +106,7 @@ export default [
           .keys({
             link: magicLinkSchema
           })
-          .label('getSaveAndExitRecordParams'),
-        query: Joi.object()
-          .keys({
-            preview: previewSchema
-          })
-          .label('getSaveAndExitRecordQuery')
+          .label('getSaveAndExitRecordParams')
       },
       response: {
         status: {
