@@ -149,15 +149,17 @@ export default [
   }),
 
   /**
-   * @type {ServerRoute<{ Params: DeleteSavedLinkParams }>}
+   * @type {ServerRoute<DeleteSaveAndExitRecordRequest>}
    */
   ({
     method: 'DELETE',
     path: '/save-and-exit/records/{link}',
     async handler(request) {
-      const { link } = request.params
+      const { auth, params } = request
+      const { link } = params
+      const { sub } = auth.credentials.user
 
-      return deleteSavedLinkDetails(link)
+      return deleteSavedLinkDetails(link, sub)
     },
     options: {
       tags: ['api'],
@@ -245,5 +247,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSavedLinkParams } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSavedLinkParams, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
  */

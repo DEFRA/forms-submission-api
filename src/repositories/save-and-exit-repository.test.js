@@ -8,6 +8,7 @@ import {
 import {
   createSaveAndExitRecord,
   deleteSaveAndExitGroup,
+  deleteSaveAndExitRecord,
   findExpiringRecords,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
@@ -453,6 +454,39 @@ describe('save-and-exit-repository', () => {
       await expect(
         findSaveAndExitRecordsForUser(sub, iss, 'form-id')
       ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('deleteSaveAndExitRecord', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+    it('should mark one record as deleted', async () => {
+      jest.mocked(
+        mockCollection.updateOne.mockResolvedValueOnce({
+          modifiedCount: 1,
+          matchedCount: 1
+        })
+      )
+      const result = await deleteSaveAndExitRecord(link, sub)
+      const [filter, update] = mockCollection.updateOne.mock.calls[0]
+      expect(filter).toEqual({ magicLinkId: link, 'auth.sub': sub })
+      expect(update).toEqual({ $set: { isDeleted: true } })
+      expect(result).toEqual({ modified: true, matched: true })
+    })
+
+    it('should noop if no records match', async () => {
+      jest.mocked(
+        mockCollection.updateOne.mockResolvedValueOnce({
+          modifiedCount: 0,
+          matchedCount: 0
+        })
+      )
+      const result = await deleteSaveAndExitRecord(link, sub)
+      const [filter, update] = mockCollection.updateOne.mock.calls[0]
+      expect(filter).toEqual({ magicLinkId: link, 'auth.sub': sub })
+      expect(update).toEqual({ $set: { isDeleted: true } })
+      expect(result).toEqual({ modified: false, matched: false })
     })
   })
 })

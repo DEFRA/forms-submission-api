@@ -104,6 +104,7 @@
  * @typedef {{ sub: string, iss: string }} CitizenCredentials
  * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
  * @typedef {{ Params: { link: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
+ * @typedef {{ Params: DeleteSavedLinkParams, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} DeleteSaveAndExitRecordRequest
  */
 
 /**

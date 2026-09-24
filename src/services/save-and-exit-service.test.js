@@ -6,6 +6,7 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
+  deleteSaveAndExitRecord,
   findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
@@ -16,6 +17,7 @@ import {
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   cleanUpSaveAndExit,
+  deleteSavedLinkDetails,
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
@@ -324,6 +326,37 @@ describe('save-and-exit service', () => {
       jest.mocked(findSaveAndExitRecordForUser).mockResolvedValueOnce(null)
 
       await expect(getSaveAndExitRecordForUser(sub, iss, link)).rejects.toThrow(
+        'Invalid magic link'
+      )
+    })
+  })
+
+  describe('deleteSavedLinkDetails', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+    test('should delete the record the repository finds', async () => {
+      jest.mocked(deleteSaveAndExitRecord).mockResolvedValueOnce({
+        modified: true,
+        matched: true
+      })
+
+      const record = await deleteSavedLinkDetails(link, sub)
+
+      expect(deleteSaveAndExitRecord).toHaveBeenCalledWith(link, sub)
+      expect(record).toEqual({
+        modified: true,
+        matched: true
+      })
+    })
+
+    test('should throw not-found error the repository when there is no match', async () => {
+      jest.mocked(deleteSaveAndExitRecord).mockResolvedValueOnce({
+        modified: false,
+        matched: false
+      })
+
+      await expect(deleteSavedLinkDetails(link, sub)).rejects.toThrow(
         'Invalid magic link'
       )
     })

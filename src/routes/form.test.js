@@ -6,6 +6,7 @@ import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
+  deleteSavedLinkDetails,
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
@@ -448,6 +449,29 @@ describe('Forms route', () => {
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+    })
+
+    test('Testing DELETE /save-and-exit/records/{link} returns the saved state of the owner', async () => {
+      jest.mocked(deleteSavedLinkDetails).mockResolvedValueOnce({
+        matched: true,
+        modified: true
+      })
+
+      const response = await server.inject({
+        method: 'DELETE',
+        url: `/save-and-exit/records/${LINK}`,
+        auth: authCitizen
+      })
+
+      expect(deleteSavedLinkDetails).toHaveBeenCalledWith(
+        LINK,
+        authCitizen.credentials.user.sub
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual({
+        matched: true,
+        modified: true
+      })
     })
   })
 })

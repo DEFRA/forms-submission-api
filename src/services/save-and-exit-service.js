@@ -186,9 +186,10 @@ export async function cleanUpSaveAndExit(meta, session) {
 /**
  * Delete the save and exit link by magic link id
  * @param {string} magicLinkId - magic link id
+ * @param {string} sub - subject claim of the access token
  */
-export async function deleteSavedLinkDetails(magicLinkId) {
-  const result = await deleteSaveAndExitRecord(magicLinkId)
+export async function deleteSavedLinkDetails(magicLinkId, sub) {
+  const result = await deleteSaveAndExitRecord(magicLinkId, sub)
 
   if (!result.matched) {
     throw Boom.notFound(INVALID_MAGIC_LINK)
