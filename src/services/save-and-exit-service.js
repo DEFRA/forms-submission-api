@@ -5,6 +5,7 @@ import argon2 from 'argon2'
 import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
+  deleteSaveAndExitRecord,
   findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
@@ -124,7 +125,8 @@ export async function getSaveAndExitRecordsForUser(sub, iss, formId, preview) {
     referenceNumber: record.referenceNumber,
     formTitle: record.form.title,
     createdAt: record.createdAt,
-    expireAt: record.expireAt
+    expireAt: record.expireAt,
+    isDeleted: record.isDeleted
   }))
 }
 
@@ -141,10 +143,7 @@ export async function getSaveAndExitRecordForUser(sub, iss, magicLinkId) {
     throw Boom.notFound(INVALID_MAGIC_LINK)
   }
 
-  return {
-    state: record.state,
-    magicLinkGroupId: record.magicLinkGroupId
-  }
+  return record
 }
 
 /**
@@ -182,6 +181,20 @@ export async function cleanUpSaveAndExit(meta, session) {
     )
     // Silently fail otherwise submission would go to DLQ even though it's been processed ok
   }
+}
+
+/**
+ * Delete the save and exit link by magic link id
+ * @param {string} magicLinkId - magic link id
+ */
+export async function deleteSavedLinkDetails(magicLinkId) {
+  const result = await deleteSaveAndExitRecord(magicLinkId)
+
+  if (!result.matched) {
+    throw Boom.notFound(INVALID_MAGIC_LINK)
+  }
+
+  return result
 }
 
 /**

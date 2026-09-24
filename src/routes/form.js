@@ -3,6 +3,7 @@ import Joi from 'joi'
 
 import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
 import {
+  deleteSavedLinkResponseSchema,
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
   getSaveAndExitRecordResponseSchema,
@@ -16,6 +17,7 @@ import {
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
+  deleteSavedLinkDetails,
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
@@ -147,6 +149,35 @@ export default [
   }),
 
   /**
+   * @type {ServerRoute<{ Params: DeleteSavedLinkParams }>}
+   */
+  ({
+    method: 'DELETE',
+    path: '/save-and-exit/records/{link}',
+    async handler(request) {
+      const { link } = request.params
+
+      return deleteSavedLinkDetails(link)
+    },
+    options: {
+      tags: ['api'],
+      auth: 'citizen-access-token',
+      validate: {
+        params: Joi.object()
+          .keys({
+            link: magicLinkSchema
+          })
+          .label('deleteSavedLinkParams')
+      },
+      response: {
+        status: {
+          200: deleteSavedLinkResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
    * @satisfies {ServerRoute<ValidateSaveAndExit>}
    */
   ({
@@ -214,5 +245,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSavedLinkParams } from '~/src/api/types.js'
  */

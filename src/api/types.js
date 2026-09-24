@@ -10,6 +10,7 @@
 
 /**
  * @typedef {{ link: string }} GetSavedLinkParams
+ * @typedef {{ link: string }} DeleteSavedLinkParams
  * @typedef {{ Params: { link: string }, Payload: { securityAnswer: string }}} ValidateSaveAndExit
  * @typedef {{ Params: { link: string }}} ResetSaveAndExit
  */
@@ -53,6 +54,7 @@
  *   expireAt: Date,
  *   version?: number | null,
  *   consumed?: boolean,
+ *   isDeleted?: boolean,
  *   notify?: SaveAndExitNotify | null
  * }} SaveAndExitV2Document
  */
