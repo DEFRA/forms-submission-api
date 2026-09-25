@@ -8,7 +8,6 @@ import {
 import {
   createSaveAndExitRecord,
   deleteSaveAndExitGroup,
-  deleteSaveAndExitRecord,
   findExpiringRecords,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
@@ -17,6 +16,7 @@ import {
   lockRecordForExpiryEmail,
   markExpiryEmailSent,
   markSaveAndExitRecordAsConsumed,
+  markSaveAndExitRecordAsDeleted,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
@@ -459,6 +459,7 @@ describe('save-and-exit-repository', () => {
 
   describe('deleteSaveAndExitRecord', () => {
     const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
     const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
 
     it('should mark one record as deleted', async () => {
@@ -468,9 +469,13 @@ describe('save-and-exit-repository', () => {
           matchedCount: 1
         })
       )
-      const result = await deleteSaveAndExitRecord(link, sub)
+      const result = await markSaveAndExitRecordAsDeleted(sub, iss, link)
       const [filter, update] = mockCollection.updateOne.mock.calls[0]
-      expect(filter).toEqual({ magicLinkId: link, 'auth.sub': sub })
+      expect(filter).toEqual({
+        magicLinkId: link,
+        'auth.sub': sub,
+        'auth.issuer': iss
+      })
       expect(update).toEqual({ $set: { isDeleted: true } })
       expect(result).toEqual({ modified: true, matched: true })
     })
@@ -482,9 +487,13 @@ describe('save-and-exit-repository', () => {
           matchedCount: 0
         })
       )
-      const result = await deleteSaveAndExitRecord(link, sub)
+      const result = await markSaveAndExitRecordAsDeleted(sub, iss, link)
       const [filter, update] = mockCollection.updateOne.mock.calls[0]
-      expect(filter).toEqual({ magicLinkId: link, 'auth.sub': sub })
+      expect(filter).toEqual({
+        magicLinkId: link,
+        'auth.sub': sub,
+        'auth.issuer': iss
+      })
       expect(update).toEqual({ $set: { isDeleted: true } })
       expect(result).toEqual({ modified: false, matched: false })
     })

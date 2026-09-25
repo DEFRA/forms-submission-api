@@ -6,21 +6,21 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import {
   deleteSaveAndExitGroup,
-  deleteSaveAndExitRecord,
   findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   markSaveAndExitRecordAsConsumed,
+  markSaveAndExitRecordAsDeleted,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
   cleanUpSaveAndExit,
-  deleteSavedLinkDetails,
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
+  markSavedLinkDetailsAsDeleted,
   resetSaveAndExitLink,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
@@ -337,17 +337,22 @@ describe('save-and-exit service', () => {
 
   describe('deleteSavedLinkDetails', () => {
     const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
     const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
 
     test('should delete the record the repository finds', async () => {
-      jest.mocked(deleteSaveAndExitRecord).mockResolvedValueOnce({
+      jest.mocked(markSaveAndExitRecordAsDeleted).mockResolvedValueOnce({
         modified: true,
         matched: true
       })
 
-      const record = await deleteSavedLinkDetails(link, sub)
+      const record = await markSavedLinkDetailsAsDeleted(sub, iss, link)
 
-      expect(deleteSaveAndExitRecord).toHaveBeenCalledWith(link, sub)
+      expect(markSaveAndExitRecordAsDeleted).toHaveBeenCalledWith(
+        sub,
+        iss,
+        link
+      )
       expect(record).toEqual({
         modified: true,
         matched: true
@@ -355,14 +360,14 @@ describe('save-and-exit service', () => {
     })
 
     test('should throw not-found error the repository when there is no match', async () => {
-      jest.mocked(deleteSaveAndExitRecord).mockResolvedValueOnce({
+      jest.mocked(markSaveAndExitRecordAsDeleted).mockResolvedValueOnce({
         modified: false,
         matched: false
       })
 
-      await expect(deleteSavedLinkDetails(link, sub)).rejects.toThrow(
-        'Invalid magic link'
-      )
+      await expect(
+        markSavedLinkDetailsAsDeleted(sub, iss, link)
+      ).rejects.toThrow('Invalid magic link')
     })
   })
 })

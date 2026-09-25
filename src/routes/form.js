@@ -17,10 +17,10 @@ import {
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
-  deleteSavedLinkDetails,
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
+  markSavedLinkDetailsAsDeleted,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
 
@@ -157,9 +157,9 @@ export default [
     async handler(request) {
       const { auth, params } = request
       const { link } = params
-      const { sub } = auth.credentials.user
+      const { sub, iss } = auth.credentials.user
 
-      return deleteSavedLinkDetails(link, sub)
+      return markSavedLinkDetailsAsDeleted(sub, iss, link)
     },
     options: {
       tags: ['api'],
@@ -247,5 +247,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSavedLinkParams, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
+ * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
  */

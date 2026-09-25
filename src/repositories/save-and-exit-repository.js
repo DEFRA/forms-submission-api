@@ -54,12 +54,13 @@ export async function getSaveAndExitRecord(id) {
 }
 
 /**
- * Delete a save and exit record based on magic link id
- * @param {string} id - the link id
+ * Mark a save and exit record as deleted based on magic link id
  * @param {string} sub - the id of the user
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} id - the link id
  * @returns { Promise<{ matched: boolean, modified: boolean }> }
  */
-export async function deleteSaveAndExitRecord(id, sub) {
+export async function markSaveAndExitRecordAsDeleted(sub, iss, id) {
   const event = {
     category: saveAndExitLabel,
     action: 'delete-record',
@@ -77,7 +78,8 @@ export async function deleteSaveAndExitRecord(id, sub) {
     const result = await coll.updateOne(
       {
         magicLinkId: id,
-        'auth.sub': sub
+        'auth.sub': sub,
+        'auth.issuer': iss
       },
       {
         $set: { isDeleted: true }
@@ -86,7 +88,7 @@ export async function deleteSaveAndExitRecord(id, sub) {
 
     logger.info(
       { event: { ...event, duration: timer.elapsed } },
-      `Mark save and exit record as deleted (${timer.elapsed}ms)`
+      `Marked save and exit record as deleted (${timer.elapsed}ms)`
     )
 
     return {

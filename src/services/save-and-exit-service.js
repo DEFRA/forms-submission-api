@@ -5,12 +5,12 @@ import argon2 from 'argon2'
 import { logger } from '~/src/helpers/logging/logger.js'
 import {
   deleteSaveAndExitGroup,
-  deleteSaveAndExitRecord,
   findSaveAndExitRecordForUser,
   findSaveAndExitRecordsForUser,
   getLatestSaveAndExitByGroup,
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
+  markSaveAndExitRecordAsDeleted,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
@@ -185,11 +185,12 @@ export async function cleanUpSaveAndExit(meta, session) {
 
 /**
  * Delete the save and exit link by magic link id
- * @param {string} magicLinkId - magic link id
  * @param {string} sub - subject claim of the access token
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} magicLinkId - magic link id
  */
-export async function deleteSavedLinkDetails(magicLinkId, sub) {
-  const result = await deleteSaveAndExitRecord(magicLinkId, sub)
+export async function markSavedLinkDetailsAsDeleted(sub, iss, magicLinkId) {
+  const result = await markSaveAndExitRecordAsDeleted(sub, iss, magicLinkId)
 
   if (!result.matched) {
     throw Boom.notFound(INVALID_MAGIC_LINK)
