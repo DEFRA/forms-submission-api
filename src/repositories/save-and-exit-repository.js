@@ -54,6 +54,57 @@ export async function getSaveAndExitRecord(id) {
 }
 
 /**
+ * Mark a save and exit record as deleted based on magic link id
+ * @param {string} sub - the id of the user
+ * @param {string} iss - issuer claim of the access token
+ * @param {string} id - the link id
+ * @returns { Promise<{ matched: boolean, modified: boolean }> }
+ */
+export async function markSaveAndExitRecordAsDeleted(sub, iss, id) {
+  const event = {
+    category: saveAndExitLabel,
+    action: 'delete-record',
+    reference: id
+  }
+  logger.info({ event }, 'Mark save and exit record as deleted')
+
+  const coll =
+    /** @type {Collection<SaveAndExitV1Document | SaveAndExitV2Document>} */ (
+      db.collection(SAVE_AND_EXIT_COLLECTION_NAME)
+    )
+
+  try {
+    const timer = createTimer()
+    const result = await coll.updateOne(
+      {
+        magicLinkId: id,
+        'auth.sub': sub,
+        'auth.issuer': iss
+      },
+      {
+        $set: { isDeleted: true }
+      }
+    )
+
+    logger.info(
+      { event: { ...event, duration: timer.elapsed } },
+      `Marked save and exit record as deleted (${timer.elapsed}ms)`
+    )
+
+    return {
+      matched: result.matchedCount === 1,
+      modified: result.modifiedCount === 1
+    }
+  } catch (err) {
+    logger.error(
+      { err, event },
+      `Failed to mark save and exit record as deleted - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Find the latest (active) link in a group of save-and-exit records
  * @param {string} groupId - group id of save-and-exit record
  * @returns { Promise<WithId<SaveAndExitV1Document> | null> }
@@ -182,7 +233,8 @@ export async function findSaveAndExitRecordsForUser(sub, iss, formId, preview) {
                   field: { $literal: '$$__referenceNumber' },
                   input: '$state'
                 }
-              }
+              },
+              isDeleted: 1
             }
           }
         ])
@@ -234,7 +286,15 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
         expireAt: { $gt: new Date() }
       },
       // Return the saved answers and the group, and leave `_id` out.
-      { projection: { _id: 0, state: 1, magicLinkGroupId: 1 } }
+      {
+        projection: {
+          _id: 0,
+          form: 1,
+          state: 1,
+          magicLinkGroupId: 1,
+          isDeleted: 1
+        }
+      }
     )
 
     logger.info(
@@ -242,7 +302,12 @@ export async function findSaveAndExitRecordForUser(sub, iss, magicLinkId) {
       `Read save and exit record for user (${timer.elapsed}ms)`
     )
 
-    return result
+    return (
+      result && {
+        ...result,
+        referenceNumber: result.state.$$__referenceNumber
+      }
+    )
   } catch (err) {
     logger.error(
       { err, event },
@@ -696,11 +761,14 @@ export async function markExpiryEmailSent(magicLinkId, runtimeId) {
  * @property {Date} createdAt - when the citizen saved the form
  * @property {Date} expireAt - when the record expires
  * @property {string} [referenceNumber] - the reference number, if the saved answers have one
+ * @property {boolean} [isDeleted] - is deleted marker
  */
 
 /**
  * One saved record, as the resume journey needs it.
  * @typedef {object} SaveAndExitRecordForResume
  * @property {object} state - the saved answers
+ * @property {string} referenceNumber - the form reference number
+ * @property {object} form - the form status
  * @property {string} [magicLinkGroupId] - the group the record belongs to, if it has one
  */

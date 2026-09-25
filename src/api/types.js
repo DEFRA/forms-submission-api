@@ -10,6 +10,7 @@
 
 /**
  * @typedef {{ link: string }} GetSavedLinkParams
+ * @typedef {{ link: string }} DeleteSavedLinkParams
  * @typedef {{ Params: { link: string }, Payload: { securityAnswer: string }}} ValidateSaveAndExit
  * @typedef {{ Params: { link: string }}} ResetSaveAndExit
  */
@@ -53,6 +54,7 @@
  *   expireAt: Date,
  *   version?: number | null,
  *   consumed?: boolean,
+ *   isDeleted?: boolean,
  *   notify?: SaveAndExitNotify | null
  * }} SaveAndExitV2Document
  */
@@ -102,6 +104,7 @@
  * @typedef {{ sub: string, iss: string }} CitizenCredentials
  * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
  * @typedef {{ Params: { link: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
+ * @typedef {{ Params: DeleteSavedLinkParams, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} DeleteSaveAndExitRecordRequest
  */
 
 /**

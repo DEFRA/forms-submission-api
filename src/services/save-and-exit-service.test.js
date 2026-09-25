@@ -12,6 +12,7 @@ import {
   getSaveAndExitRecord,
   incrementInvalidPasswordAttempts,
   markSaveAndExitRecordAsConsumed,
+  markSaveAndExitRecordAsDeleted,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 import {
@@ -19,6 +20,7 @@ import {
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
   getSavedLinkDetails,
+  markSavedLinkDetailsAsDeleted,
   resetSaveAndExitLink,
   validateSavedLinkCredentials
 } from '~/src/services/save-and-exit-service.js'
@@ -308,7 +310,9 @@ describe('save-and-exit service', () => {
     test('should return the saved answers of the record the repository finds', async () => {
       jest.mocked(findSaveAndExitRecordForUser).mockResolvedValueOnce({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
 
       const record = await getSaveAndExitRecordForUser(sub, iss, link)
@@ -316,7 +320,9 @@ describe('save-and-exit service', () => {
       expect(findSaveAndExitRecordForUser).toHaveBeenCalledWith(sub, iss, link)
       expect(record).toEqual({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
     })
 
@@ -326,6 +332,42 @@ describe('save-and-exit service', () => {
       await expect(getSaveAndExitRecordForUser(sub, iss, link)).rejects.toThrow(
         'Invalid magic link'
       )
+    })
+  })
+
+  describe('deleteSavedLinkDetails', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+    const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+    test('should delete the record the repository finds', async () => {
+      jest.mocked(markSaveAndExitRecordAsDeleted).mockResolvedValueOnce({
+        modified: true,
+        matched: true
+      })
+
+      const record = await markSavedLinkDetailsAsDeleted(sub, iss, link)
+
+      expect(markSaveAndExitRecordAsDeleted).toHaveBeenCalledWith(
+        sub,
+        iss,
+        link
+      )
+      expect(record).toEqual({
+        modified: true,
+        matched: true
+      })
+    })
+
+    test('should throw not-found error the repository when there is no match', async () => {
+      jest.mocked(markSaveAndExitRecordAsDeleted).mockResolvedValueOnce({
+        modified: false,
+        matched: false
+      })
+
+      await expect(
+        markSavedLinkDetailsAsDeleted(sub, iss, link)
+      ).rejects.toThrow('Invalid magic link')
     })
   })
 })

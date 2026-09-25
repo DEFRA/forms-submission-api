@@ -16,6 +16,7 @@ import {
   lockRecordForExpiryEmail,
   markExpiryEmailSent,
   markSaveAndExitRecordAsConsumed,
+  markSaveAndExitRecordAsDeleted,
   resetSaveAndExitRecord
 } from '~/src/repositories/save-and-exit-repository.js'
 
@@ -453,6 +454,48 @@ describe('save-and-exit-repository', () => {
       await expect(
         findSaveAndExitRecordsForUser(sub, iss, 'form-id')
       ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('deleteSaveAndExitRecord', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+    const link = 'fd4e6453-fb32-43e4-b4cf-12b381a713de'
+
+    it('should mark one record as deleted', async () => {
+      jest.mocked(
+        mockCollection.updateOne.mockResolvedValueOnce({
+          modifiedCount: 1,
+          matchedCount: 1
+        })
+      )
+      const result = await markSaveAndExitRecordAsDeleted(sub, iss, link)
+      const [filter, update] = mockCollection.updateOne.mock.calls[0]
+      expect(filter).toEqual({
+        magicLinkId: link,
+        'auth.sub': sub,
+        'auth.issuer': iss
+      })
+      expect(update).toEqual({ $set: { isDeleted: true } })
+      expect(result).toEqual({ modified: true, matched: true })
+    })
+
+    it('should noop if no records match', async () => {
+      jest.mocked(
+        mockCollection.updateOne.mockResolvedValueOnce({
+          modifiedCount: 0,
+          matchedCount: 0
+        })
+      )
+      const result = await markSaveAndExitRecordAsDeleted(sub, iss, link)
+      const [filter, update] = mockCollection.updateOne.mock.calls[0]
+      expect(filter).toEqual({
+        magicLinkId: link,
+        'auth.sub': sub,
+        'auth.issuer': iss
+      })
+      expect(update).toEqual({ $set: { isDeleted: true } })
+      expect(result).toEqual({ modified: false, matched: false })
     })
   })
 })
