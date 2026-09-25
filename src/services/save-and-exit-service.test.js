@@ -310,7 +310,9 @@ describe('save-and-exit service', () => {
     test('should return the saved answers of the record the repository finds', async () => {
       jest.mocked(findSaveAndExitRecordForUser).mockResolvedValueOnce({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
 
       const record = await getSaveAndExitRecordForUser(sub, iss, link)

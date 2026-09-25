@@ -312,7 +312,8 @@ describe('Forms route', () => {
       referenceNumber: '123-456-789',
       formTitle: 'My FirstForm',
       createdAt: new Date('2026-09-01T09:00:00.000Z'),
-      expireAt: new Date('2026-09-29T09:00:00.000Z')
+      expireAt: new Date('2026-09-29T09:00:00.000Z'),
+      isDeleted: undefined
     }
 
     test('Testing GET /save-and-exit/records returns the records of the signed-in citizen', async () => {
@@ -397,7 +398,9 @@ describe('Forms route', () => {
     test('Testing GET /save-and-exit/records/{link} returns the saved state of the owner', async () => {
       jest.mocked(getSaveAndExitRecordForUser).mockResolvedValueOnce({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
 
       const response = await server.inject({
