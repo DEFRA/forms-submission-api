@@ -417,7 +417,9 @@ describe('Forms route', () => {
       expect(response.statusCode).toEqual(StatusCodes.OK)
       expect(response.result).toEqual({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
     })
 

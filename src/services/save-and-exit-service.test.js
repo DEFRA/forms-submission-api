@@ -320,7 +320,9 @@ describe('save-and-exit service', () => {
       expect(findSaveAndExitRecordForUser).toHaveBeenCalledWith(sub, iss, link)
       expect(record).toEqual({
         state: { formField1: 'val1' },
-        magicLinkGroupId: 'group-1'
+        magicLinkGroupId: 'group-1',
+        referenceNumber: 'XXX-XXX-XXX',
+        form: {}
       })
     })
 
