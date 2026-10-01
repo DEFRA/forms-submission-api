@@ -51,7 +51,7 @@ export function mapSubmissionMessageToData(message) {
  * @returns {FormSubmissionDocument}
  */
 export function mapSubmissionDataToDocument(message) {
-  const months = 9
+  const months = 18
   const recordCreatedAt = new Date()
   const expireAt = addMonths(recordCreatedAt, months)
 
