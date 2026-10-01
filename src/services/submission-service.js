@@ -100,6 +100,9 @@ const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 const SUBMISSION_LANGUAGE_HEADER = 'SubmissionLanguage'
 const SUBMISSION_LANGUAGE_HEADER_TEXT = 'Submission language'
 
+const USER_CONFIRMATION_EMAIL_HEADER = 'UserConfirmationEmail'
+const USER_CONFIRMATION_EMAIL_HEADER_TEXT = 'Confirmation email address'
+
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 /**
@@ -125,7 +128,11 @@ export async function generateFormSubmissionsFile(formId) {
  * @param {string} emailAddress - the recipient email address
  */
 export async function generateFeedbackSubmissionsFileForAll(emailAddress) {
-  const removeColumns = new Set(['formId', 'SubmissionRef'])
+  const removeColumns = new Set([
+    'formId',
+    'SubmissionRef',
+    USER_CONFIRMATION_EMAIL_HEADER
+  ])
 
   return generateSubmissionsFile(
     CSAT_FORM_ID,
@@ -148,7 +155,11 @@ export async function generateFeedbackSubmissionsFileForForm(
   formId,
   emailAddress
 ) {
-  const removeColumns = new Set(['formId', 'SubmissionRef'])
+  const removeColumns = new Set([
+    'formId',
+    'SubmissionRef',
+    USER_CONFIRMATION_EMAIL_HEADER
+  ])
 
   const metadata = await getFormMetadataById(formId)
 
@@ -559,6 +570,37 @@ function addPaymentCellsToRow(row, caches, record, options) {
 }
 
 /**
+ * Add the user confirmation email cell to a row
+ * @param {Map<string, CellValue>} row - the row to add cells to
+ * @param {WithId<FormSubmissionDocument>} record - the submission record
+ * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
+ */
+function addUserConfirmationEmailCellToRow(row, record, options) {
+  const email = record.meta.custom?.userConfirmationEmail
+  const value = typeof email === 'string' ? email : ''
+
+  addCellToRow(row, USER_CONFIRMATION_EMAIL_HEADER, value, options)
+}
+
+/**
+ * Add the user confirmation email header. The column is always
+ * present, even when no submission has a confirmation email.
+ * @param {Caches} caches - the spreadsheet caches
+ * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
+ */
+function addUserConfirmationEmailHeader(caches, options) {
+  if (!allowColumn(USER_CONFIRMATION_EMAIL_HEADER, options?.removeColumns)) {
+    return
+  }
+
+  addHeaderIfMissing(
+    caches.headers,
+    USER_CONFIRMATION_EMAIL_HEADER,
+    USER_CONFIRMATION_EMAIL_HEADER_TEXT
+  )
+}
+
+/**
  * Generate a submission file for a form id
  * @param {string} formId - the form id
  * @param {string} emailAddress - the recipient email address
@@ -603,9 +645,12 @@ export async function generateSubmissionsFile(
       addFormComponentCellsToRow(formModel, row, context, record, options)
     }
     addPaymentCellsToRow(row, caches, record, options)
+    addUserConfirmationEmailCellToRow(row, record, options)
 
     rows.push(row)
   }
+
+  addUserConfirmationEmailHeader(caches, options)
 
   // Build the Excel workbook
   const workbook = buildExcelFile(
