@@ -86,15 +86,15 @@ export async function markSaveAndExitRecordAsDeleted(sub, iss, id) {
       }
     )
 
+    const matched = result.matchedCount === 1
+    const modified = result.modifiedCount === 1
+
     logger.info(
       { event: { ...event, duration: timer.elapsed } },
-      `Marked save and exit record as deleted (${timer.elapsed}ms)`
+      `Marked save and exit record as deleted (${timer.elapsed}ms, matched: ${matched}, modified: ${modified})`
     )
 
-    return {
-      matched: result.matchedCount === 1,
-      modified: result.modifiedCount === 1
-    }
+    return { matched, modified }
   } catch (err) {
     logger.error(
       { err, event },
