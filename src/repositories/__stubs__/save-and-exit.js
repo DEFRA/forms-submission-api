@@ -7,6 +7,7 @@ import {
   SubmissionEventMessageSource,
   SubmissionEventMessageType
 } from '@defra/forms-model'
+import { ObjectId } from 'mongodb'
 
 import { addDays } from '~/src/helpers/date-helper.js'
 
@@ -80,6 +81,7 @@ export function buildSaveAndExitV2Message(
         issuer: 'auth-issuer'
       },
       state: {
+        $$__referenceNumber: 'XXX-XXX-XXX',
         formField1: 'val1',
         formField2: 'val2'
       }
@@ -179,7 +181,9 @@ export function buildDbDocumentV1() {
  */
 export function buildDbDocumentV2() {
   return /** @type {WithId<SaveAndExitV2Document>} */ ({
+    _id: new ObjectId(STUB_SAVE_AND_EXIT_RECORD_ID),
     magicLinkId: 'magic-id',
+    email: 'enrique.chase@defra.gov.uk',
     form: {
       id: 'form-id',
       status: 'draft',
@@ -192,6 +196,7 @@ export function buildDbDocumentV2() {
       issuer: 'auth-issuer'
     },
     state: {
+      $$__referenceNumber: 'XXX-XXX-XXX',
       formField1: 'val1',
       formField2: 'val2'
     },
