@@ -481,9 +481,10 @@ describe('events', () => {
       expect(lag?.[0]).toMatchObject({
         event: { kind: 'metric', reference: 'msg-metrics' }
       })
+      // ECS durations are nanoseconds: at least 1.5 s
       expect(
         /** @type {any} */ (lag?.[0]).event.duration
-      ).toBeGreaterThanOrEqual(1500)
+      ).toBeGreaterThanOrEqual(1500 * 1_000_000)
       expect(summary?.[0]).toMatchObject({
         event: {
           kind: 'metric',

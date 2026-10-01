@@ -235,7 +235,8 @@ export async function processSaveAndExitEvents(messages) {
   async function processSaveAndExitEvent(message) {
     const session = client.startSession()
     const { queueLagMs, receiveCount } = getMessageQueueStats(message)
-    const total = createTimer()
+    // Total time of the event, end minus start, on the nanosecond clock
+    const start = process.hrtime.bigint()
     /** @type {{ version?: string, formId?: string, transactionAttempts: number, saveMs?: number, notifyMs?: number }} */
     const stats = { transactionAttempts: 0 }
 
@@ -275,11 +276,11 @@ export async function processSaveAndExitEvents(messages) {
         return message
       })
 
-      logProcessed(message, 'success', total.elapsed, stats, receiveCount)
+      logProcessed(message, 'success', elapsedNs(start), stats, receiveCount)
 
       return result
     } catch (err) {
-      logProcessed(message, 'failure', total.elapsed, stats, receiveCount)
+      logProcessed(message, 'failure', elapsedNs(start), stats, receiveCount)
       logger.error(
         err,
         `[processSaveAndExitEvents] Failed to process message - ${getBoomErrorMessage(err)}`
@@ -320,6 +321,18 @@ export async function processSaveAndExitEvents(messages) {
   return { processed, failed }
 }
 
+/** ECS `event.duration` is in nanoseconds, as CDP's log indexing expects */
+const NANOSECONDS_PER_MILLISECOND = 1_000_000
+
+/**
+ * Nanoseconds since `start`, a `process.hrtime.bigint()` reading. A Number
+ * holds whole nanoseconds exactly for over 100 days.
+ * @param {bigint} start
+ */
+function elapsedNs(start) {
+  return Number(process.hrtime.bigint() - start)
+}
+
 /**
  * Logs how long a message waited in the queue before this consumer received
  * it, as a metric. With the record and email timings this is where the time
@@ -340,7 +353,8 @@ function logQueueLag(message, queueLagMs, receiveCount) {
         action: 'queue-lag',
         kind: 'metric',
         type: 'info',
-        duration: queueLagMs,
+        // SentTimestamp is in milliseconds, so this is accurate to the millisecond
+        duration: queueLagMs * NANOSECONDS_PER_MILLISECOND,
         reference: message.MessageId
       }
     },
@@ -353,11 +367,12 @@ function logQueueLag(message, queueLagMs, receiveCount) {
  * person: no email address, answers or security answer.
  * @param {Message} message
  * @param {'success' | 'failure'} outcome
- * @param {number} durationMs
+ * @param {number} durationNs - total time of the event in nanoseconds
  * @param {{ version?: string, formId?: string, transactionAttempts: number, saveMs?: number, notifyMs?: number }} stats
  * @param {number | undefined} receiveCount
  */
-function logProcessed(message, outcome, durationMs, stats, receiveCount) {
+function logProcessed(message, outcome, durationNs, stats, receiveCount) {
+  const durationMs = Math.round(durationNs / NANOSECONDS_PER_MILLISECOND)
   const log = outcome === 'success' ? logger.info : logger.warn
 
   log.call(
@@ -369,7 +384,7 @@ function logProcessed(message, outcome, durationMs, stats, receiveCount) {
         kind: 'metric',
         type: 'info',
         outcome,
-        duration: durationMs,
+        duration: durationNs,
         reference: message.MessageId
       }
     },
