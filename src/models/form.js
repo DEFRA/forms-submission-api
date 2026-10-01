@@ -27,6 +27,11 @@ export const getSavedLinkResponseSchema = Joi.object({
   invalidPasswordAttempts: Joi.number().min(0).optional()
 }).label('getSavedLinkResponse')
 
+export const deleteSavedLinkResponseSchema = Joi.object({
+  matched: Joi.boolean().required(),
+  modified: Joi.boolean().required()
+}).label('getSavedLinkResponse')
+
 export const getSaveAndExitRecordsResponseSchema = Joi.array()
   .items(
     Joi.object({

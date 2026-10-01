@@ -315,7 +315,7 @@ describe('findSaveAndExitRecordForUser', () => {
           },
           email: 'citizen@example.com',
           auth: { sub: SUBJECT, issuer: ISSUER_URL },
-          state: { formField1: 'val1' }
+          state: { formField1: 'val1', $$__referenceNumber: 'XXX-XXX-XXX' }
         }
       })
     })
@@ -326,7 +326,10 @@ describe('findSaveAndExitRecordForUser', () => {
 
     const record = await findSaveAndExitRecordForUser(SUBJECT, ISSUER_URL, LINK)
 
-    expect(record?.state).toEqual({ formField1: 'val1' })
+    expect(record?.state).toEqual({
+      formField1: 'val1',
+      $$__referenceNumber: 'XXX-XXX-XXX'
+    })
     expect(record?.magicLinkGroupId).toEqual(expect.any(String))
   })
 

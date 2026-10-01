@@ -324,6 +324,7 @@ describe('events', () => {
           issuer: 'auth-issuer'
         },
         state: {
+          $$__referenceNumber: 'XXX-XXX-XXX',
           formField1: 'val1',
           formField2: 'val2'
         },
