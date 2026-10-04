@@ -1,6 +1,8 @@
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 
+import { applyTraceHeaders } from '~/src/helpers/request-tracing.js'
+
 const MIN_OK_STATUS = 200
 const MAX_OK_STATUS = 299
 
@@ -11,6 +13,12 @@ const MAX_OK_STATUS = 299
  * @param {Parameters<typeof Wreck.request>[2]} options
  */
 export async function request(method, url, options) {
+  const headers = applyTraceHeaders(options?.headers)
+
+  if (headers) {
+    options = { ...options, headers }
+  }
+
   const response = await Wreck.request(method, url.href, options)
 
   /** @type {BodyType} */

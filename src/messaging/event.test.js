@@ -5,9 +5,11 @@ import {
   SendMessageCommand,
   StartMessageMoveTaskCommand
 } from '@aws-sdk/client-sqs'
+import { createLogContext, runWithLogContext } from '@defra/forms-common'
 import { mockClient } from 'aws-sdk-client-mock'
 
 import 'aws-sdk-client-mock-jest'
+
 import {
   deleteDlqMessage,
   deleteMessage,
@@ -47,6 +49,14 @@ describe('event', () => {
       }
       snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
       await expect(receiveMessages(queueName)).resolves.toEqual(receivedMessage)
+    })
+
+    it('should request the message attributes', async () => {
+      snsMock.on(ReceiveMessageCommand).resolves({ Messages: [messageStub] })
+      await receiveMessages(queueName)
+      expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
+        MessageAttributeNames: ['All']
+      })
     })
   })
 
@@ -170,6 +180,25 @@ describe('event', () => {
       expect(snsMock).toHaveReceivedCommandWith(SendMessageCommand, {
         QueueUrl: 'http://localhost:4566/000000000000/forms_submission_events',
         MessageBody: messageStub.Body
+      })
+    })
+
+    it('should send the log context with the message', async () => {
+      const context = createLogContext({
+        correlationId: 'correlation-id',
+        userId: 'user-id'
+      })
+
+      snsMock.on(SendMessageCommand).resolves({ MessageId: '12345' })
+      await runWithLogContext(context, () =>
+        resubmitDlqMessage(queueName, messageStub.MessageId, messageStub.Body)
+      )
+      expect(snsMock).toHaveReceivedCommandWith(SendMessageCommand, {
+        MessageBody: messageStub.Body,
+        MessageAttributes: {
+          correlationId: { DataType: 'String', StringValue: 'correlation-id' },
+          userId: { DataType: 'String', StringValue: 'user-id' }
+        }
       })
     })
 

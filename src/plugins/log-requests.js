@@ -12,19 +12,7 @@ export const logRequests = {
     log4xxResponseErrors: true,
     logRequestComplete: true,
     customRequestCompleteMessage(request, responseTime) {
-      const { credentials, isAuthenticated } = request.auth
-
-      let userPrefix = ''
-
-      if (isAuthenticated && credentials.user) {
-        const { user } = credentials
-
-        if (user.oid) {
-          userPrefix = ` [${user.oid}] `
-        }
-      }
-
-      return `[response]${userPrefix} ${request.method} ${request.path} ${request.raw.res.statusCode} (${responseTime}ms)`
+      return `[response] ${request.method} ${request.path} ${request.raw.res.statusCode} (${responseTime}ms)`
     }
   }
 }
