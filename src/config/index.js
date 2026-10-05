@@ -367,14 +367,14 @@ export const config = convict({
   submissionExpiryInMonths: {
     doc: 'Submission expiry as number of months',
     format: Number,
-    default: 18,
+    default: null,
     env: 'SUBMISSION_EXPIRY_IN_MONTHS'
   },
   /** @type {SchemaObj<number>} */
   referenceNumberExpiryInMonths: {
     doc: 'Reference number expiry as number of months',
     format: Number,
-    default: 18,
+    default: null,
     env: 'REFERENCE_NUMBER_EXPIRY_IN_MONTHS'
   },
 
