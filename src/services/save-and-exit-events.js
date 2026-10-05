@@ -10,10 +10,19 @@ import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
 import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { logger } from '~/src/helpers/logging/logger.js'
+import { runWithTraceId } from '~/src/helpers/logging/trace-context.js'
+import { createTimer } from '~/src/helpers/timer.js'
 import { translator as createdTranslator } from '~/src/i18n/createTranslator.js'
-import { deleteMessage } from '~/src/messaging/event.js'
+import {
+  deleteMessage,
+  getMessageQueueStats,
+  getMessageTraceId
+} from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
-import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
+import {
+  createSaveAndExitRecord,
+  saveAndExitLabel
+} from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 
@@ -225,20 +234,38 @@ export async function processSaveAndExitEvents(messages) {
    */
   async function processSaveAndExitEvent(message) {
     const session = client.startSession()
+    const { queueLagMs, receiveCount } = getMessageQueueStats(message)
+    // Total time of the event, end minus start, on the nanosecond clock
+    const start = process.hrtime.bigint()
+    /** @type {{ version?: string, formId?: string, transactionAttempts: number, saveMs?: number, notifyMs?: number }} */
+    const stats = { transactionAttempts: 0 }
+
+    logQueueLag(message, queueLagMs, receiveCount)
 
     try {
-      return await session.withTransaction(async () => {
+      const result = await session.withTransaction(async () => {
+        // The driver runs this again on a transient error, so the count
+        // shows retries (a write conflict between saves of one form, say)
+        stats.transactionAttempts++
+
         const data = await mapSaveAndExitMessageToData(message)
 
         const isV1 =
           data.parsedContent.type ===
           SubmissionEventMessageType.RUNNER_SAVE_AND_EXIT
 
+        stats.version = isV1 ? 'v1' : 'v2'
+        stats.formId = data.parsedContent.data.form.id
+
+        const save = createTimer()
         const emailContent = isV1
           ? await handleSaveAndExitV1(data, session)
           : await handleSaveAndExitV2(data, session)
+        stats.saveMs = save.elapsed
 
+        const notify = createTimer()
         await sendNotification(emailContent)
+        stats.notifyMs = notify.elapsed
 
         logger.info(`Deleting save and exit message ${message.MessageId}`)
 
@@ -248,7 +275,12 @@ export async function processSaveAndExitEvents(messages) {
 
         return message
       })
+
+      logProcessed(message, 'success', elapsedNs(start), stats, receiveCount)
+
+      return result
     } catch (err) {
+      logProcessed(message, 'failure', elapsedNs(start), stats, receiveCount)
       logger.error(
         err,
         `[processSaveAndExitEvents] Failed to process message - ${getBoomErrorMessage(err)}`
@@ -259,8 +291,14 @@ export async function processSaveAndExitEvents(messages) {
     }
   }
 
+  // Each message gets its own trace id, so the messages of one batch, which
+  // run at the same time, do not share one
   const results = await Promise.allSettled(
-    messages.map(processSaveAndExitEvent)
+    messages.map((message) =>
+      runWithTraceId(getMessageTraceId(message), () =>
+        processSaveAndExitEvent(message)
+      )
+    )
   )
 
   const processed = results
@@ -281,6 +319,77 @@ export async function processSaveAndExitEvents(messages) {
   }
 
   return { processed, failed }
+}
+
+/** ECS `event.duration` is in nanoseconds, as CDP's log indexing expects */
+const NANOSECONDS_PER_MILLISECOND = 1_000_000
+
+/**
+ * Nanoseconds since `start`, a `process.hrtime.bigint()` reading. A Number
+ * holds whole nanoseconds exactly for over 100 days.
+ * @param {bigint} start
+ */
+function elapsedNs(start) {
+  return Number(process.hrtime.bigint() - start)
+}
+
+/**
+ * Logs how long a message waited in the queue before this consumer received
+ * it, as a metric. With the record and email timings this is where the time
+ * between "Save and exit" and the saved form appearing goes.
+ * @param {Message} message
+ * @param {number | undefined} queueLagMs
+ * @param {number | undefined} receiveCount
+ */
+function logQueueLag(message, queueLagMs, receiveCount) {
+  if (queueLagMs === undefined) {
+    return
+  }
+
+  logger.info(
+    {
+      event: {
+        category: saveAndExitLabel,
+        action: 'queue-lag',
+        kind: 'metric',
+        type: 'info',
+        // SentTimestamp is in milliseconds, so this is accurate to the millisecond
+        duration: queueLagMs * NANOSECONDS_PER_MILLISECOND,
+        reference: message.MessageId
+      }
+    },
+    `[saveAndExitQueue] Received message ${message.MessageId} after ${queueLagMs}ms in the queue (receiveCount=${receiveCount ?? 'unknown'})`
+  )
+}
+
+/**
+ * Logs one summary of a message's processing, as a metric. It names no
+ * person: no email address, answers or security answer.
+ * @param {Message} message
+ * @param {'success' | 'failure'} outcome
+ * @param {number} durationNs - total time of the event in nanoseconds
+ * @param {{ version?: string, formId?: string, transactionAttempts: number, saveMs?: number, notifyMs?: number }} stats
+ * @param {number | undefined} receiveCount
+ */
+function logProcessed(message, outcome, durationNs, stats, receiveCount) {
+  const durationMs = Math.round(durationNs / NANOSECONDS_PER_MILLISECOND)
+  const log = outcome === 'success' ? logger.info : logger.warn
+
+  log.call(
+    logger,
+    {
+      event: {
+        category: saveAndExitLabel,
+        action: 'process-message',
+        kind: 'metric',
+        type: 'info',
+        outcome,
+        duration: durationNs,
+        reference: message.MessageId
+      }
+    },
+    `[saveAndExitQueue] Processed message ${message.MessageId} - outcome=${outcome} version=${stats.version ?? 'unknown'} formId=${stats.formId ?? 'unknown'} totalMs=${durationMs} saveMs=${stats.saveMs ?? '-'} notifyMs=${stats.notifyMs ?? '-'} transactionAttempts=${stats.transactionAttempts} receiveCount=${receiveCount ?? 'unknown'}`
+  )
 }
 
 /**

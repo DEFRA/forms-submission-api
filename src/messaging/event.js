@@ -19,6 +19,40 @@ const RETRY_WAIT_BETWEEN_TRIES_IN_SECS = 1
 const DEFAULT_VISIBILITY_TIMEOUT = 3
 const DEFAULT_WAIT_TIME_IN_SECS = 3
 
+/** Message attribute that carries the trace id of the request that sent it */
+export const TRACE_ID_ATTRIBUTE = 'traceId'
+
+/**
+ * The trace id to log a message's processing under: the sender's trace id
+ * when the message has one, else the message id. Messages sent before the
+ * attribute existed, or redriven from a dead-letter queue, have none.
+ * @param {Message} message
+ * @returns {string}
+ */
+export function getMessageTraceId(message) {
+  return (
+    message.MessageAttributes?.[TRACE_ID_ATTRIBUTE]?.StringValue ??
+    /** @type {string} */ (message.MessageId)
+  )
+}
+
+/**
+ * Queue figures for a received message: how long it waited in the queue and
+ * how many times it has been received (more than 1 means a redelivery)
+ * @param {Message} message
+ * @param {number} [now] - current time in epoch milliseconds
+ * @returns {{ queueLagMs?: number, receiveCount?: number }}
+ */
+export function getMessageQueueStats(message, now = Date.now()) {
+  const sent = Number(message.Attributes?.SentTimestamp)
+  const received = Number(message.Attributes?.ApproximateReceiveCount)
+
+  return {
+    ...(Number.isFinite(sent) && { queueLagMs: Math.max(0, now - sent) }),
+    ...(Number.isFinite(received) && { receiveCount: received })
+  }
+}
+
 /**
  * @param {string} dlqName
  */
@@ -47,7 +81,13 @@ export function receiveMessages(queueUrl) {
   const input = {
     QueueUrl: queueUrl,
     MaxNumberOfMessages: maxNumberOfMessages,
-    VisibilityTimeout: pollingVisibilityTimeout
+    VisibilityTimeout: pollingVisibilityTimeout,
+    // The publisher's trace id, so the consumer's logs join the request that
+    // sent the message
+    MessageAttributeNames: [TRACE_ID_ATTRIBUTE],
+    // When the message was sent and how often it has been received, for the
+    // queue lag and redelivery figures in the processing logs
+    MessageSystemAttributeNames: ['SentTimestamp', 'ApproximateReceiveCount']
   }
 
   const command = new ReceiveMessageCommand(input)
