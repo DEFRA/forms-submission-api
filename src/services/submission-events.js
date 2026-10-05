@@ -1,3 +1,4 @@
+import { runWithMessageLogContext } from '@defra/forms-common'
 import { formAdapterSubmissionMessagePayloadSchema } from '@defra/forms-engine-plugin/engine/types/schema.js'
 import { getErrorMessage } from '@defra/forms-model'
 import Joi from 'joi'
@@ -109,7 +110,9 @@ export async function processSubmissionMessages(messages) {
   }
 
   const results = await Promise.allSettled(
-    messages.map(processSubmissionMessage)
+    messages.map((message) =>
+      runWithMessageLogContext(message, () => processSubmissionMessage(message))
+    )
   )
 
   const processed = results

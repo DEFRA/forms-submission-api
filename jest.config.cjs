@@ -38,6 +38,7 @@ module.exports = {
   // See: https://jestjs.io/docs/ecmascript-modules
   transformIgnorePatterns: [
     `node_modules/(?!${[
+      '@defra/forms-common', // Supports ESM only
       '@defra/forms-model/.*',
       '@defra/hapi-tracing/.*',
       'nanoid', // Supports ESM only
