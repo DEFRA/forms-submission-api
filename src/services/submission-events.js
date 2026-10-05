@@ -12,6 +12,7 @@ import { createSubmissionRecord } from '~/src/repositories/submission-repository
 import { cleanUpSaveAndExit } from '~/src/services/save-and-exit-service.js'
 
 const queueUrl = config.get('submissionQueueUrl')
+const submissionExpiryInMonths = config.get('submissionExpiryInMonths')
 
 /**
  * @param {Message} message
@@ -51,9 +52,8 @@ export function mapSubmissionMessageToData(message) {
  * @returns {FormSubmissionDocument}
  */
 export function mapSubmissionDataToDocument(message) {
-  const months = 9
   const recordCreatedAt = new Date()
-  const expireAt = addMonths(recordCreatedAt, months)
+  const expireAt = addMonths(recordCreatedAt, submissionExpiryInMonths)
 
   return {
     ...message.parsedContent,

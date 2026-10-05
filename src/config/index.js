@@ -363,6 +363,20 @@ export const config = convict({
     default: null,
     env: 'SAVE_AND_EXIT_EXPIRY_IN_DAYS'
   },
+  /** @type {SchemaObj<number>} */
+  submissionExpiryInMonths: {
+    doc: 'Submission expiry as number of months',
+    format: Number,
+    default: null,
+    env: 'SUBMISSION_EXPIRY_IN_MONTHS'
+  },
+  /** @type {SchemaObj<number>} */
+  referenceNumberExpiryInMonths: {
+    doc: 'Reference number expiry as number of months',
+    format: Number,
+    default: null,
+    env: 'REFERENCE_NUMBER_EXPIRY_IN_MONTHS'
+  },
 
   /**
    * Send emails

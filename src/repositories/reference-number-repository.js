@@ -1,9 +1,14 @@
 import { generateUniqueReference } from '@defra/forms-engine-plugin/engine/referenceNumbers.js'
 import { addMonths } from 'date-fns'
 
+import { config } from '~/src/config/index.js'
 import { MONGO_DUPLICATE_KEY_ERROR } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { REFERENCE_NUMBERS_COLLECTION_NAME, db } from '~/src/mongo.js'
+
+const referenceNumberExpiryInMonths = config.get(
+  'referenceNumberExpiryInMonths'
+)
 
 /**
  * Create a unique submission reference number
@@ -22,8 +27,7 @@ export async function create(prefix) {
     const referenceNumber = generateUniqueReference(prefix)
 
     try {
-      const months = 18
-      const expireAt = addMonths(new Date(), months)
+      const expireAt = addMonths(new Date(), referenceNumberExpiryInMonths)
 
       await coll.insertOne({ referenceNumber, expireAt })
 
