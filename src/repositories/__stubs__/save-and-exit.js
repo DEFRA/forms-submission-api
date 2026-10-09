@@ -35,7 +35,8 @@ export function buildSaveAndExitV1Message(
         title: 'My FirstForm',
         status: FormStatus.Draft,
         isPreview: false,
-        baseUrl: 'http://localhost:3009'
+        baseUrl: 'http://localhost:3009',
+        language: 'en-GB'
       },
       email: 'my-email@test.com',
       security: {
@@ -43,6 +44,7 @@ export function buildSaveAndExitV1Message(
         answer: 'a2'
       },
       state: {
+        $$__referenceNumber: 'XXX-XXX-XXX',
         formField1: 'val1',
         formField2: 'val2'
       }
@@ -73,7 +75,8 @@ export function buildSaveAndExitV2Message(
         title: 'My FirstForm',
         status: FormStatus.Draft,
         isPreview: false,
-        baseUrl: 'http://localhost:3009'
+        baseUrl: 'http://localhost:3009',
+        language: 'en-GB'
       },
       email: 'my-email@test.com',
       auth: {

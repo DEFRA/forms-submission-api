@@ -79,7 +79,7 @@ describe('events', () => {
     const submissionEventMessage = buildMessage({
       Body: rawMessageDelivery(
         true,
-        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "title": "My First Form", \n "isPreview": false, \n "status": "draft", \n "baseUrl": "http://localhost:3009" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
+        '{\n     "_id": "689b7ab1d0eeac9711a7fb33",\n     "category": "RUNNER",\n     "messageCreatedAt": "2025-07-23T00:00:00.000Z",\n    "createdAt": "2025-07-23T00:00:00.000Z",\n  "data":  {\n       "form": {\n "id": "689b7ab1d0eeac9711a7fb33",\n "title": "My First Form",\n "language": "en-GB",\n "isPreview": false, \n "status": "draft", \n "baseUrl": "http://localhost:3009" },\n      "email": "my-email@test.com",\n         "security": {\n "question": "memorable-place", "answer": "a3" },\n "state": {\n    "formField1": "val1",\n         "formField2": "val2" }\n       },\n     "schemaVersion": 1,\n     "type": "RUNNER_SAVE_AND_EXIT"\n,\n     "source": "FORMS_RUNNER"\n   }'
       ),
       MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
       MessageAttributes: {},
@@ -102,7 +102,8 @@ describe('events', () => {
                 title: 'My First Form',
                 isPreview: false,
                 status: 'draft',
-                baseUrl: 'http://localhost:3009'
+                baseUrl: 'http://localhost:3009',
+                language: 'en-GB'
               },
               email: 'my-email@test.com',
               security: {
@@ -194,6 +195,7 @@ describe('events', () => {
     const saveAndExitMessage2 = buildSaveAndExitV1Message({}, formId2)
     const saveAndExitMessage3 = buildSaveAndExitV1Message({}, formId3)
     const saveAndExitMessage4 = buildSaveAndExitV2Message({}, formId4)
+    saveAndExitMessage4.data.form.language = 'cy'
     const message1 = buildMessageFromRunnerMessage(saveAndExitMessage1, {
       MessageId: messageId1
     })
@@ -226,7 +228,8 @@ describe('events', () => {
           isPreview: false,
           status: 'draft',
           baseUrl: 'http://localhost:3009',
-          title: 'My FirstForm'
+          title: 'My FirstForm',
+          language: 'en-GB'
         },
         email: 'my-email@test.com',
         security: {
@@ -234,6 +237,7 @@ describe('events', () => {
           question: 'memorable-place'
         },
         state: {
+          $$__referenceNumber: 'XXX-XXX-XXX',
           formField1: 'val1',
           formField2: 'val2'
         },
@@ -256,7 +260,8 @@ describe('events', () => {
           isPreview: false,
           status: 'draft',
           baseUrl: 'http://localhost:3009',
-          title: 'My FirstForm'
+          title: 'My FirstForm',
+          language: 'en-GB'
         },
         email: 'my-email@test.com',
         security: {
@@ -264,6 +269,7 @@ describe('events', () => {
           question: 'memorable-place'
         },
         state: {
+          $$__referenceNumber: 'XXX-XXX-XXX',
           formField1: 'val1',
           formField2: 'val2'
         },
@@ -286,7 +292,8 @@ describe('events', () => {
           title: 'My FirstForm',
           isPreview: false,
           status: 'draft',
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          language: 'en-GB'
         },
         email: 'my-email@test.com',
         security: {
@@ -294,6 +301,7 @@ describe('events', () => {
           question: 'memorable-place'
         },
         state: {
+          $$__referenceNumber: 'XXX-XXX-XXX',
           formField1: 'val1',
           formField2: 'val2'
         },
@@ -316,7 +324,8 @@ describe('events', () => {
           title: 'My FirstForm',
           isPreview: false,
           status: 'draft',
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          language: 'cy'
         },
         email: 'my-email@test.com',
         auth: {

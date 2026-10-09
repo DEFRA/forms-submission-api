@@ -8,9 +8,14 @@ import Joi from 'joi'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
+import { EN_GB } from '~/src/constants.js'
 import { getBoomErrorMessage } from '~/src/helpers/error-helper.js'
 import { logger } from '~/src/helpers/logging/logger.js'
-import { translator as createdTranslator } from '~/src/i18n/createTranslator.js'
+import {
+  createTranslator,
+  translator as createdTranslator
+} from '~/src/i18n/createTranslator.js'
+import { createI18nInstance } from '~/src/i18n/index.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
@@ -91,7 +96,8 @@ export function mapSaveAndExitDataToDocumentV1(message) {
       isPreview: form.isPreview,
       status: form.status,
       baseUrl: form.baseUrl,
-      title: form.title
+      title: form.title,
+      language: form.language
     },
     email,
     security: {
@@ -124,7 +130,8 @@ export function mapSaveAndExitDataToDocumentV2(message) {
       isPreview: form.isPreview,
       status: form.status,
       baseUrl: form.baseUrl,
-      title: form.title
+      title: form.title,
+      language: form.language
     },
     auth,
     email,
@@ -318,7 +325,12 @@ async function handleSaveAndExitV2(data, session) {
   return await constructEmailContentV2(
     document,
     data.parsedContent.data.form,
-    createdTranslator
+    data.parsedContent.data.form.language === EN_GB
+      ? createdTranslator
+      : createTranslator(
+          createI18nInstance(),
+          data.parsedContent.data.form.language
+        )
   )
 }
 
