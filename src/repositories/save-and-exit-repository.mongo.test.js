@@ -311,7 +311,8 @@ describe('findSaveAndExitRecordForUser', () => {
             title: 'My First Form',
             status: FormStatus.Live,
             isPreview: false,
-            baseUrl: 'http://localhost:3009'
+            baseUrl: 'http://localhost:3009',
+            language: 'en-GB'
           },
           email: 'citizen@example.com',
           auth: { sub: SUBJECT, issuer: ISSUER_URL },
