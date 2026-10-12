@@ -35,7 +35,8 @@ export async function getSaveAndExitRecord(id) {
   try {
     const timer = createTimer()
     const result = await coll.findOne({
-      magicLinkId: id
+      magicLinkId: id,
+      isDeleted: { $ne: true }
     })
 
     logger.info(
