@@ -588,7 +588,8 @@ export async function findExpiringRecords(
           { 'notify.expireLockId': null },
           { 'notify.expireLockTimestamp': null },
           { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
-        ]
+        ],
+        isDeleted: { $ne: true }
       })
       .withReadPreference('primary')
 
