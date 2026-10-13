@@ -104,7 +104,8 @@ const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
 // Maximum number of characters Excel (and the xlsx library) allows in a single cell
 export const MAX_CELL_TEXT_LENGTH = 32767
-export const TRUNCATED_CELL_PREFIX = '[RESPONSE TRUNCATED:]'
+export const TRUNCATED_CELL_PREFIX =
+  '[WARNING. This answer has been truncated as it is too long.]'
 const TRUNCATED_CELL_TEXT_LENGTH =
   MAX_CELL_TEXT_LENGTH - TRUNCATED_CELL_PREFIX.length
 // Highest code point that fits in a single UTF-16 code unit; anything above is a surrogate pair
