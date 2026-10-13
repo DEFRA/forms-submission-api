@@ -13,12 +13,15 @@ import {
 import { sendNotification } from '~/src/services/notify.js'
 import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
 import {
+  MAX_CELL_TEXT_LENGTH,
+  TRUNCATED_CELL_PREFIX,
   coerceDataValue,
   generateFeedbackSubmissionsFileForAll,
   generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
   getFormModel,
-  lookupFormNameById
+  lookupFormNameById,
+  truncateCellValue
 } from '~/src/services/submission-service.js'
 // @ts-expect-error - import json
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
@@ -485,6 +488,132 @@ F2B-JFE-WA9,24/06/2026,draft,Yes,English,,,,`
       await expect(() => generateFormSubmissionsFile(formId)).rejects.toThrow(
         `Missing notification email for form id ${formId}`
       )
+    })
+  })
+
+  describe('generateSubmissionsFile with oversized cell values', () => {
+    test('should truncate cell values that exceed the Excel cell limit', async () => {
+      const formId = '688131eeff67f889d52c66cc'
+      const fileId = 'fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5'
+      jest.mocked(getFormMetadataById).mockResolvedValue(
+        /** @type {FormMetadata}  */ ({
+          title: 'My form',
+          notificationEmail: 'enrique.chase@defra.gov.uk'
+        })
+      )
+
+      const oversizedValue = 'x'.repeat(MAX_CELL_TEXT_LENGTH + 100)
+      const submissions = structuredClone(formSubmissions)
+      const oversizedSubmission = submissions.find(
+        (submission) => submission.meta.referenceNumber === '8C2-7E8-189'
+      )
+      if (!oversizedSubmission) {
+        throw new Error('Expected fixture submission 8C2-7E8-189')
+      }
+      oversizedSubmission.data.main.qHKjBt = oversizedValue
+
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          for (const submission of submissions) {
+            yield submission
+          }
+        }
+      }
+
+      // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
+      jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
+
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersions)
+      )
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockImplementation((id, versionNumber) =>
+          Promise.resolve(versions[String(versionNumber)])
+        )
+      jest
+        .mocked(getFormDefinition)
+        .mockImplementation(() => Promise.resolve(versions['36']))
+
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
+
+      await generateFormSubmissionsFile(formId)
+
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
+      const rows = /** @type {string[][]} */ (
+        xlsx.utils.sheet_to_json(workbook.Sheets.Sheet1, {
+          header: 1,
+          raw: false
+        })
+      )
+      const oversizedRow = rows.find((row) => row[0] === '8C2-7E8-189')
+      const otherRow = rows.find((row) => row[0] === '365-DFR-C67')
+
+      expect(oversizedRow?.[5]).toHaveLength(MAX_CELL_TEXT_LENGTH)
+      expect(oversizedRow?.[5].startsWith(TRUNCATED_CELL_PREFIX)).toBe(true)
+      expect(otherRow?.[5]).toBe('Chocolate')
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('submission reference 8C2-7E8-189')
+      )
+    })
+  })
+
+  describe('truncateCellValue', () => {
+    const formId = '688131eeff67f889d52c66cc'
+
+    test('should not change a value at the maximum length', () => {
+      const value = 'a'.repeat(MAX_CELL_TEXT_LENGTH)
+
+      expect(truncateCellValue(value, formId, 'ABC-123-DEF')).toBe(value)
+      expect(logger.info).not.toHaveBeenCalled()
+    })
+
+    test('should not change non-text values', () => {
+      const date = new Date(2000, 0, 1)
+
+      expect(truncateCellValue(123, formId, 'ABC-123-DEF')).toBe(123)
+      expect(truncateCellValue(date, formId, 'ABC-123-DEF')).toBe(date)
+      expect(
+        truncateCellValue(undefined, formId, 'ABC-123-DEF')
+      ).toBeUndefined()
+    })
+
+    test('should truncate and prefix a value over the maximum length', () => {
+      const value = 'a'.repeat(MAX_CELL_TEXT_LENGTH + 1)
+      const result = truncateCellValue(value, formId, 'ABC-123-DEF')
+
+      expect(result).toHaveLength(MAX_CELL_TEXT_LENGTH)
+      expect(result).toBe(
+        `${TRUNCATED_CELL_PREFIX}${'a'.repeat(MAX_CELL_TEXT_LENGTH - TRUNCATED_CELL_PREFIX.length)}`
+      )
+      expect(logger.info).toHaveBeenCalledWith(
+        `Truncated a cell value of ${MAX_CELL_TEXT_LENGTH + 1} characters for form ${formId}, submission reference ABC-123-DEF`
+      )
+    })
+
+    test('should log when the submission reference is not available', () => {
+      const value = 'a'.repeat(MAX_CELL_TEXT_LENGTH + 1)
+
+      truncateCellValue(value, formId, undefined)
+
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('submission reference unavailable')
+      )
+    })
+
+    test('should not split a surrogate pair', () => {
+      const keep = MAX_CELL_TEXT_LENGTH - TRUNCATED_CELL_PREFIX.length
+      // Place an emoji (two UTF-16 code units) across the truncation boundary
+      const value = `${'a'.repeat(keep - 1)}\u{1F600}${'a'.repeat(100)}`
+      const result = /** @type {string} */ (
+        truncateCellValue(value, formId, 'ABC-123-DEF')
+      )
+
+      expect(result).toBe(`${TRUNCATED_CELL_PREFIX}${'a'.repeat(keep - 1)}`)
     })
   })
 
