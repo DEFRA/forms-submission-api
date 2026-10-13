@@ -17,7 +17,11 @@ import {
   rawMessageDelivery
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
-import { getFormMetadataById } from '~/src/services/forms-service.js'
+import {
+  getFormDefinitionVersion,
+  getFormMetadataById
+} from '~/src/services/forms-service.js'
+import { sendNotification } from '~/src/services/notify.js'
 import {
   mapSaveAndExitDataToDocumentV2,
   mapSaveAndExitMessageToData,
@@ -65,6 +69,35 @@ jest.mock('~/src/mongo.js', () => {
     }
   }
 })
+
+/**
+ * @param {number} formNumber
+ */
+function mockMetadata(formNumber) {
+  return /** @type {FormMetadata} */ (
+    /** @type {unknown} */ ({
+      slug: `my-form-${formNumber}`,
+      title: `My form title ${formNumber}`
+    })
+  )
+}
+
+/**
+ * @param {number} formNumber
+ */
+function mockDefinition(formNumber) {
+  return /** @type {FormDefinition} */ (
+    /** @type {unknown} */ ({
+      metadata: {
+        translations: {
+          cy: {
+            'form.title': `Welsh form title ${formNumber}`
+          }
+        }
+      }
+    })
+  )
+}
 
 describe('events', () => {
   beforeAll(async () => {
@@ -182,20 +215,27 @@ describe('events', () => {
   })
 
   describe('processSubmissionEvents', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
     const messageId1 = '01267dd5-8cc7-4749-9802-40190f6429eb'
     const messageId2 = '5dd16f40-6118-4797-97c9-60a298c9a898'
     const messageId3 = '70c0155c-e9a9-4b90-a45f-a839924fca65'
     const messageId4 = 'eb7facfb-aa7d-45f7-9b14-051fdec8c4dc'
+    const messageId5 = 'e420409b-380e-4618-9ace-29f9f59a5fbc'
 
     const formId1 = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
     const formId2 = 'dc11160e-8d8c-4151-a70a-080a08ef6622'
     const formId3 = '4d6dc877-83ef-475b-a591-5b1709d634dd'
     const formId4 = '76640947-8b37-4968-9d3b-25f51bfb6818'
+    const formId5 = '8dde912f-17f0-4cb8-b1cd-dd1e8637e9dd'
     const saveAndExitMessage1 = buildSaveAndExitV1Message({}, formId1)
     const saveAndExitMessage2 = buildSaveAndExitV1Message({}, formId2)
     const saveAndExitMessage3 = buildSaveAndExitV1Message({}, formId3)
     const saveAndExitMessage4 = buildSaveAndExitV2Message({}, formId4)
     saveAndExitMessage4.data.form.language = 'cy'
+    const saveAndExitMessage5 = buildSaveAndExitV2Message({}, formId5)
     const message1 = buildMessageFromRunnerMessage(saveAndExitMessage1, {
       MessageId: messageId1
     })
@@ -217,7 +257,10 @@ describe('events', () => {
     const message7 = buildMessageFromRunnerMessage(saveAndExitMessage4, {
       MessageId: messageId4
     })
-    const messages = [message1, message2, message3, message7]
+    const message8 = buildMessageFromRunnerMessage(saveAndExitMessage5, {
+      MessageId: messageId5
+    })
+    const messages = [message1, message2, message3, message7, message8]
     const messages2 = [message4, message5, message6]
 
     it('should create a list of submission events', async () => {
@@ -317,7 +360,7 @@ describe('events', () => {
         magicLinkGroupId: ''
       }
 
-      // V2 save-and-exit
+      // V2 save-and-exit - Welsh
       const expectedMapped4 = {
         form: {
           id: '76640947-8b37-4968-9d3b-25f51bfb6818',
@@ -348,15 +391,49 @@ describe('events', () => {
         }
       }
 
-      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
-        // @ts-expect-error - partial mock of test data
-        {
-          slug: 'my-firstform'
+      // V2 save-and-exit - English
+      const expectedMapped5 = {
+        form: {
+          id: '8dde912f-17f0-4cb8-b1cd-dd1e8637e9dd',
+          title: 'My FirstForm',
+          isPreview: false,
+          status: 'draft',
+          baseUrl: 'http://localhost:3009',
+          language: 'en-GB'
+        },
+        email: 'my-email@test.com',
+        auth: {
+          sub: 'auth-sub',
+          issuer: 'auth-issuer'
+        },
+        state: {
+          $$__referenceNumber: 'XXX-XXX-XXX',
+          formField1: 'val1',
+          formField2: 'val2'
+        },
+        magicLinkId: expect.any(String),
+        magicLinkGroupId: '',
+        createdAt: expect.any(Date),
+        version: 1,
+        notify: {
+          expireLockId: null,
+          expireLockTimestamp: null,
+          expireEmailSentTimestamp: null
         }
-      )
+      }
+
+      jest
+        .mocked(getFormMetadataById)
+        .mockResolvedValueOnce(mockMetadata(1))
+        .mockResolvedValueOnce(mockMetadata(2))
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockResolvedValueOnce(mockDefinition(1))
+        .mockResolvedValueOnce(mockDefinition(2))
 
       const result = await processSaveAndExitEvents(messages)
-      expect(createSaveAndExitRecord).toHaveBeenCalledTimes(4)
+      expect(createSaveAndExitRecord).toHaveBeenCalledTimes(5)
       expect(createSaveAndExitRecord).toHaveBeenCalledWith(
         expectedMapped1,
         expect.anything()
@@ -373,16 +450,42 @@ describe('events', () => {
         expectedMapped4,
         expect.anything()
       )
-      expect(deleteMessage).toHaveBeenCalledTimes(4)
+      expect(createSaveAndExitRecord).toHaveBeenCalledWith(
+        expectedMapped5,
+        expect.anything()
+      )
+      expect(deleteMessage).toHaveBeenCalledTimes(5)
       expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message1)
       expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message2)
       expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message3)
       expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message4)
+      expect(deleteMessage).toHaveBeenCalledWith(expect.any(String), message5)
 
       expect(result).toEqual({
         processed: messages,
         failed: []
       })
+
+      expect(sendNotification).toHaveBeenCalledTimes(5)
+      // @ts-expect-error - dynamic calls from mock
+      const mockCalls = sendNotification.mock.calls
+      // V2
+      expect(mockCalls[0][0].personalisation.subject).toBe(
+        'Cynnydd ffurflen wedi’i arbed: Welsh form title 1'
+      )
+      expect(mockCalls[1][0].personalisation.subject).toBe(
+        'Form progress saved: My FirstForm'
+      )
+      // V1
+      expect(mockCalls[2][0].personalisation.subject).toBe(
+        'Form progress saved'
+      )
+      expect(mockCalls[3][0].personalisation.subject).toBe(
+        'Form progress saved'
+      )
+      expect(mockCalls[4][0].personalisation.subject).toBe(
+        'Form progress saved'
+      )
     })
 
     it('should handle failures', async () => {
@@ -451,5 +554,6 @@ describe('events', () => {
 })
 
 /**
- * @import {Message} from '@aws-sdk/client-sqs'
+ * @import { Message } from '@aws-sdk/client-sqs'
+ * @import { FormDefinition, FormMetadata } from '@defra/forms-model'
  */

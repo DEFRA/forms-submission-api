@@ -19,7 +19,11 @@ import { createI18nInstance } from '~/src/i18n/index.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { client } from '~/src/mongo.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
-import { getFormMetadataById } from '~/src/services/forms-service.js'
+import {
+  getFormDefinition,
+  getFormDefinitionVersion,
+  getFormMetadataById
+} from '~/src/services/forms-service.js'
 import { sendNotification } from '~/src/services/notify.js'
 
 const queueUrl = config.get('saveAndExitQueueUrl')
@@ -180,6 +184,22 @@ export function constructEmailContentV1(document, formTitle) {
 }
 
 /**
+ * Lookup form title in another language
+ * @param {FormDefinition} definition
+ * @param {string} language
+ */
+function translateFormTitle(definition, language) {
+  const translations =
+    /** @type {Record<string, Record<string, string | undefined >> | undefined} */ (
+      definition.metadata?.translations
+    )
+  if (!translations || !(language in translations)) {
+    return undefined
+  }
+  return translations[language]['form.title']
+}
+
+/**
  * @param {Omit<SaveAndExitV2Document, 'expireAt'>} document
  * @param {{ id: string; title: string; status: FormStatus; isPreview: boolean; baseUrl: string }} form
  * @param {SubmissionTranslator} translator
@@ -188,11 +208,18 @@ export function constructEmailContentV1(document, formTitle) {
 export async function constructEmailContentV2(document, form, translator) {
   const { templateId, emailReplyToId } = getNotifyEmailConfig()
 
-  const { t } = translator
-
-  const formTitle = form.title
+  const { language, t } = translator
 
   const meta = await getFormMetadataById(form.id)
+
+  const definition = document.version
+    ? await getFormDefinitionVersion(form.id, document.version)
+    : await getFormDefinition(form.id, form.status)
+
+  const formTitle =
+    language !== EN_GB
+      ? (translateFormTitle(definition, language) ?? form.title)
+      : form.title
 
   const previewDraftStub = form.isPreview ? `preview/${form.status}/` : ''
 
@@ -338,7 +365,7 @@ async function handleSaveAndExitV2(data, session) {
  * @import { Message } from '@aws-sdk/client-sqs'
  * @import { ClientSession } from 'mongodb'
  * @import { SendNotificationArgs } from '~/src/services/notify.js'
- * @import { FormStatus, SaveAndExitMessage, SaveAndExitV2Message } from '@defra/forms-model'
+ * @import { FormDefinition, FormMetadata, FormStatus, SaveAndExitMessage, SaveAndExitV2Message } from '@defra/forms-model'
  * @import { SubmissionTranslator } from '~/src/api/types.js'
  * @import { SaveAndExitV1Document, SaveAndExitV2Document } from '~/src/api/types.js'
  */
