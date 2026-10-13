@@ -102,6 +102,14 @@ const SUBMISSION_LANGUAGE_HEADER_TEXT = 'Submission language'
 
 const CSAT_FORM_ID = '691db72966b1bdc98fa3e72a'
 
+// Maximum number of characters Excel (and the xlsx library) allows in a single cell
+export const MAX_CELL_TEXT_LENGTH = 32767
+export const TRUNCATED_CELL_PREFIX = '[RESPONSE TRUNCATED:]'
+const TRUNCATED_CELL_TEXT_LENGTH =
+  MAX_CELL_TEXT_LENGTH - TRUNCATED_CELL_PREFIX.length
+// Highest code point that fits in a single UTF-16 code unit; anything above is a surrogate pair
+const MAX_BMP_CODE_POINT = 0xffff
+
 /**
  * Generate a form submission file for a form id
  * @param {string} formId - the form id
@@ -761,6 +769,37 @@ export function buildPreHeaders(options) {
 }
 
 /**
+ * Truncates a text cell value that exceeds the maximum length Excel supports.
+ * The truncated value is prefixed with TRUNCATED_CELL_PREFIX, and the prefix
+ * is included in the maximum length. Non-text and short values are returned unchanged.
+ * @param {CellValue} value - the cell value
+ * @param {string} formId - the form id
+ * @param {string | undefined} submissionRef - the submission reference number (if available)
+ * @returns {CellValue} the cell value, truncated if required
+ */
+export function truncateCellValue(value, formId, submissionRef) {
+  if (typeof value !== 'string' || value.length <= MAX_CELL_TEXT_LENGTH) {
+    return value
+  }
+
+  let end = TRUNCATED_CELL_TEXT_LENGTH
+
+  // Avoid splitting a UTF-16 surrogate pair, which would produce invalid text.
+  // codePointAt returns the full code point when a high surrogate is followed by
+  // a low surrogate, so a value above the BMP means the pair straddles the cut.
+  const lastCodePoint = value.codePointAt(end - 1)
+  if (lastCodePoint !== undefined && lastCodePoint > MAX_BMP_CODE_POINT) {
+    end--
+  }
+
+  logger.info(
+    `Truncated a cell value of ${value.length} characters for form ${formId}, submission reference ${submissionRef ?? 'unavailable'}`
+  )
+
+  return `${TRUNCATED_CELL_PREFIX}${value.substring(0, end)}`
+}
+
+/**
  * Build an xlsx workbook from the headers and rows
  * @param {string} formId - the form id
  * @param {[string, string][]} headers - the file headers (including payment headers)
@@ -799,7 +838,12 @@ function buildExcelFile(formId, headers, rows, options) {
       wsRow.push(row.get(key))
     })
 
-    wsRows.push(wsRow)
+    const submissionRef = /** @type {string | undefined} */ (
+      row.get(SUBMISSION_REF_HEADER)
+    )
+    wsRows.push(
+      wsRow.map((value) => truncateCellValue(value, formId, submissionRef))
+    )
   })
 
   // Create an excel file from the data and save
