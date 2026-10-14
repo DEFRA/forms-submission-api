@@ -35,7 +35,8 @@ export async function getSaveAndExitRecord(id) {
   try {
     const timer = createTimer()
     const result = await coll.findOne({
-      magicLinkId: id
+      magicLinkId: id,
+      isDeleted: { $ne: true }
     })
 
     logger.info(
@@ -587,7 +588,8 @@ export async function findExpiringRecords(
           { 'notify.expireLockId': null },
           { 'notify.expireLockTimestamp': null },
           { 'notify.expireLockTimestamp': { $lt: oneHourAgo } }
-        ]
+        ],
+        isDeleted: { $ne: true }
       })
       .withReadPreference('primary')
 
