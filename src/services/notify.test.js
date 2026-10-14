@@ -36,11 +36,7 @@ describe('sendNotification', () => {
       response: createMockResponse({ statusCode: 200 }),
       body: {}
     })
-    const result = await sendNotification(defaultArgs)
-    expect(result?.response).toEqual({
-      statusCode: 200,
-      headers: {}
-    })
+    await sendNotification(defaultArgs)
 
     expect(postJson).toHaveBeenCalledWith(new URL(NOTIFY_ENDPOINT), {
       payload: {
@@ -67,8 +63,7 @@ describe('sendNotification', () => {
     // Advance past the first retry delay (1000ms)
     await jest.advanceTimersByTimeAsync(1000)
 
-    const result = await promise
-    expect(result?.response.statusCode).toBe(200)
+    await expect(promise).resolves.toBeUndefined()
     expect(postJson).toHaveBeenCalledTimes(2)
   })
 
@@ -89,8 +84,7 @@ describe('sendNotification', () => {
     // Second retry delay: 2000ms
     await jest.advanceTimersByTimeAsync(2000)
 
-    const result = await promise
-    expect(result?.response.statusCode).toBe(200)
+    await expect(promise).resolves.toBeUndefined()
     expect(postJson).toHaveBeenCalledTimes(3)
   })
 
@@ -120,12 +114,11 @@ describe('sendNotification', () => {
   })
 
   it('should not call Notify for an address on the test email domain', async () => {
-    const result = await sendNotification({
+    await sendNotification({
       ...defaultArgs,
       emailAddress: 'smoke-test@example.forms.defra.gov.uk'
     })
 
-    expect(result).toBeUndefined()
     expect(postJson).not.toHaveBeenCalled()
   })
 

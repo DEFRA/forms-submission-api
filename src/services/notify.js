@@ -72,7 +72,7 @@ function isTestAddress(emailAddress) {
 
 /**
  * @param {SendNotificationArgs} args
- * @returns
+ * @returns {Promise<void>}
  */
 export async function sendNotification(args) {
   const { templateId, emailAddress, personalisation, emailReplyToId } = args
@@ -96,7 +96,7 @@ export async function sendNotification(args) {
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await postJsonByType(new URL(NOTIFY_ENDPOINT), {
+      await postJsonByType(new URL(NOTIFY_ENDPOINT), {
         payload: {
           template_id: templateId,
           email_address: emailAddress,
@@ -107,6 +107,7 @@ export async function sendNotification(args) {
           Authorization: 'Bearer ' + createToken(serviceId, apiKeyId)
         }
       })
+      return
     } catch (error) {
       lastError = error
 
