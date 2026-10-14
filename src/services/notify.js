@@ -2,6 +2,7 @@ import { token } from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
+import { TEST_EMAIL_DOMAIN } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { postJson } from '~/src/services/httpService.js'
 
@@ -60,11 +61,29 @@ function createToken(iss, secret) {
 }
 
 /**
+ * Whether an email address is on the test email domain. The address must
+ * end with `@` and the full domain, so that an address on a domain that
+ * only ends with the test domain is a normal address.
+ * @param {string} emailAddress
+ */
+function isTestAddress(emailAddress) {
+  return emailAddress.toLowerCase().endsWith(`@${TEST_EMAIL_DOMAIN}`)
+}
+
+/**
  * @param {SendNotificationArgs} args
  * @returns
  */
 export async function sendNotification(args) {
   const { templateId, emailAddress, personalisation, emailReplyToId } = args
+
+  // A test address has no mailbox, so the email is not sent. This lets the
+  // work that sends the email complete for a test account.
+  if (isTestAddress(emailAddress)) {
+    logger.info('Skipped the Notify email to an address on the test domain')
+    return
+  }
+
   const { serviceId, apiKeyId } = getNotifyCredentials()
 
   const postJsonByType =
