@@ -1,3 +1,4 @@
+import { EN_GB } from '~/src/constants.js'
 import { createI18nInstance } from '~/src/i18n/index.js'
 
 /**
@@ -7,7 +8,7 @@ import { createI18nInstance } from '~/src/i18n/index.js'
  * @param {string} [language] - requested language
  * @returns {SubmissionTranslator}
  */
-export function createTranslator(i18nInstance, language = 'en-GB') {
+export function createTranslator(i18nInstance, language = EN_GB) {
   /**
    * @param {string} key
    * @param {Record<string, unknown>} [opts]

@@ -53,6 +53,8 @@ describe('Forms route', () => {
       const payload = {
         retrievalKey: 'enrique.chase@defra.gov.uk',
         sessionId: '2e46661c-e9b5-43aa-84bb-c6a4e5b88814',
+        language: 'en-GB',
+        referenceNumber: 'XXX-XXX-XXX',
         main: [
           {
             name: 'FFhvH',
@@ -151,7 +153,7 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         error: 'Bad Request',
         message:
-          '"retrievalKey" is required. "sessionId" is required. "main" is required. "repeaters" is required. "something" is not allowed'
+          '"retrievalKey" is required. "sessionId" is required. "referenceNumber" is required. "language" is required. "main" is required. "repeaters" is required. "something" is not allowed'
       })
     })
   })
@@ -163,7 +165,8 @@ describe('Forms route', () => {
           id: '12345',
           isPreview: false,
           status: FormStatus.Draft,
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          language: 'en-GB'
         },
         authType: 'memorableWord',
         question: SecurityQuestionsEnum.MemorablePlace,
@@ -257,7 +260,8 @@ describe('Forms route', () => {
           id: '12345',
           isPreview: false,
           status: FormStatus.Draft,
-          baseUrl: 'http://localhost:3009'
+          baseUrl: 'http://localhost:3009',
+          language: 'en-GB'
         },
         state: {
           formField1: '123'
