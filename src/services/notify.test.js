@@ -36,11 +36,7 @@ describe('sendNotification', () => {
       response: createMockResponse({ statusCode: 200 }),
       body: {}
     })
-    const result = await sendNotification(defaultArgs)
-    expect(result.response).toEqual({
-      statusCode: 200,
-      headers: {}
-    })
+    await sendNotification(defaultArgs)
 
     expect(postJson).toHaveBeenCalledWith(new URL(NOTIFY_ENDPOINT), {
       payload: {
@@ -67,8 +63,7 @@ describe('sendNotification', () => {
     // Advance past the first retry delay (1000ms)
     await jest.advanceTimersByTimeAsync(1000)
 
-    const result = await promise
-    expect(result.response.statusCode).toBe(200)
+    await expect(promise).resolves.toBeUndefined()
     expect(postJson).toHaveBeenCalledTimes(2)
   })
 
@@ -89,8 +84,7 @@ describe('sendNotification', () => {
     // Second retry delay: 2000ms
     await jest.advanceTimersByTimeAsync(2000)
 
-    const result = await promise
-    expect(result.response.statusCode).toBe(200)
+    await expect(promise).resolves.toBeUndefined()
     expect(postJson).toHaveBeenCalledTimes(3)
   })
 
@@ -117,6 +111,38 @@ describe('sendNotification', () => {
 
     expect(caughtError).toBe(finalError)
     expect(postJson).toHaveBeenCalledTimes(4)
+  })
+
+  it('should not call Notify for an address on the test email domain', async () => {
+    await sendNotification({
+      ...defaultArgs,
+      emailAddress: 'smoke-test@example.forms.defra.gov.uk'
+    })
+
+    expect(postJson).not.toHaveBeenCalled()
+  })
+
+  it('should not call Notify for an address on the test email domain in a different case', async () => {
+    await sendNotification({
+      ...defaultArgs,
+      emailAddress: 'Smoke-Test@Example.Forms.Defra.Gov.UK'
+    })
+
+    expect(postJson).not.toHaveBeenCalled()
+  })
+
+  it('should call Notify for an address on a domain that ends with the test email domain', async () => {
+    jest.mocked(postJson).mockResolvedValueOnce({
+      response: createMockResponse({ statusCode: 200 }),
+      body: {}
+    })
+
+    await sendNotification({
+      ...defaultArgs,
+      emailAddress: 'person@notexample.forms.defra.gov.uk'
+    })
+
+    expect(postJson).toHaveBeenCalledTimes(1)
   })
 
   it('should include Authorization header with Bearer token', async () => {
