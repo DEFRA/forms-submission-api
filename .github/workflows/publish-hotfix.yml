@@ -18,15 +18,27 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Depth 0 is required for branch-based versioning
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
+
+      # Copies mongod out of the official image rather than downloading it from
+      # fastdl.mongodb.org, so that the unit tests do not depend on a host that
+      # often aborts downloads from CI runners. The tag follows MONGO_VERSION in
+      # src/mongo.test.js
+      - name: Provide MongoDB binary
+        run: |
+          docker create --name mongod-source mongo:6.0.14
+          docker cp mongod-source:/usr/bin/mongod "$RUNNER_TEMP/mongod"
+          docker rm mongod-source
+          docker rmi mongo:6.0.14
+          echo "MONGOMS_SYSTEM_BINARY=$RUNNER_TEMP/mongod" >> "$GITHUB_ENV"
 
       - name: Test code and Create Test Coverage Reports
         run: |
