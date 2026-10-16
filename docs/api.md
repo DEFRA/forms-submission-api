@@ -88,7 +88,7 @@ Your client ID is configured with access to specific email addresses. When the D
 Exchange your client ID and secret for an access token by making a request to the Cognito token endpoint.
 
 For the Cognito token URL for each environment, refer to the CDP documentation:
-https://portal.cdp-int.defra.cloud/documentation/how-to/apis.md#what-are-the-login-urls-for-my-api-
+https://portal.cdp-int.defra.cloud/documentation/how-to/apis.md#what-are-the-login-urls-for-my-api
 
 ```javascript
 async function getCognitoToken(clientId, clientSecret, tokenUrl) {
