@@ -167,7 +167,7 @@ export const config = convict({
     header: {
       doc: 'CDP tracing header name',
       format: String,
-      default: null,
+      default: 'x-cdp-request-id',
       env: 'TRACING_HEADER'
     }
   },
