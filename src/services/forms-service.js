@@ -2,6 +2,7 @@ import { FormStatus } from '@defra/forms-engine-plugin/types'
 import { formMetadataSchema } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
+import { traceHeaders } from '~/src/helpers/logging/trace-context.js'
 import { getJson } from '~/src/services/httpService.js'
 
 const managerUrl = config.get('managerUrl')
@@ -14,7 +15,8 @@ export async function getFormMetadata(slug) {
   const getJsonByType = /** @type {typeof getJson<FormMetadata>} */ (getJson)
 
   const { body: metadata } = await getJsonByType(
-    new URL(`${managerUrl}/forms/slug/${slug}`)
+    new URL(`${managerUrl}/forms/slug/${slug}`),
+    { headers: traceHeaders() }
   )
 
   // Run it through the schema to coerce dates
@@ -35,7 +37,8 @@ export async function getFormMetadataById(formId) {
   const getJsonByType = /** @type {typeof getJson<FormMetadata>} */ (getJson)
 
   const { body: metadata } = await getJsonByType(
-    new URL(`${managerUrl}/forms/${formId}`)
+    new URL(`${managerUrl}/forms/${formId}`),
+    { headers: traceHeaders() }
   )
 
   // Run it through the schema to coerce dates
@@ -58,7 +61,8 @@ export async function getFormDefinition(id, state) {
 
   const suffix = state === FormStatus.Draft ? `/${state}` : ''
   const { body: definition } = await getJsonByType(
-    new URL(`${managerUrl}/forms/${id}/definition${suffix}`)
+    new URL(`${managerUrl}/forms/${id}/definition${suffix}`),
+    { headers: traceHeaders() }
   )
 
   return definition
@@ -73,7 +77,8 @@ export async function getFormDefinitionVersion(id, versionNumber) {
   const getJsonByType = /** @type {typeof getJson<FormDefinition>} */ (getJson)
 
   const { body: definition } = await getJsonByType(
-    new URL(`${managerUrl}/forms/${id}/versions/${versionNumber}/definition`)
+    new URL(`${managerUrl}/forms/${id}/versions/${versionNumber}/definition`),
+    { headers: traceHeaders() }
   )
 
   return definition

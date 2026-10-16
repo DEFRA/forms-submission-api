@@ -1,7 +1,7 @@
-import { getTraceId } from '@defra/hapi-tracing'
 import { ecsFormat } from '@elastic/ecs-pino-format'
 
 import { config } from '~/src/config/index.js'
+import { getCurrentTraceId } from '~/src/helpers/logging/trace-context.js'
 
 const logConfig = config.get('log')
 const serviceName = config.get('serviceName')
@@ -29,7 +29,7 @@ export const loggerOptions = /** @type {any} */ ({
   nesting: true,
   mixin() {
     const mixinValues = {}
-    const traceId = getTraceId()
+    const traceId = getCurrentTraceId()
     if (traceId) {
       mixinValues.trace = { id: traceId }
     }

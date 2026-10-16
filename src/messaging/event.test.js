@@ -12,6 +12,8 @@ import {
   deleteDlqMessage,
   deleteMessage,
   getDeadLetterQueueUrl,
+  getMessageQueueStats,
+  getMessageTraceId,
   receiveDlqMessages,
   receiveMessages,
   redriveDlqMessages,
@@ -47,6 +49,64 @@ describe('event', () => {
       }
       snsMock.on(ReceiveMessageCommand).resolves(receivedMessage)
       await expect(receiveMessages(queueName)).resolves.toEqual(receivedMessage)
+    })
+
+    it('asks for the trace id and the timing attributes', async () => {
+      snsMock.on(ReceiveMessageCommand).resolves({ Messages: [] })
+
+      await receiveMessages(queueName)
+
+      expect(snsMock).toHaveReceivedCommandWith(ReceiveMessageCommand, {
+        MessageAttributeNames: ['traceId'],
+        MessageSystemAttributeNames: [
+          'SentTimestamp',
+          'ApproximateReceiveCount'
+        ]
+      })
+    })
+  })
+
+  describe('getMessageTraceId', () => {
+    it('uses the trace id the sender attached', () => {
+      expect(
+        getMessageTraceId({
+          ...messageStub,
+          MessageAttributes: {
+            traceId: { DataType: 'String', StringValue: 'trace-abc' }
+          }
+        })
+      ).toBe('trace-abc')
+    })
+
+    it('falls back to the message id', () => {
+      expect(getMessageTraceId(messageStub)).toBe(messageId)
+    })
+  })
+
+  describe('getMessageQueueStats', () => {
+    it('works out the queue lag and receive count', () => {
+      expect(
+        getMessageQueueStats(
+          {
+            ...messageStub,
+            Attributes: { SentTimestamp: '1000', ApproximateReceiveCount: '3' }
+          },
+          4500
+        )
+      ).toEqual({ queueLagMs: 3500, receiveCount: 3 })
+    })
+
+    it('leaves out figures the message does not have', () => {
+      expect(getMessageQueueStats(messageStub, 4500)).toEqual({})
+    })
+
+    it('never reports a negative lag when clocks differ', () => {
+      expect(
+        getMessageQueueStats(
+          { ...messageStub, Attributes: { SentTimestamp: '5000' } },
+          4500
+        )
+      ).toEqual({ queueLagMs: 0 })
     })
   })
 

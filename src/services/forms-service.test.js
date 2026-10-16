@@ -1,6 +1,7 @@
 import { FormStatus } from '@defra/forms-engine-plugin/types'
 import { StatusCodes } from 'http-status-codes'
 
+import { runWithTraceId } from '~/src/helpers/logging/trace-context.js'
 import {
   getFormDefinition,
   getFormDefinitionVersion,
@@ -31,7 +32,17 @@ describe('Forms service', () => {
       await getFormMetadata(metadata.slug)
 
       expect(getJson).toHaveBeenCalledWith(
-        new URL(`/forms/slug/${metadata.slug}`, MANAGER_URL)
+        new URL(`/forms/slug/${metadata.slug}`, MANAGER_URL),
+        { headers: {} }
+      )
+    })
+
+    it('passes on the current trace id, so forms-manager logs join the same trace', async () => {
+      await runWithTraceId('trace-123', () => getFormMetadata(metadata.slug))
+
+      expect(getJson).toHaveBeenCalledWith(
+        new URL(`/forms/slug/${metadata.slug}`, MANAGER_URL),
+        { headers: { 'x-cdp-request-id': 'trace-123' } }
       )
     })
 
@@ -74,7 +85,8 @@ describe('Forms service', () => {
       await getFormMetadataById(metadata.id)
 
       expect(getJson).toHaveBeenCalledWith(
-        new URL(`/forms/${metadata.id}`, MANAGER_URL)
+        new URL(`/forms/${metadata.id}`, MANAGER_URL),
+        { headers: {} }
       )
     })
 
@@ -117,7 +129,8 @@ describe('Forms service', () => {
       await getFormDefinition(metadata.id, FormStatus.Draft)
 
       expect(getJson).toHaveBeenCalledWith(
-        new URL(`/forms/${metadata.id}/definition/draft`, MANAGER_URL)
+        new URL(`/forms/${metadata.id}/definition/draft`, MANAGER_URL),
+        { headers: {} }
       )
     })
 
@@ -125,7 +138,8 @@ describe('Forms service', () => {
       await getFormDefinition(metadata.id, FormStatus.Live)
 
       expect(getJson).toHaveBeenCalledWith(
-        new URL(`/forms/${metadata.id}/definition`, MANAGER_URL)
+        new URL(`/forms/${metadata.id}/definition`, MANAGER_URL),
+        { headers: {} }
       )
     })
   })
@@ -148,7 +162,8 @@ describe('Forms service', () => {
         new URL(
           `/forms/${metadata.id}/versions/${versionNumber}/definition`,
           MANAGER_URL
-        )
+        ),
+        { headers: {} }
       )
     })
   })
