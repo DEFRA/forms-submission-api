@@ -25,6 +25,9 @@ export function createTranslator(i18nInstance, language = EN_GB) {
 /** @type {SubmissionTranslator} */
 export const defaultTranslator = createTranslator(createI18nInstance())
 
+/** @type {SubmissionTranslator} */
+export const welshTranslator = createTranslator(createI18nInstance(), 'cy')
+
 /**
  * @import { i18n } from 'i18next'
  * @import { SubmissionTranslator } from '~/src/api/types.js'

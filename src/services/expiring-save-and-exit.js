@@ -2,14 +2,13 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
-import { EN_GB } from '~/src/constants.js'
+import { CY, EN_GB } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import {
-  createTranslator,
-  defaultTranslator
+  defaultTranslator,
+  welshTranslator
 } from '~/src/i18n/createTranslator.js'
-import { createI18nInstance } from '~/src/i18n/index.js'
 import {
   findExpiringRecords,
   lockRecordForExpiryEmail,
@@ -118,10 +117,7 @@ export function constructExpiryReminderEmailContent(
   const { templateId, emailReplyToId } = getNotifyEmailConfig()
 
   const language = 'language' in document.form ? document.form.language : EN_GB
-  const translator =
-    language !== EN_GB
-      ? createTranslator(createI18nInstance(), language)
-      : defaultTranslator
+  const translator = language === CY ? welshTranslator : defaultTranslator
   const { t } = translator
 
   // Calculate hours remaining until expiry (rounded down)
