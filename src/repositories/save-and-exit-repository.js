@@ -619,7 +619,7 @@ export async function findExpiringRecords(
  * @param {string} magicLinkId - The magic link ID
  * @param {string} runtimeId - The runtime ID to use as lock
  * @param {number|null} [currentVersion] - The current version of the record
- * @returns {Promise<WithId<SaveAndExitV1Document> | null>}
+ * @returns {Promise<WithId<SaveAndExitV1Document | SaveAndExitV2Document> | null>}
  */
 export async function lockRecordForExpiryEmail(
   magicLinkId,

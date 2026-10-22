@@ -6,5 +6,18 @@
     "sameEmailOrNumber": "Defnyddiwch yr un cyfeiriad e-bost neu rif ffôn a ddefnyddioch wrth greu eich mewngofnodi.",
     "continueForm": "Parhau â’ch ffurflen",
     "expiryIfNoSignIn": "Os na fyddwch yn mewngofnodi o fewn [[expiryInDays]] diwrnod, bydd eich gwybodaeth a arbedwyd yn cael ei dileu."
+  },
+  "saveAndExitExpiry": {
+    "subject": "Bydd y cynnydd ar y ffurflen yn dod i ben ymhen [[hoursRemainingText]]",
+    "hour_zero": "oriau",
+    "hour_one": "awr",
+    "hour_two": "oriau",
+    "hour_few": "oriau",
+    "hour_many": "oriau",
+    "hour_other": "oriau",
+    "bodyHeading": "# Bydd cynnydd y ffurflen yn dod i ben yn fuan",
+    "bodyExpiresIn": "Mae eich cynnydd gyda [[title]] yn dod i ben ymhen [[hoursRemainingText]].",
+    "bodyContinue": "Parhewch â'ch ffurflen",
+    "bodyLinkValidity": "Mae'r ddolen yn ddilys am [[hoursRemainingText]]. Ar ôl yr amser hwnnw, bydd eich gwybodaeth wedi'i chadw yn cael ei dileu."
   }
 }
