@@ -7,6 +7,8 @@ import {
 import { ValidationError } from 'joi'
 import { pino } from 'pino'
 
+import { logger } from '~/src/helpers/logging/logger.js'
+import { getCurrentTraceId } from '~/src/helpers/logging/trace-context.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { prepareDb } from '~/src/mongo.js'
 import {
@@ -24,7 +26,12 @@ import {
   processSaveAndExitEvents
 } from '~/src/services/save-and-exit-events.js'
 
-jest.mock('~/src/messaging/event.js')
+jest.mock('~/src/messaging/event.js', () => {
+  const actual = jest.requireActual('~/src/messaging/event.js')
+
+  // Keep the pure helpers that read a received message, mock the SQS call
+  return { ...actual, deleteMessage: jest.fn() }
+})
 jest.mock('~/src/repositories/save-and-exit-repository.js')
 jest.mock('~/src/services/forms-service.js')
 jest.mock('~/src/services/notify.js')
@@ -32,6 +39,7 @@ jest.mock('~/src/helpers/logging/logger.js', () => ({
   logger: {
     error: jest.fn(),
     info: jest.fn(),
+    warn: jest.fn(),
     debug: jest.fn()
   }
 }))
@@ -401,6 +409,118 @@ describe('events', () => {
       expect(result.failed).toHaveLength(2)
       expect(result.failed).toContainEqual(new Error('error in create'))
       expect(result.failed).toContainEqual(new Error('error in delete'))
+    })
+  })
+
+  describe('processSaveAndExitEvents monitoring', () => {
+    const formId = '542ba433-f07a-4e02-8d2f-8a0ba719fb24'
+    const runnerMessage = buildSaveAndExitV1Message({}, formId)
+
+    /**
+     * @param {string} id
+     * @param {Partial<Message>} [extra]
+     */
+    const buildReceived = (id, extra = {}) => ({
+      ...buildMessageFromRunnerMessage(runnerMessage, { MessageId: id }),
+      ...extra
+    })
+
+    beforeEach(() => {
+      jest.mocked(deleteMessage).mockResolvedValue({
+        $metadata: { httpStatusCode: 200 }
+      })
+    })
+
+    it('processes each message under the trace id the runner sent with it', async () => {
+      /** @type {Record<string, string | undefined>} */
+      const seen = {}
+      jest.mocked(createSaveAndExitRecord).mockImplementation((document) => {
+        seen[document.magicLinkId] = getCurrentTraceId()
+        return Promise.resolve(/** @type {any} */ (undefined))
+      })
+
+      await processSaveAndExitEvents([
+        buildReceived('msg-with-trace', {
+          MessageAttributes: {
+            traceId: { DataType: 'String', StringValue: 'runner-trace-1' }
+          }
+        }),
+        buildReceived('msg-without-trace')
+      ])
+
+      expect(seen).toEqual({
+        'msg-with-trace': 'runner-trace-1',
+        // Sent before the attribute existed, or redriven: the message id
+        'msg-without-trace': 'msg-without-trace'
+      })
+    })
+
+    it('logs the queue lag and a processing summary as metrics', async () => {
+      jest
+        .mocked(createSaveAndExitRecord)
+        .mockResolvedValue(/** @type {any} */ (undefined))
+      const sent = Date.now() - 1500
+
+      await processSaveAndExitEvents([
+        buildReceived('msg-metrics', {
+          Attributes: {
+            SentTimestamp: String(sent),
+            ApproximateReceiveCount: '2'
+          }
+        })
+      ])
+
+      const calls = jest.mocked(logger.info).mock.calls
+      const lag = calls.find(
+        ([obj]) => /** @type {any} */ (obj)?.event?.action === 'queue-lag'
+      )
+      const summary = calls.find(
+        ([obj]) => /** @type {any} */ (obj)?.event?.action === 'process-message'
+      )
+
+      expect(lag?.[0]).toMatchObject({
+        event: { kind: 'metric', reference: 'msg-metrics' }
+      })
+      // ECS durations are nanoseconds: at least 1.5 s
+      expect(
+        /** @type {any} */ (lag?.[0]).event.duration
+      ).toBeGreaterThanOrEqual(1500 * 1_000_000)
+      expect(summary?.[0]).toMatchObject({
+        event: {
+          kind: 'metric',
+          outcome: 'success',
+          reference: 'msg-metrics',
+          duration: expect.any(Number)
+        }
+      })
+      expect(summary?.[1]).toContain('version=v1')
+      expect(summary?.[1]).toContain('receiveCount=2')
+      expect(summary?.[1]).toContain('transactionAttempts=1')
+    })
+
+    it('logs a failure summary without personal data', async () => {
+      jest
+        .mocked(createSaveAndExitRecord)
+        .mockRejectedValueOnce(new Error('insert failed'))
+
+      await processSaveAndExitEvents([buildReceived('msg-fails')])
+
+      const summary = jest
+        .mocked(logger.warn)
+        .mock.calls.find(
+          ([obj]) =>
+            /** @type {any} */ (obj)?.event?.action === 'process-message'
+        )
+
+      expect(summary?.[0]).toMatchObject({
+        event: { outcome: 'failure', reference: 'msg-fails' }
+      })
+
+      const everything = JSON.stringify([
+        jest.mocked(logger.info).mock.calls,
+        jest.mocked(logger.warn).mock.calls
+      ])
+      expect(everything).not.toContain(runnerMessage.data.email)
     })
   })
 
