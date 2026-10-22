@@ -2,8 +2,13 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { config } from '~/src/config/index.js'
 import { requireConfig } from '~/src/config/require-config.js'
+import { CY, EN_GB } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
+import {
+  defaultTranslator,
+  welshTranslator
+} from '~/src/i18n/createTranslator.js'
 import {
   findExpiringRecords,
   lockRecordForExpiryEmail,
@@ -111,22 +116,27 @@ export function constructExpiryReminderEmailContent(
 ) {
   const { templateId, emailReplyToId } = getNotifyEmailConfig()
 
+  const language = 'language' in document.form ? document.form.language : EN_GB
+  const translator = language === CY ? welshTranslator : defaultTranslator
+  const { t } = translator
+
   // Calculate hours remaining until expiry (rounded down)
   const now = new Date()
   const timeRemainingMs = document.expireAt.getTime() - now.getTime()
   const hoursRemaining = Math.floor(timeRemainingMs / (1000 * 60 * 60))
-  const hoursRemainingText =
-    hoursRemaining === 1 ? `${hoursRemaining} hour` : `${hoursRemaining} hours`
+  const hoursRemainingText = `${hoursRemaining} ${t('saveAndExitExpiry.hour', { count: hoursRemaining })}`
 
-  const emailSubject = `Form progress expires in ${hoursRemainingText}`
+  const { title } = formTitleAndSlug
 
-  const emailBody = `# Form progress expires soon
+  const emailSubject = t('saveAndExitExpiry.subject', { hoursRemainingText })
 
-Your progress with ${formTitleAndSlug.title} expires in ${hoursRemainingText}.
+  const emailBody = `${t('saveAndExitExpiry.bodyHeading')}
 
-[Continue with your form](${getResumeLink(document, formTitleAndSlug)})
+${t('saveAndExitExpiry.bodyExpiresIn', { title, hoursRemainingText })}
 
-The link is valid for ${hoursRemainingText}. After that time, your saved information will be deleted.
+[${t('saveAndExitExpiry.bodyContinue')}](${getResumeLink(document, formTitleAndSlug)})
+
+${t('saveAndExitExpiry.bodyLinkValidity', { hoursRemainingText })}
 `
 
   return {
