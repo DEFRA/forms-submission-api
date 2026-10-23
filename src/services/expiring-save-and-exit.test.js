@@ -97,7 +97,7 @@ describe('expiring-save-and-exit', () => {
       jest.useRealTimers()
     })
 
-    test('should construct email content correctly', () => {
+    test('should construct email content correctly in English', () => {
       // Set expireAt to 48 hours from now
       const now = new Date()
       const expireAt = new Date(now.getTime() + 48 * 60 * 60 * 1000)
@@ -125,6 +125,42 @@ describe('expiring-save-and-exit', () => {
         `http://localhost:3009/resume-form/test-form-id/test-magic-link`
       )
       expect(result.personalisation.body).toContain('valid for 48 hours')
+      expect(result.emailReplyToId).toBe(config.get('notifyReplyToId'))
+    })
+
+    test('should construct email content correctly in Welsh', () => {
+      // Set expireAt to 48 hours from now
+      const now = new Date()
+      const expireAt = new Date(now.getTime() + 48 * 60 * 60 * 1000)
+
+      const mockDocument = createMockDocument({
+        magicLinkId: 'test-magic-link',
+        email: 'test@example.com',
+        expireAt,
+        form: {
+          language: 'cy'
+        }
+      })
+
+      const result = constructExpiryReminderEmailContent(mockDocument, {
+        title: 'Test Form',
+        slug: 'test-form'
+      })
+
+      expect(result.emailAddress).toBe('test@example.com')
+      expect(result.templateId).toBe(config.get('notifyTemplateId'))
+      expect(result.personalisation.subject).toBe(
+        'Bydd y cynnydd ar y ffurflen yn dod i ben ymhen 48 oriau'
+      )
+      expect(result.personalisation.body).toContain(
+        'Mae eich cynnydd gyda Test Form yn dod i ben ymhen 48 oriau.'
+      )
+      expect(result.personalisation.body).toContain(
+        `http://localhost:3009/resume-form/test-form-id/test-magic-link`
+      )
+      expect(result.personalisation.body).toContain(
+        "Mae'r ddolen yn ddilys am 48 oriau"
+      )
       expect(result.emailReplyToId).toBe(config.get('notifyReplyToId'))
     })
 

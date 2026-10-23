@@ -7,6 +7,11 @@ import {
 import { ValidationError } from 'joi'
 import { pino } from 'pino'
 
+import { CY } from '~/src/constants.js'
+import {
+  defaultTranslator,
+  welshTranslator
+} from '~/src/i18n/createTranslator.js'
 import { deleteMessage } from '~/src/messaging/event.js'
 import { prepareDb } from '~/src/mongo.js'
 import {
@@ -18,7 +23,9 @@ import {
 } from '~/src/repositories/__stubs__/save-and-exit.js'
 import { createSaveAndExitRecord } from '~/src/repositories/save-and-exit-repository.js'
 import { getFormMetadataById } from '~/src/services/forms-service.js'
+import { sendNotification } from '~/src/services/notify.js'
 import {
+  constructEmailContentV2,
   mapSaveAndExitDataToDocumentV2,
   mapSaveAndExitMessageToData,
   processSaveAndExitEvents
@@ -437,6 +444,114 @@ describe('events', () => {
       })
 
       expect(document.magicLinkGroupId).toBe('group-1')
+    })
+
+    it('includes the form language when one is provided', () => {
+      const message = buildSaveAndExitV2Message()
+
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: {
+          ...message,
+          data: {
+            ...message.data,
+            form: { ...message.data.form, language: CY }
+          }
+        }
+      })
+
+      expect(document.form.language).toBe(CY)
+    })
+
+    it('omits the form language when none is provided', () => {
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: buildSaveAndExitV2Message()
+      })
+
+      expect(document.form).not.toHaveProperty('language')
+    })
+  })
+
+  describe('constructEmailContentV2', () => {
+    it('links to the live homepage when the form is not a preview', async () => {
+      const message = buildSaveAndExitV2Message()
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: message
+      })
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+        // @ts-expect-error - partial mock of test data
+        { slug: 'my-firstform' }
+      )
+
+      const result = await constructEmailContentV2(
+        document,
+        message.data.form,
+        defaultTranslator
+      )
+
+      expect(result.personalisation.body).toContain(
+        '(http://localhost:3009/homepage/my-firstform)'
+      )
+    })
+
+    it('includes the preview status in the link for preview forms', async () => {
+      const message = buildSaveAndExitV2Message()
+      const form = { ...message.data.form, isPreview: true }
+      const document = mapSaveAndExitDataToDocumentV2({
+        messageId: LINK_ID,
+        parsedContent: {
+          ...message,
+          data: { ...message.data, form }
+        }
+      })
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+        // @ts-expect-error - partial mock of test data
+        { slug: 'my-firstform' }
+      )
+
+      const result = await constructEmailContentV2(
+        document,
+        form,
+        defaultTranslator
+      )
+
+      expect(result.personalisation.body).toContain(
+        '(http://localhost:3009/homepage/preview/draft/my-firstform)'
+      )
+    })
+  })
+
+  describe('processSaveAndExitEvents with a non-English form', () => {
+    it('sends the email using the translator for the form language', async () => {
+      const message = buildSaveAndExitV2Message()
+      const welshMessage = {
+        ...message,
+        data: {
+          ...message.data,
+          form: { ...message.data.form, language: CY }
+        }
+      }
+      const sqsMessage = buildMessageFromRunnerMessage(welshMessage, {
+        MessageId: LINK_ID
+      })
+      jest.mocked(getFormMetadataById).mockResolvedValueOnce(
+        // @ts-expect-error - partial mock of test data
+        { slug: 'my-firstform' }
+      )
+
+      const result = await processSaveAndExitEvents([sqsMessage])
+
+      const welshSubject = `${welshTranslator.t('saveAndExit.progressSavedShort')}: My FirstForm`
+      const englishSubject = `${defaultTranslator.t('saveAndExit.progressSavedShort')}: My FirstForm`
+      expect(result.failed).toEqual([])
+      expect(welshSubject).not.toBe(englishSubject)
+      expect(sendNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          personalisation: expect.objectContaining({ subject: welshSubject })
+        })
+      )
     })
   })
 })

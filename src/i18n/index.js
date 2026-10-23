@@ -1,6 +1,7 @@
 import { getErrorMessage } from '@defra/forms-model'
 import i18next, { createInstance } from 'i18next'
 
+import { EN_GB } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import cy from '~/src/i18n/translations/cy.json' with { type: 'json' }
 import enGB from '~/src/i18n/translations/en-GB.json' with { type: 'json' }
@@ -11,7 +12,7 @@ i18next
       'en-GB': { translation: enGB },
       cy: { translation: cy }
     },
-    fallbackLng: 'en-GB',
+    fallbackLng: EN_GB,
     interpolation: {
       prefix: '[[',
       suffix: ']]',
