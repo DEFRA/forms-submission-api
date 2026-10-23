@@ -1,3 +1,4 @@
+import { runWithMessageLogContext } from '@defra/forms-common'
 import {
   SubmissionEventMessageType,
   getErrorMessage,
@@ -266,7 +267,9 @@ export async function processSaveAndExitEvents(messages) {
   }
 
   const results = await Promise.allSettled(
-    messages.map(processSaveAndExitEvent)
+    messages.map((message) =>
+      runWithMessageLogContext(message, () => processSaveAndExitEvent(message))
+    )
   )
 
   const processed = results
