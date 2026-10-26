@@ -1,3 +1,4 @@
+import { createLogContext, runWithLogContext } from '@defra/forms-common'
 import Boom from '@hapi/boom'
 import Wreck from '@hapi/wreck'
 
@@ -41,6 +42,31 @@ describe('httpService', () => {
         {}
       )
       expect(jest.mocked(Wreck.read)).toHaveBeenCalledWith(mockResponse, {})
+    })
+
+    it('should send the correlation ID of the log context', async () => {
+      /** @type {any} */
+      const mockResponse = { statusCode: 200, headers: {} }
+      const context = createLogContext({ correlationId: 'correlation-id' })
+
+      jest.mocked(Wreck.request).mockResolvedValue(mockResponse)
+      jest.mocked(Wreck.read).mockResolvedValue({})
+
+      const url = new URL('http://example.com/api')
+      await runWithLogContext(context, () =>
+        request('get', url, { headers: { accept: 'application/json' } })
+      )
+
+      expect(jest.mocked(Wreck.request)).toHaveBeenCalledWith(
+        'get',
+        'http://example.com/api',
+        {
+          headers: {
+            accept: 'application/json',
+            'x-cdp-request-id': 'correlation-id'
+          }
+        }
+      )
     })
 
     it('should throw Boom error for non-200 status with message in body', async () => {

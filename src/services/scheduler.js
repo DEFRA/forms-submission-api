@@ -1,3 +1,4 @@
+import { createLogContext, runWithLogContext } from '@defra/forms-common'
 import { getErrorMessage } from '@defra/forms-model'
 import cron from 'node-cron'
 
@@ -44,7 +45,7 @@ class SchedulerService {
       // Prevents overlapping execution when the runImmediately argument is set to true.
       let isTaskRunning = false
 
-      const executeScheduledTask = async () => {
+      const runScheduledTask = async () => {
         if (isTaskRunning) {
           logger.info(
             `[SchedulerService] Task '${name}' is already running, skipping`
@@ -64,6 +65,10 @@ class SchedulerService {
           isTaskRunning = false
         }
       }
+
+      // Each run gets its own correlation ID in the logs
+      const executeScheduledTask = () =>
+        runWithLogContext(createLogContext(), runScheduledTask)
 
       const task = cron.createTask(cronExpression, executeScheduledTask, {
         timezone: 'UTC',
