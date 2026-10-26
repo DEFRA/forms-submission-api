@@ -6,6 +6,7 @@ import {
   deleteSavedLinkResponseSchema,
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
+  getCombinedRecordsResponseSchema,
   getSaveAndExitRecordResponseSchema,
   getSaveAndExitRecordsResponseSchema,
   getSavedLinkGoneSchema,
@@ -14,6 +15,7 @@ import {
   previewSchema,
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
+import { getCombinedRecordsForUser } from '~/src/services/combined-records-service.js'
 import { submit } from '~/src/services/file-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
@@ -214,6 +216,40 @@ export default [
   }),
 
   /**
+   * @type {ServerRoute<GetCombinedRecordsRequest>}
+   */
+  ({
+    method: 'GET',
+    path: '/combined/records',
+    handler(request) {
+      const { auth } = request
+      const { sub, iss } = auth.credentials.user
+
+      const { formId, preview } = request.query
+
+      return getCombinedRecordsForUser(sub, iss, formId, preview)
+    },
+    options: {
+      tags: ['api'],
+      // The token names the citizen, so the request carries no identifier.
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
+      validate: {
+        query: Joi.object()
+          .keys({
+            formId: Joi.string().required(),
+            preview: previewSchema
+          })
+          .label('getCombinedRecordsQuery')
+      },
+      response: {
+        status: {
+          200: getCombinedRecordsResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
    * @type {ServerRoute<GetReportTimelineRequest>}
    */
   ({
@@ -247,5 +283,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
+ * @import { GetCombinedRecordsRequest, GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
  */
