@@ -1,3 +1,4 @@
+import { getCorrelationId } from '@defra/forms-common'
 import { pino } from 'pino'
 
 import { deleteMessage } from '~/src/messaging/event.js'
@@ -199,6 +200,31 @@ describe('events', () => {
         processed: messages,
         failed: []
       })
+    })
+
+    it('should process each message in the log context of the message', async () => {
+      /** @type {(string | undefined)[]} */
+      const correlationIds = []
+
+      jest.mocked(deleteMessage).mockImplementation(() => {
+        correlationIds.push(getCorrelationId())
+        return Promise.resolve({ $metadata: {} })
+      })
+
+      await processSubmissionMessages([
+        {
+          ...submissionMessage,
+          MessageAttributes: {
+            correlationId: { DataType: 'String', StringValue: 'correlation-id' }
+          }
+        },
+        submissionMessage
+      ])
+
+      expect(correlationIds).toEqual([
+        'correlation-id',
+        expect.stringMatching(/^[0-9a-f-]{36}$/)
+      ])
     })
 
     it('should handle failures', async () => {
