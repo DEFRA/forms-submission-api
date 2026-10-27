@@ -1,7 +1,8 @@
-import { generateKeyPairSync } from 'node:crypto'
+import { createPublicKey, generateKeyPairSync } from 'node:crypto'
 
 import Jwt from '@hapi/jwt'
 import { StatusCodes } from 'http-status-codes'
+import nock from 'nock'
 
 import { createServer } from '~/src/api/server.js'
 import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-service.js'
@@ -34,8 +35,9 @@ const kid = process.env.CITIZEN_SIGNING_KEY_ID
  * Creates an access token, signed the way the identity provider signs it.
  * @param {Record<string, unknown>} [claims]
  * @param {string} [key]
+ * @param {string} [keyId]
  */
-function createAccessToken(claims = {}, key = privateKeyPem) {
+function createAccessToken(claims = {}, key = privateKeyPem, keyId = kid) {
   return Jwt.token.generate(
     {
       sub: SUB,
@@ -45,7 +47,7 @@ function createAccessToken(claims = {}, key = privateKeyPem) {
       ...claims
     },
     { key, algorithm: 'RS256' },
-    { header: { kid } }
+    { header: { kid: keyId } }
   )
 }
 
@@ -113,6 +115,69 @@ describe('Citizen access token', () => {
     const response = await callWith(forged)
 
     expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+  })
+
+  test('should refuse a token signed by a key with an id the provider does not publish', async () => {
+    const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const forged = createAccessToken(
+      {},
+      /** @type {string} */ (
+        privateKey.export({ type: 'pkcs8', format: 'pem' })
+      ),
+      'sig-rs256-unknown'
+    )
+
+    const response = await callWith(forged)
+
+    expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+  })
+
+  test('should accept a token signed by a key the provider published after the last fetch', async () => {
+    jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValue([])
+
+    // The key set is fetched before the rotation
+    await callWith(createAccessToken())
+
+    const rotated = generateKeyPairSync('rsa', { modulusLength: 2048 })
+    const rotatedKid = 'sig-rs256-rotated'
+
+    // The provider now publishes the new key next to the current key
+    nock.cleanAll()
+    nock('https://identity.test')
+      .persist()
+      .get('/.well_known/jwks.json')
+      .reply(200, {
+        keys: [
+          {
+            ...createPublicKey(privateKeyPem).export({ format: 'jwk' }),
+            use: 'sig',
+            alg: 'RS256',
+            kid
+          },
+          {
+            ...rotated.publicKey.export({ format: 'jwk' }),
+            use: 'sig',
+            alg: 'RS256',
+            kid: rotatedKid
+          }
+        ]
+      })
+
+    // Moves past the cooldown between two fetches of the key set
+    const now = Date.now()
+    jest.spyOn(Date, 'now').mockReturnValue(now + 60_000)
+
+    const response = await callWith(
+      createAccessToken(
+        {},
+        /** @type {string} */ (
+          rotated.privateKey.export({ type: 'pkcs8', format: 'pem' })
+        ),
+        rotatedKid
+      )
+    )
+
+    expect(response.statusCode).toEqual(StatusCodes.OK)
   })
 
   test('should refuse an expired token', async () => {

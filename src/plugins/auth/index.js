@@ -1,5 +1,8 @@
+import { KeyObject } from 'node:crypto'
+
 import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
+import { createRemoteJWKSet, errors } from 'jose'
 
 import { config } from '~/src/config/index.js'
 import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
@@ -13,6 +16,11 @@ const oidcVerifyIss = config.get('oidcVerifyIss')
 const citizenJwksUri = config.get('citizen.jwksUri')
 const citizenVerifyAud = config.get('citizen.verifyAud')
 const citizenVerifyIss = config.get('citizen.verifyIss')
+
+// Fetches the key set again when a token names a key id that is not in the
+// cached copy, so that a key that forms-identity-ui starts to sign with is
+// accepted at once rather than after the cache expires
+const citizenKeySet = createRemoteJWKSet(new URL(citizenJwksUri))
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
@@ -74,9 +82,7 @@ export const auth = {
 
       // `aud` names this API, so a token minted for another API is refused.
       server.auth.strategy(CITIZEN_ACCESS_TOKEN_STRATEGY, 'jwt', {
-        keys: {
-          uri: citizenJwksUri
-        },
+        keys: getCitizenKey,
         verify: {
           aud: citizenVerifyAud,
           iss: citizenVerifyIss,
@@ -166,6 +172,31 @@ export function validateAppAuth(artifacts) {
 }
 
 /**
+ * Finds the public key of the citizen identity provider that signed the token.
+ * A key id that the provider does not publish gives no key, so the token is
+ * refused as unauthorised rather than as a server error.
+ * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
+ */
+export async function getCitizenKey(artifacts) {
+  const { alg, kid } = /** @type {JWSHeaderParameters} */ (
+    artifacts.decoded.header
+  )
+
+  try {
+    const key = await citizenKeySet({ alg, kid })
+
+    return { key: KeyObject.from(key), algorithms: [alg] }
+  } catch (err) {
+    if (err instanceof errors.JWKSNoMatchingKey) {
+      logger.error(`Authentication error: No citizen key with kid '${kid}'`)
+      return undefined
+    }
+
+    throw err
+  }
+}
+
+/**
  * Additional validation for citizen access token based authentication. A
  * `sub` is unique only within its provider, so the issuer is carried with it.
  * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
@@ -224,4 +255,5 @@ export function validateRetrievalKey(clientId, retrievalKey) {
 /**
  * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts, CitizenAccessTokenPayload } from '~/src/plugins/auth/types.js'
+ * @import { JWSHeaderParameters } from 'jose'
  */
