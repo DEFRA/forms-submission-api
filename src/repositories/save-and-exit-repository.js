@@ -8,6 +8,7 @@ import { addDays } from '~/src/helpers/date-helper.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import { SAVE_AND_EXIT_COLLECTION_NAME, db } from '~/src/mongo.js'
+import { previewFilter } from '~/src/repositories/helpers.js'
 
 const expiryInDays = config.get('saveAndExitExpiryInDays')
 
@@ -147,19 +148,6 @@ export async function getLatestSaveAndExitByGroup(groupId) {
     )
     throw err
   }
-}
-
-/**
- * The filter for the preview state of a record. A live form and a preview of
- * the live form both have the status `live`, thus the filter uses the two
- * fields.
- * A live record can have no `isPreview` field, thus the filter uses `$ne`.
- * @param {FormStatus} [preview] - the preview state, or none for a live form
- */
-function previewFilter(preview) {
-  return preview
-    ? { 'form.isPreview': true, 'form.status': preview }
-    : { 'form.isPreview': { $ne: true } }
 }
 
 /**

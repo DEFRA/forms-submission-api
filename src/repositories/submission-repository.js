@@ -2,6 +2,7 @@ import { getErrorMessage } from '@defra/forms-model'
 
 import { logger } from '~/src/helpers/logging/logger.js'
 import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
+import { previewFilter } from '~/src/repositories/helpers.js'
 
 /**
  * Gets submission records based on formId
@@ -133,6 +134,44 @@ export async function getSubmissionRecordByReference(referenceNumber) {
 }
 
 /**
+ * Get all submission records for a user based on form ID
+ * @param {string} sub - the user's subject identifier
+ * @param {string} iss - the issuer of the token
+ * @param {string} formId - the form ID
+ * @param {FormStatus} [preview] - the preview state, or none for a live form
+ * @returns { Promise<WithId<FormSubmissionDocument>[]> }
+ */
+export async function getSubmissionRecordsForUser(sub, iss, formId, preview) {
+  logger.info('Reading user submission records')
+
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll
+      .find({
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
+        'meta.formId': formId,
+        ...previewFilter(preview, 'meta')
+      })
+      .toArray()
+
+    logger.info('Read user submission records')
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to read submission record - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * @import { FormStatus } from '@defra/forms-model'
  * @import { ClientSession, Filter, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
  * @import { FormSubmissionDocument } from '~/src/api/types.js'
  */

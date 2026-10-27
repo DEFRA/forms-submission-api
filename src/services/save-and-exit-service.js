@@ -116,6 +116,7 @@ export async function validateSavedLinkCredentials(
  * @param {string} iss - issuer claim of the access token
  * @param {string} formId - the form the records belong to
  * @param {FormStatus} [preview] - the preview state, or none for a live form
+ * @returns { Promise<SaveAndExitRecordMapped[]> }
  */
 export async function getSaveAndExitRecordsForUser(sub, iss, formId, preview) {
   const records = await findSaveAndExitRecordsForUser(sub, iss, formId, preview)
@@ -198,6 +199,16 @@ export async function markSavedLinkDetailsAsDeleted(sub, iss, magicLinkId) {
 
   return result
 }
+
+/**
+ * @typedef {object} SaveAndExitRecordMapped
+ * @property {string} magicLinkId - the magic link ID
+ * @property {string} [referenceNumber] - the reference number of the submission
+ * @property {string} [formTitle] - the title of the form
+ * @property {Date} createdAt - the creation date of the record
+ * @property {Date} expireAt - the expiration date of the record
+ * @property {boolean} [isDeleted] - whether the record has been marked as deleted
+ */
 
 /**
  * @import { FormStatus } from '@defra/forms-model'

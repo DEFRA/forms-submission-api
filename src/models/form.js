@@ -2,6 +2,8 @@ import { formAdapterSubmissionMessagePayloadSchema } from '@defra/forms-engine-p
 import { stateSchema } from '@defra/forms-engine-plugin/schema.js'
 import Joi from 'joi'
 
+import { FormRowStatus } from '~/src/constants.js'
+
 export const magicLinkSchema = Joi.string().uuid().required()
 
 // The preview state of a form. A request with no value is for the live form.
@@ -120,3 +122,18 @@ export const generateReferenceNumberResponseSchema = Joi.string().label(
 export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
 
 export const messageIdSchema = Joi.string()
+
+export const getFormRecordsResponseSchema = Joi.array()
+  .items(
+    Joi.object({
+      status: Joi.string()
+        .valid(...Object.keys(FormRowStatus))
+        .required(),
+      referenceNumber: Joi.string().optional(),
+      createdAt: Joi.date().required(),
+      expireAt: Joi.date().optional(),
+      magicLinkId: Joi.string().optional(),
+      formTitle: Joi.string().optional()
+    }).label('formRecord')
+  )
+  .label('getFormRecordsResponse')

@@ -1,3 +1,5 @@
+import { FormStatus } from '@defra/forms-model'
+
 import { db } from '~/src/mongo.js'
 import { buildMockCollection } from '~/src/repositories/__stubs__/mongo.js'
 import {
@@ -9,7 +11,8 @@ import {
   createSubmissionRecord,
   getSubmissionRecordByReference,
   getSubmissionRecords,
-  getSubmissionRecordsForDate
+  getSubmissionRecordsForDate,
+  getSubmissionRecordsForUser
 } from '~/src/repositories/submission-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -125,6 +128,57 @@ describe('submission repository', () => {
 
       await expect(
         getSubmissionRecordByReference(STUB_SUBMISSION_REF)
+      ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('getSubmissionRecordsForUser', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+
+    it('should find live records of the user for the form', async () => {
+      const toArray = jest.fn().mockResolvedValueOnce([submissionDocument])
+      mockCollection.find.mockReturnValueOnce({ toArray })
+
+      const result = await getSubmissionRecordsForUser(sub, iss, STUB_FORM_ID)
+
+      expect(result).toEqual([submissionDocument])
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
+        'meta.formId': STUB_FORM_ID,
+        'meta.isPreview': { $ne: true }
+      })
+    })
+
+    it('should filter by preview state', async () => {
+      const toArray = jest.fn().mockResolvedValueOnce([])
+      mockCollection.find.mockReturnValueOnce({ toArray })
+
+      const result = await getSubmissionRecordsForUser(
+        sub,
+        iss,
+        STUB_FORM_ID,
+        FormStatus.Draft
+      )
+
+      expect(result).toEqual([])
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
+        'meta.formId': STUB_FORM_ID,
+        'meta.isPreview': true,
+        'meta.status': FormStatus.Draft
+      })
+    })
+
+    it('should log and rethrow read failures', async () => {
+      mockCollection.find.mockReturnValueOnce({
+        toArray: jest.fn().mockRejectedValueOnce(new Error('an error'))
+      })
+
+      await expect(
+        getSubmissionRecordsForUser(sub, iss, STUB_FORM_ID)
       ).rejects.toThrow(new Error('an error'))
     })
   })

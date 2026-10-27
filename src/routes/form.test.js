@@ -4,6 +4,7 @@ import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
+import { getFormRecordsForUser } from '~/src/services/form-records-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
@@ -15,6 +16,7 @@ import {
 import { authCitizen } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
+jest.mock('~/src/services/form-records-service.js')
 jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
@@ -286,6 +288,91 @@ describe('Forms route', () => {
         },
         invalidPasswordAttempts: 0
       })
+    })
+  })
+
+  describe('Form records', () => {
+    const formId = '688131eeff67f889d52c66cc'
+    const createdAt = new Date('2026-09-01T09:00:00.000Z')
+
+    test('Testing GET /form/records returns the form records of the signed-in citizen', async () => {
+      const records = [
+        {
+          status: 'InProgress',
+          magicLinkId: '3b3ba0e1-45cf-4b2b-9a3a-8f0f9a1c33aa',
+          formTitle: 'My FirstForm',
+          createdAt,
+          expireAt: new Date('2026-09-29T09:00:00.000Z')
+        },
+        { status: 'Submitted', referenceNumber: '123-456-789', createdAt }
+      ]
+      jest.mocked(getFormRecordsForUser).mockResolvedValueOnce(records)
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/form/records?formId=${formId}`,
+        auth: authCitizen
+      })
+
+      expect(getFormRecordsForUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        formId,
+        undefined
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual(records)
+    })
+
+    test('Testing GET /form/records passes the preview state', async () => {
+      jest.mocked(getFormRecordsForUser).mockResolvedValueOnce([])
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/form/records?formId=${formId}&preview=draft`,
+        auth: authCitizen
+      })
+
+      expect(getFormRecordsForUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        formId,
+        FormStatus.Draft
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual([])
+    })
+
+    test('Testing GET /form/records refuses an unknown preview state', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/form/records?formId=${formId}&preview=other`,
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+    })
+
+    test('Testing GET /form/records refuses a request without a form id', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: '/form/records',
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+      expect(response.result).toMatchObject({
+        message: '"formId" is required'
+      })
+    })
+
+    test('Testing GET /form/records is not reachable without a citizen token', async () => {
+      const response = await server.inject({
+        method: 'GET',
+        url: `/form/records?formId=${formId}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
     })
   })
 

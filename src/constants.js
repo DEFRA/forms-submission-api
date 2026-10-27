@@ -7,3 +7,10 @@ export const CY = 'cy'
 // An address on this domain has no mailbox. Test accounts, such as the
 // smoke test account, use it.
 export const TEST_EMAIL_DOMAIN = 'example.forms.defra.gov.uk'
+
+export const FormRowStatus = {
+  InProgress: 'inProgress',
+  Submitted: 'submitted',
+  Expired: 'expired',
+  Deleted: 'deleted'
+}
