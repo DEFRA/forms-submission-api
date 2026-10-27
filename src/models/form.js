@@ -123,7 +123,7 @@ export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
 
 export const messageIdSchema = Joi.string()
 
-export const getCombinedRecordsResponseSchema = Joi.array()
+export const getFormRecordsResponseSchema = Joi.array()
   .items(
     Joi.object({
       status: Joi.string()
@@ -134,6 +134,6 @@ export const getCombinedRecordsResponseSchema = Joi.array()
       expireAt: Joi.date().optional(),
       magicLinkId: Joi.string().optional(),
       formTitle: Joi.string().optional()
-    }).label('combinedRecord')
+    }).label('formRecord')
   )
-  .label('getCombinedRecordsResponse')
+  .label('getFormRecordsResponse')

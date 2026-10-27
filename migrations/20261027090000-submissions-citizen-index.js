@@ -18,31 +18,18 @@ export const up = async (db) => {
     `[CITIZEN-MIG] Re-ordering the citizen index on ${SAVE_AND_EXIT_COLLECTION_NAME}`
   )
 
-  if (
-    await saveColl.indexExists('auth.issuer_1_auth.sub_1_form.id_1_expireAt_1')
-  ) {
-    await saveColl.dropIndex('auth.issuer_1_auth.sub_1_form.id_1_expireAt_1')
-  }
+  await saveColl.dropIndex('auth.issuer_1_auth.sub_1_form.id_1_expireAt_1')
 
-  const newExists = await saveColl.indexExists(
-    'auth.sub_1_auth.issuer_1_form.id_1_expireAt_1'
+  await saveColl.createIndex({
+    'auth.sub': 1,
+    'auth.issuer': 1,
+    'form.id': 1,
+    expireAt: 1
+  })
+
+  console.log(
+    `[CITIZEN-MIG] Re-ordered the citizen index on ${SAVE_AND_EXIT_COLLECTION_NAME}`
   )
-  if (!newExists) {
-    await saveColl.createIndex({
-      'auth.sub': 1,
-      'auth.issuer': 1,
-      'form.id': 1,
-      expireAt: 1
-    })
-
-    console.log(
-      `[CITIZEN-MIG] Re-ordered the citizen index on ${SAVE_AND_EXIT_COLLECTION_NAME}`
-    )
-  } else {
-    console.log(
-      `[CITIZEN-MIG] The citizen index on ${SAVE_AND_EXIT_COLLECTION_NAME} did not need re-ordering`
-    )
-  }
 
   const submissionsColl = /** @type {Collection<FormSubmissionDocument>} */ (
     db.collection(SUBMISSIONS_COLLECTION_NAME)

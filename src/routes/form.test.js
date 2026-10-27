@@ -3,8 +3,8 @@ import Boom from '@hapi/boom'
 import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
-import { getCombinedRecordsForUser } from '~/src/services/combined-records-service.js'
 import { submit } from '~/src/services/file-service.js'
+import { getFormRecordsForUser } from '~/src/services/form-records-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
@@ -16,7 +16,7 @@ import {
 import { authCitizen } from '~/test/fixtures/auth.js'
 
 jest.mock('~/src/mongo.js')
-jest.mock('~/src/services/combined-records-service.js')
+jest.mock('~/src/services/form-records-service.js')
 jest.mock('~/src/services/file-service.js')
 jest.mock('~/src/services/save-and-exit-service.js')
 jest.mock('~/src/tasks/receive-save-and-exit-messages.js')
@@ -291,11 +291,11 @@ describe('Forms route', () => {
     })
   })
 
-  describe('Combined records', () => {
+  describe('Form records', () => {
     const formId = '688131eeff67f889d52c66cc'
     const createdAt = new Date('2026-09-01T09:00:00.000Z')
 
-    test('Testing GET /combined/records returns the combined records of the signed-in citizen', async () => {
+    test('Testing GET /form/records returns the form records of the signed-in citizen', async () => {
       const records = [
         {
           status: 'InProgress',
@@ -306,15 +306,15 @@ describe('Forms route', () => {
         },
         { status: 'Submitted', referenceNumber: '123-456-789', createdAt }
       ]
-      jest.mocked(getCombinedRecordsForUser).mockResolvedValueOnce(records)
+      jest.mocked(getFormRecordsForUser).mockResolvedValueOnce(records)
 
       const response = await server.inject({
         method: 'GET',
-        url: `/combined/records?formId=${formId}`,
+        url: `/form/records?formId=${formId}`,
         auth: authCitizen
       })
 
-      expect(getCombinedRecordsForUser).toHaveBeenCalledWith(
+      expect(getFormRecordsForUser).toHaveBeenCalledWith(
         authCitizen.credentials.user.sub,
         authCitizen.credentials.user.iss,
         formId,
@@ -324,16 +324,16 @@ describe('Forms route', () => {
       expect(response.result).toEqual(records)
     })
 
-    test('Testing GET /combined/records passes the preview state', async () => {
-      jest.mocked(getCombinedRecordsForUser).mockResolvedValueOnce([])
+    test('Testing GET /form/records passes the preview state', async () => {
+      jest.mocked(getFormRecordsForUser).mockResolvedValueOnce([])
 
       const response = await server.inject({
         method: 'GET',
-        url: `/combined/records?formId=${formId}&preview=draft`,
+        url: `/form/records?formId=${formId}&preview=draft`,
         auth: authCitizen
       })
 
-      expect(getCombinedRecordsForUser).toHaveBeenCalledWith(
+      expect(getFormRecordsForUser).toHaveBeenCalledWith(
         authCitizen.credentials.user.sub,
         authCitizen.credentials.user.iss,
         formId,
@@ -343,20 +343,20 @@ describe('Forms route', () => {
       expect(response.result).toEqual([])
     })
 
-    test('Testing GET /combined/records refuses an unknown preview state', async () => {
+    test('Testing GET /form/records refuses an unknown preview state', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: `/combined/records?formId=${formId}&preview=other`,
+        url: `/form/records?formId=${formId}&preview=other`,
         auth: authCitizen
       })
 
       expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
     })
 
-    test('Testing GET /combined/records refuses a request without a form id', async () => {
+    test('Testing GET /form/records refuses a request without a form id', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: '/combined/records',
+        url: '/form/records',
         auth: authCitizen
       })
 
@@ -366,10 +366,10 @@ describe('Forms route', () => {
       })
     })
 
-    test('Testing GET /combined/records is not reachable without a citizen token', async () => {
+    test('Testing GET /form/records is not reachable without a citizen token', async () => {
       const response = await server.inject({
         method: 'GET',
-        url: `/combined/records?formId=${formId}`
+        url: `/form/records?formId=${formId}`
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)

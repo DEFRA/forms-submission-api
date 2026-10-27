@@ -4,14 +4,14 @@ import { FormRowStatus } from '~/src/constants.js'
 import { getSubmissionRecordsForUser } from '~/src/repositories/submission-repository.js'
 import {
   formRowSorter,
-  getCombinedRecordsForUser
-} from '~/src/services/combined-records-service.js'
+  getFormRecordsForUser
+} from '~/src/services/form-records-service.js'
 import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/repositories/submission-repository.js')
 jest.mock('~/src/services/save-and-exit-service.js')
 
-describe('combined-records-service', () => {
+describe('form-records-service', () => {
   const sub = 'a3f1c0de-0000-4000-8000-000000000001'
   const iss = 'https://identity.forms.example'
   const formId = '688131eeff67f889d52c66cc'
@@ -23,7 +23,7 @@ describe('combined-records-service', () => {
   const row = (status, createdAt) =>
     /** @type {any} */ ({ status, createdAt: new Date(createdAt) })
 
-  describe('getCombinedRecordsForUser', () => {
+  describe('getFormRecordsForUser', () => {
     beforeEach(() => {
       jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValue([])
       jest.mocked(getSubmissionRecordsForUser).mockResolvedValue([])
@@ -36,11 +36,11 @@ describe('combined-records-service', () => {
     })
 
     it('should return an empty array when there are no records', async () => {
-      expect(await getCombinedRecordsForUser(sub, iss, formId)).toEqual([])
+      expect(await getFormRecordsForUser(sub, iss, formId)).toEqual([])
     })
 
     it('should pass the arguments to both sources', async () => {
-      await getCombinedRecordsForUser(sub, iss, formId, FormStatus.Draft)
+      await getFormRecordsForUser(sub, iss, formId, FormStatus.Draft)
 
       expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
@@ -57,7 +57,7 @@ describe('combined-records-service', () => {
     })
 
     it('should pass an undefined preview state for a live form', async () => {
-      await getCombinedRecordsForUser(sub, iss, formId)
+      await getFormRecordsForUser(sub, iss, formId)
 
       expect(getSaveAndExitRecordsForUser).toHaveBeenCalledWith(
         sub,
@@ -97,7 +97,7 @@ describe('combined-records-service', () => {
         })
       ])
 
-      const result = await getCombinedRecordsForUser(sub, iss, formId)
+      const result = await getFormRecordsForUser(sub, iss, formId)
 
       expect(result).toEqual([
         {
@@ -151,7 +151,7 @@ describe('combined-records-service', () => {
         })
       ])
 
-      const result = await getCombinedRecordsForUser(sub, iss, formId)
+      const result = await getFormRecordsForUser(sub, iss, formId)
 
       expect(result.map((r) => r.magicLinkId ?? r.referenceNumber)).toEqual([
         'new-progress',
@@ -167,7 +167,7 @@ describe('combined-records-service', () => {
         .mocked(getSaveAndExitRecordsForUser)
         .mockRejectedValueOnce(new Error('save and exit failed'))
 
-      await expect(getCombinedRecordsForUser(sub, iss, formId)).rejects.toThrow(
+      await expect(getFormRecordsForUser(sub, iss, formId)).rejects.toThrow(
         'save and exit failed'
       )
     })
@@ -177,7 +177,7 @@ describe('combined-records-service', () => {
         .mocked(getSubmissionRecordsForUser)
         .mockRejectedValueOnce(new Error('submission failed'))
 
-      await expect(getCombinedRecordsForUser(sub, iss, formId)).rejects.toThrow(
+      await expect(getFormRecordsForUser(sub, iss, formId)).rejects.toThrow(
         'submission failed'
       )
     })

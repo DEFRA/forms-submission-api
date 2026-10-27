@@ -4,7 +4,7 @@ import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-servi
 
 /**
  * @param {SaveAndExitRecordMapped[]} records
- * @returns {FormRowCombined[]}
+ * @returns {FormRecord[]}
  */
 function mapSaveAndExit(records) {
   return records.map((record) => {
@@ -21,7 +21,7 @@ function mapSaveAndExit(records) {
 
 /**
  * @param {FormSubmissionDocument[]} records
- * @returns {FormRowCombined[]}
+ * @returns {FormRecord[]}
  */
 function mapSubmission(records) {
   return records.map((record) => ({
@@ -35,14 +35,14 @@ function mapSubmission(records) {
 }
 
 /**
- * Get combined records for a user based on form ID
+ * Get form records for a user based on form ID
  * @param {string} sub - the user's subject identifier
  * @param {string} iss - the issuer of the token
  * @param {string} formId - the form ID
  * @param {FormStatus} [preview] - the preview state, or none for a live form
- * @returns { Promise<FormRowCombined[]> }
+ * @returns { Promise<FormRecord[]> }
  */
-export async function getCombinedRecordsForUser(sub, iss, formId, preview) {
+export async function getFormRecordsForUser(sub, iss, formId, preview) {
   const [saveAndExitRecords, submissionRecords] = await Promise.all([
     getSaveAndExitRecordsForUser(sub, iss, formId, preview),
     getSubmissionRecordsForUser(sub, iss, formId, preview)
@@ -66,8 +66,8 @@ const statusOrder = /** @type {Record<string, number>} */ ({
 
 /**
  * Sort the rows by status (alphabetically descending), then by 'updatedAt' ascending
- * @param {FormRowCombined} a
- * @param {FormRowCombined} b
+ * @param {FormRecord} a
+ * @param {FormRecord} b
  */
 export function formRowSorter(a, b) {
   const statusA = statusOrder[a.status] || 0
@@ -77,8 +77,8 @@ export function formRowSorter(a, b) {
 }
 
 /**
- * @typedef {object} FormRowCombined
- * @property {keyof statusOrder} status - the status of the form row (InProgress or Submitted)
+ * @typedef {object} FormRecord
+ * @property {keyof statusOrder} status - the status of the form row (InProgress, Submitted, Expired, or Deleted)
  * @property {string} [referenceNumber] - the reference number for submitted forms
  * @property {Date} createdAt - the created timestamp for the form row
  * @property {Date} [expireAt] - the expiration timestamp of the record

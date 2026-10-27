@@ -6,7 +6,7 @@ import {
   deleteSavedLinkResponseSchema,
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
-  getCombinedRecordsResponseSchema,
+  getFormRecordsResponseSchema,
   getSaveAndExitRecordResponseSchema,
   getSaveAndExitRecordsResponseSchema,
   getSavedLinkGoneSchema,
@@ -15,8 +15,8 @@ import {
   previewSchema,
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
-import { getCombinedRecordsForUser } from '~/src/services/combined-records-service.js'
 import { submit } from '~/src/services/file-service.js'
+import { getFormRecordsForUser } from '~/src/services/form-records-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
@@ -216,18 +216,18 @@ export default [
   }),
 
   /**
-   * @type {ServerRoute<GetCombinedRecordsRequest>}
+   * @type {ServerRoute<GetFormRecordsRequest>}
    */
   ({
     method: 'GET',
-    path: '/combined/records',
+    path: '/form/records',
     handler(request) {
       const { auth } = request
       const { sub, iss } = auth.credentials.user
 
       const { formId, preview } = request.query
 
-      return getCombinedRecordsForUser(sub, iss, formId, preview)
+      return getFormRecordsForUser(sub, iss, formId, preview)
     },
     options: {
       tags: ['api'],
@@ -239,11 +239,11 @@ export default [
             formId: Joi.string().required(),
             preview: previewSchema
           })
-          .label('getCombinedRecordsQuery')
+          .label('getFormRecordsQuery')
       },
       response: {
         status: {
-          200: getCombinedRecordsResponseSchema
+          200: getFormRecordsResponseSchema
         }
       }
     }
@@ -283,5 +283,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetCombinedRecordsRequest, GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
+ * @import { GetFormRecordsRequest, GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
  */
