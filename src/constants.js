@@ -9,7 +9,8 @@ export const CY = 'cy'
 export const TEST_EMAIL_DOMAIN = 'example.forms.defra.gov.uk'
 
 export const FormRowStatus = {
-  InProgress: 'InProgress',
-  Submitted: 'Submitted',
-  Deleted: 'Deleted'
+  InProgress: 'inProgress',
+  Submitted: 'submitted',
+  Expired: 'expired',
+  Deleted: 'deleted'
 }

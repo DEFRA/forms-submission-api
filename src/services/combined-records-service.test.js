@@ -27,6 +27,12 @@ describe('combined-records-service', () => {
     beforeEach(() => {
       jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValue([])
       jest.mocked(getSubmissionRecordsForUser).mockResolvedValue([])
+      const now = new Date('2026-09-28T09:00:00.000Z')
+      jest.useFakeTimers().setSystemTime(now)
+    })
+
+    afterAll(() => {
+      jest.useRealTimers()
     })
 
     it('should return an empty array when there are no records', async () => {

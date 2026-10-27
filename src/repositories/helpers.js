@@ -4,11 +4,12 @@
  * fields.
  * A live record can have no `isPreview` field, thus the filter uses `$ne`.
  * @param {FormStatus} [preview] - the preview state, or none for a live form
+ * @param {string} [parentKey] - the parent key for the form fields, defaults to 'form'
  */
-export function previewFilter(preview) {
+export function previewFilter(preview, parentKey = 'form') {
   return preview
-    ? { 'form.isPreview': true, 'form.status': preview }
-    : { 'form.isPreview': { $ne: true } }
+    ? { [`${parentKey}.isPreview`]: true, [`${parentKey}.status`]: preview }
+    : { [`${parentKey}.isPreview`]: { $ne: true } }
 }
 
 /**

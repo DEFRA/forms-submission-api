@@ -144,10 +144,10 @@ describe('submission repository', () => {
 
       expect(result).toEqual([submissionDocument])
       expect(mockCollection.find).toHaveBeenCalledWith({
-        'meta.sub': sub,
-        'meta.iss': iss,
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
         'meta.formId': STUB_FORM_ID,
-        'form.isPreview': { $ne: true }
+        'meta.isPreview': { $ne: true }
       })
     })
 
@@ -164,11 +164,11 @@ describe('submission repository', () => {
 
       expect(result).toEqual([])
       expect(mockCollection.find).toHaveBeenCalledWith({
-        'meta.sub': sub,
-        'meta.iss': iss,
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
         'meta.formId': STUB_FORM_ID,
-        'form.isPreview': true,
-        'form.status': FormStatus.Draft
+        'meta.isPreview': true,
+        'meta.status': FormStatus.Draft
       })
     })
 

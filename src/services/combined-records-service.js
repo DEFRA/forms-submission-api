@@ -7,10 +7,16 @@ import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-servi
  * @returns {FormRowCombined[]}
  */
 function mapSaveAndExit(records) {
-  return records.map((record) => ({
-    status: record.isDeleted ? FormRowStatus.Deleted : FormRowStatus.InProgress,
-    ...record
-  }))
+  return records.map((record) => {
+    const expired = record.expireAt < new Date()
+    const expiredOrInProgess = expired
+      ? FormRowStatus.Expired
+      : FormRowStatus.InProgress
+    return {
+      status: record.isDeleted ? FormRowStatus.Deleted : expiredOrInProgess,
+      ...record
+    }
+  })
 }
 
 /**
@@ -20,7 +26,10 @@ function mapSaveAndExit(records) {
 function mapSubmission(records) {
   return records.map((record) => ({
     referenceNumber: record.meta.referenceNumber,
-    status: FormRowStatus.Submitted,
+    status:
+      record.expireAt < new Date()
+        ? FormRowStatus.Expired
+        : FormRowStatus.Submitted,
     createdAt: record.recordCreatedAt
   }))
 }
@@ -51,7 +60,8 @@ export async function getCombinedRecordsForUser(sub, iss, formId, preview) {
 const statusOrder = /** @type {Record<string, number>} */ ({
   [FormRowStatus.InProgress]: 1,
   [FormRowStatus.Submitted]: 2,
-  [FormRowStatus.Deleted]: 3
+  [FormRowStatus.Expired]: 3,
+  [FormRowStatus.Deleted]: 4
 })
 
 /**

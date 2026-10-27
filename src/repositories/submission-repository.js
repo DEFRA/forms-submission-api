@@ -151,10 +151,10 @@ export async function getSubmissionRecordsForUser(sub, iss, formId, preview) {
   try {
     const result = await coll
       .find({
-        'meta.sub': sub,
-        'meta.iss': iss,
+        'meta.auth.sub': sub,
+        'meta.auth.issuer': iss,
         'meta.formId': formId,
-        ...previewFilter(preview)
+        ...previewFilter(preview, 'meta')
       })
       .toArray()
 
