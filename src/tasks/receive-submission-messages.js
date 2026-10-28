@@ -14,8 +14,6 @@ const queueUrl = config.get('submissionQueueUrl')
  * @returns {Promise<void>}
  */
 export async function runTaskOnce() {
-  logger.info('Receiving submission queue messages')
-
   try {
     const result = await receiveMessages(queueUrl)
     const messages = result.Messages
@@ -24,8 +22,6 @@ export async function runTaskOnce() {
     logger.info(`Received ${messageCount} submission queue messages`)
 
     if (messages && messageCount) {
-      logger.info('Processing submission queue messages')
-
       const { processed } = await processSubmissionMessages(messages)
 
       logger.info(`Processed ${processed.length} submission queue messages`)
@@ -45,12 +41,6 @@ export async function runTaskOnce() {
 export async function runTask() {
   await runTaskOnce()
 
-  logger.info(
-    `Adding submission task to stack in ${receiveMessageTimeout} milliseconds`
-  )
-
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   setTimeout(runTask, receiveMessageTimeout)
-
-  logger.info(`Added submission task to stack`)
 }
