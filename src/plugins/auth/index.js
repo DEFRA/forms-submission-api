@@ -18,8 +18,12 @@ const citizenVerifyAud = config.get('citizen.verifyAud')
 const citizenVerifyIss = config.get('citizen.verifyIss')
 
 // Fetches the key set again when a token names a key id that is not in the
-// cached copy, so that a key that forms-identity-ui starts to sign with is
-// accepted at once rather than after the cache expires
+// cached copy, at most once every 30 seconds, so that a key that
+// forms-identity-ui starts to sign with is accepted at once. Each fetch
+// replaces the whole set, so a deleted key stops working within the 10 minute
+// cache age. A request that needs a fetch waits for it and fails with it, so
+// that a deleted key cannot stay in use while forms-identity-ui is down.
+// docs/authentication.md describes when it fetches.
 const citizenKeySet = createRemoteJWKSet(new URL(citizenJwksUri))
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
