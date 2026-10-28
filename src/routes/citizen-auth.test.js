@@ -132,6 +132,37 @@ describe('Citizen access token', () => {
     expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
   })
 
+  test('should refuse a token without a key id', async () => {
+    const response = await callWith(
+      Jwt.token.generate(
+        { sub: SUB, iss: ISSUER, aud: AUDIENCE, client_id: 'runner' },
+        { key: privateKeyPem, algorithm: 'RS256' }
+      )
+    )
+
+    expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+  })
+
+  test.each(
+    /** @type {const} */ ([
+      { algorithm: 'HS256', key: 'shared-secret' },
+      { algorithm: 'none', key: '' }
+    ])
+  )(
+    'should refuse a token signed with $algorithm',
+    async ({ algorithm, key }) => {
+      const response = await callWith(
+        Jwt.token.generate(
+          { sub: SUB, iss: ISSUER, aud: AUDIENCE, client_id: 'runner' },
+          { key, algorithm },
+          { header: { kid } }
+        )
+      )
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    }
+  )
+
   test('should accept a token signed by a key the provider published after the last fetch', async () => {
     jest.mocked(getSaveAndExitRecordsForUser).mockResolvedValue([])
 

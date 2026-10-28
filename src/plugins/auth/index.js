@@ -173,22 +173,33 @@ export function validateAppAuth(artifacts) {
 
 /**
  * Finds the public key of the citizen identity provider that signed the token.
- * A key id that the provider does not publish gives no key, so the token is
+ * A token without a key id, with an algorithm that a key set cannot verify, or
+ * with a key id that the provider does not publish gets no key, so it is
  * refused as unauthorised rather than as a server error.
  * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
  */
 export async function getCitizenKey(artifacts) {
-  const { alg, kid } = /** @type {JWSHeaderParameters} */ (
-    artifacts.decoded.header
-  )
+  const { header } = artifacts.decoded
+
+  if (!('kid' in header) || typeof header.kid !== 'string') {
+    logger.error('Authentication error: Citizen token has no kid')
+    return undefined
+  }
+
+  const { alg, kid } = header
 
   try {
     const key = await citizenKeySet({ alg, kid })
 
     return { key: KeyObject.from(key), algorithms: [alg] }
   } catch (err) {
-    if (err instanceof errors.JWKSNoMatchingKey) {
-      logger.error(`Authentication error: No citizen key with kid '${kid}'`)
+    if (
+      err instanceof errors.JWKSNoMatchingKey ||
+      err instanceof errors.JOSENotSupported
+    ) {
+      logger.error(
+        `Authentication error: No citizen key for kid '${kid}' and alg '${alg}'`
+      )
       return undefined
     }
 
@@ -255,5 +266,4 @@ export function validateRetrievalKey(clientId, retrievalKey) {
 /**
  * @import { AppCredentials, ServerRegisterPluginObject, UserCredentials } from '@hapi/hapi'
  * @import { Artifacts, CitizenAccessTokenPayload } from '~/src/plugins/auth/types.js'
- * @import { JWSHeaderParameters } from 'jose'
  */
