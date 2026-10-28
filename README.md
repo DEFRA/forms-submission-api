@@ -24,6 +24,7 @@ See [docs/](docs/) for documentation.
     - [Common Issues:](#common-issues)
     - [Viewing Logs:](#viewing-logs)
 - [API endpoints](#api-endpoints)
+- [File retention](#file-retention)
 - [Docker](#docker)
   - [Development Image](#development-image)
   - [Production Image](#production-image)
@@ -275,6 +276,14 @@ npx migrate-mongo create <migration-name> -f migrate-mongo-config.js
 | `GET: /file/{fileId}`  | Checks that a file has been ingested.                                                           |
 | `POST: /file/link`     | Creates a link to a file which can be accessed by a user. Valid for 60 minutes.                 |
 | `POST: /files/persist` | Extends the expiry to 30 days. Called upon form submission.                                     |
+
+## File retention
+
+S3 lifecycle rules purge expired files. The bucket handles this itself, so the application code does not delete files.
+
+The retention policies for each environment are configured in `https://github.com/DEFRA/cdp-tenant-config/blob/main/environments/{env}/tenants/forms-submission-api.json`, where `{env}` is the environment name. For example, production uses [environments/prod/tenants/forms-submission-api.json](https://github.com/DEFRA/cdp-tenant-config/blob/main/environments/prod/tenants/forms-submission-api.json).
+
+The `cdp-tenant-config` repository is private. You must be a Defra worker to read or change it.
 
 ## Docker
 
