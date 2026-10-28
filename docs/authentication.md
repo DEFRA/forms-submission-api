@@ -167,7 +167,7 @@ What this means:
 - A new key works as soon as forms-identity-ui publishes it. This API needs no restart or wait during a key rotation.
 - A deleted key stops working within 10 minutes.
 - If forms-identity-ui cannot be reached for more than 10 minutes, all citizen requests fail with `500` until it can be reached again.
-- The fetch uses `fetch`, and does not use the proxy agent of Hapi Wreck. It connects directly to `CITIZEN_JWKS_URI`.
+- The fetch uses `fetch`. It goes through the proxy in `HTTPS_PROXY` when `NODE_USE_ENV_PROXY=1` is set, which the CDP config of this service does. Without that setting, it connects directly to `CITIZEN_JWKS_URI`.
 
 ## Protected Endpoints
 

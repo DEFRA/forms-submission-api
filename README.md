@@ -70,7 +70,7 @@ HTTPS_PROXY=
 NO_PROXY=
 ```
 
-For proxy options, see https://www.npmjs.com/package/proxy-from-env which is used by https://github.com/TooTallNate/proxy-agents/tree/main/packages/proxy-agent. The proxy applies to Hapi Wreck requests, such as the Azure and Cognito JWKS lookups. The citizen JWKS lookup uses `fetch` and connects directly. See [Citizen Access Token](docs/authentication.md#citizen-access-token).
+For proxy options, see https://www.npmjs.com/package/proxy-from-env which is used by https://github.com/TooTallNate/proxy-agents/tree/main/packages/proxy-agent. The proxy applies to Hapi Wreck requests, such as the Azure and Cognito JWKS lookups. `fetch` requests, such as the citizen JWKS lookup, use the same proxy settings when `NODE_USE_ENV_PROXY=1` is set. The CDP config of this service sets it. The AWS SDK uses its own agent and connects directly.
 
 4. **Database setup**: See [Database Migrations](#database-migrations) for information on how database migrations work in this project.
 
