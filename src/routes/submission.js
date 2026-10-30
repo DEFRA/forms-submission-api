@@ -1,7 +1,10 @@
 import Boom from '@hapi/boom'
 import Joi from 'joi'
 
-import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
+import {
+  AZURE_OIDC_TOKEN_STRATEGY,
+  CITIZEN_ACCESS_TOKEN_STRATEGY
+} from '~/src/constants.js'
 import {
   generateReferenceNumberResponseSchema,
   getSubmissionByReferenceResponseSchema
@@ -33,7 +36,7 @@ export default [
     options: {
       tags: ['api'],
       auth: {
-        strategies: [CITIZEN_ACCESS_TOKEN_STRATEGY],
+        strategies: [AZURE_OIDC_TOKEN_STRATEGY, CITIZEN_ACCESS_TOKEN_STRATEGY],
         access: {
           entity: 'user',
           scope: false

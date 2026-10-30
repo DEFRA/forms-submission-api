@@ -4,7 +4,7 @@ import { createServer } from '~/src/api/server.js'
 import { STUB_SUBMISSION_REF } from '~/src/repositories/__stubs__/submission.js'
 import { create } from '~/src/repositories/reference-number-repository.js'
 import { getSubmissionRecordByReference } from '~/src/repositories/submission-repository.js'
-import { authAD, authAdmin } from '~/test/fixtures/auth.js'
+import { authAD, authAdmin, authCitizen } from '~/test/fixtures/auth.js'
 // @ts-expect-error - import json
 import formSubmissions from '~/test/fixtures/forms-submissions.json'
 
@@ -65,6 +65,21 @@ describe('Submission routes', () => {
         method: 'GET',
         url: `/submission/${STUB_SUBMISSION_REF}`,
         auth: authAD
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+    })
+
+    test('Testing GET /submission/{referenceNumber} route is successful with citizen auth', async () => {
+      const expectedRecord = formSubmissions.at(0)
+      jest
+        .mocked(getSubmissionRecordByReference)
+        .mockResolvedValue(expectedRecord)
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/submission/${STUB_SUBMISSION_REF}`,
+        auth: authCitizen
       })
 
       expect(response.statusCode).toEqual(StatusCodes.OK)
