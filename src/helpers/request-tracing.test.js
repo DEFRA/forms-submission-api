@@ -1,6 +1,10 @@
 import {
+  REFERENCE_NUMBER_HEADER,
+  SESSION_ID_HEADER,
   createLogContext,
   getCorrelationId,
+  getReferenceNumber,
+  getSessionId,
   getUserId,
   runWithLogContext
 } from '@defra/forms-common'
@@ -8,6 +12,7 @@ import { getTraceId } from '@defra/hapi-tracing'
 import hapi from '@hapi/hapi'
 
 import {
+  applyLogContextHeaders,
   applyTraceHeaders,
   getRequestUserId,
   requestTracing
@@ -96,6 +101,31 @@ describe('request-tracing', () => {
       })
       expect(responseContext).toEqual({ correlationId, userId })
     })
+
+    it('should use the session ID and reference number of the calling service', async () => {
+      server.route({
+        method: 'GET',
+        path: '/log-context',
+        handler: () => ({
+          sessionId: getSessionId(),
+          referenceNumber: getReferenceNumber()
+        })
+      })
+
+      const { result } = await server.inject({
+        method: 'GET',
+        url: '/log-context',
+        headers: {
+          [SESSION_ID_HEADER]: 'session-id',
+          [REFERENCE_NUMBER_HEADER]: 'ABC-123-DEF'
+        }
+      })
+
+      expect(result).toEqual({
+        sessionId: 'session-id',
+        referenceNumber: 'ABC-123-DEF'
+      })
+    })
   })
 
   describe('getRequestUserId', () => {
@@ -160,6 +190,39 @@ describe('request-tracing', () => {
         expect(applyTraceHeaders(undefined)).toEqual({
           [tracingHeader]: correlationId
         })
+      })
+    })
+  })
+
+  describe('applyLogContextHeaders', () => {
+    const context = createLogContext({
+      correlationId,
+      sessionId: 'session-id',
+      referenceNumber: 'ABC-123-DEF'
+    })
+    const headers = { accept: 'application/json' }
+
+    it.each(['http://localhost:3009/forms', 'http://localhost:3004/users'])(
+      'should add the session ID and reference number for %s',
+      (url) => {
+        runWithLogContext(context, () => {
+          expect(applyLogContextHeaders(new URL(url), headers)).toEqual({
+            accept: 'application/json',
+            [SESSION_ID_HEADER]: 'session-id',
+            [REFERENCE_NUMBER_HEADER]: 'ABC-123-DEF'
+          })
+        })
+      }
+    )
+
+    it('should return the headers unchanged for a service outside forms', () => {
+      runWithLogContext(context, () => {
+        expect(
+          applyLogContextHeaders(
+            new URL('https://api.notifications.service.gov.uk/v2'),
+            headers
+          )
+        ).toBe(headers)
       })
     })
   })
