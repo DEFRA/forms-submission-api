@@ -1,5 +1,8 @@
+import { KeyObject } from 'node:crypto'
+
 import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
+import { createRemoteJWKSet, errors } from 'jose'
 
 import { config } from '~/src/config/index.js'
 import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
@@ -13,6 +16,15 @@ const oidcVerifyIss = config.get('oidcVerifyIss')
 const citizenJwksUri = config.get('citizen.jwksUri')
 const citizenVerifyAud = config.get('citizen.verifyAud')
 const citizenVerifyIss = config.get('citizen.verifyIss')
+
+// Fetches the key set again when a token names a key id that is not in the
+// cached copy, at most once every 30 seconds, so that a key that
+// forms-identity-ui starts to sign with is accepted at once. Each fetch
+// replaces the whole set, so a deleted key stops working within the 10 minute
+// cache age. A request that needs a fetch waits for it and fails with it, so
+// that a deleted key cannot stay in use while forms-identity-ui is down.
+// docs/authentication.md describes when it fetches.
+const citizenKeySet = createRemoteJWKSet(new URL(citizenJwksUri))
 
 const cognitoJwksUri = config.get('cognitoJwksUri')
 const cognitoVerifyIss = config.get('cognitoVerifyIss')
@@ -74,9 +86,7 @@ export const auth = {
 
       // `aud` names this API, so a token minted for another API is refused.
       server.auth.strategy(CITIZEN_ACCESS_TOKEN_STRATEGY, 'jwt', {
-        keys: {
-          uri: citizenJwksUri
-        },
+        keys: getCitizenKey,
         verify: {
           aud: citizenVerifyAud,
           iss: citizenVerifyIss,
@@ -162,6 +172,42 @@ export function validateAppAuth(artifacts) {
   return {
     isValid: true,
     credentials: { app }
+  }
+}
+
+/**
+ * Finds the public key of the citizen identity provider that signed the token.
+ * A token without a key id, with an algorithm that a key set cannot verify, or
+ * with a key id that the provider does not publish gets no key, so it is
+ * refused as unauthorised rather than as a server error.
+ * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
+ */
+export async function getCitizenKey(artifacts) {
+  const { header } = artifacts.decoded
+
+  if (!('kid' in header) || typeof header.kid !== 'string') {
+    logger.error('Authentication error: Citizen token has no kid')
+    return undefined
+  }
+
+  const { alg, kid } = header
+
+  try {
+    const key = await citizenKeySet({ alg, kid })
+
+    return { key: KeyObject.from(key), algorithms: [alg] }
+  } catch (err) {
+    if (
+      err instanceof errors.JWKSNoMatchingKey ||
+      err instanceof errors.JOSENotSupported
+    ) {
+      logger.error(
+        `Authentication error: No citizen key for kid '${kid}' and alg '${alg}'`
+      )
+      return undefined
+    }
+
+    throw err
   }
 }
 
