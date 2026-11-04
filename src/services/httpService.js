@@ -16,7 +16,10 @@ const MAX_OK_STATUS = 299
  * @param {Parameters<typeof Wreck.request>[2]} options
  */
 export async function request(method, url, options) {
-  const headers = applyLogContextHeaders(url, applyTraceHeaders(options?.headers))
+  const headers = applyLogContextHeaders(
+    url,
+    applyTraceHeaders(options?.headers)
+  )
 
   if (headers) {
     options = { ...options, headers }
