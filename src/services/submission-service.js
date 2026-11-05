@@ -1,7 +1,9 @@
 import { FormModel } from '@defra/forms-engine-plugin/engine/models/FormModel.js'
 import {
   ComponentType,
+  FORM_ACTION_COPY,
   hasRepeater,
+  isAllowCopyEnabled,
   replaceCustomControllers
 } from '@defra/forms-model'
 import Boom from '@hapi/boom'
@@ -31,6 +33,7 @@ import { createSubmissionXlsxFile } from '~/src/services/service-helpers.js'
  * @property {boolean} [includeFormName] - add FormName column to spreadsheet
  * @property {Set<string>} [removeColumns] - remove these columns from spreadsheet
  * @property {boolean} [isFeedbackForm] - true if this is a feedback form
+ * @property {boolean} [isCopyActionEnabled] - true if this is a copy-enabled form
  */
 
 /**
@@ -100,6 +103,8 @@ const PAYMENT_DATE_HEADER_TEXT = 'Payment date'
 const SUBMISSION_LANGUAGE_HEADER = 'SubmissionLanguage'
 const SUBMISSION_LANGUAGE_HEADER_TEXT = 'Submission language'
 
+const COPIED_FROM_HEADER = 'CopiedFromRefNum'
+const COPIED_FROM_HEADER_TEXT = 'Copied from reference number'
 const USER_CONFIRMATION_EMAIL_HEADER = 'UserConfirmationEmail'
 const USER_CONFIRMATION_EMAIL_HEADER_TEXT = 'Confirmation email address'
 
@@ -410,7 +415,9 @@ export async function addFirstCellsToRow(
     options
   )
   addCellToRow(row, SUBMISSION_LANGUAGE_HEADER, languageText, options)
-
+  if (isAllowCopyEnabled(/** @type {FormDefinition} */ (formModel?.def))) {
+    addCopiedFromCellToRow(row, record, options)
+  }
   return {
     formModel
   }
@@ -592,6 +599,23 @@ function addUserConfirmationEmailCellToRow(row, record, options) {
 }
 
 /**
+ * Add the 'Copied from reference number' cell to a row
+ * @param {Map<string, CellValue>} row - the row to add cells to
+ * @param {WithId<FormSubmissionDocument>} record - the submission record
+ * @param {SpreadsheetOptions | undefined} [options] - spreadsheet options
+ */
+function addCopiedFromCellToRow(row, record, options) {
+  const formAction = record.meta.custom?.actionName
+  const copiedFromReference = record.meta.custom?.actionReferenceNumber
+  const value =
+    formAction === FORM_ACTION_COPY && typeof copiedFromReference === 'string'
+      ? copiedFromReference
+      : ''
+
+  addCellToRow(row, COPIED_FROM_HEADER, value, options)
+}
+
+/**
  * Add the user confirmation email header. The column is always
  * present, even when no submission has a confirmation email.
  * @param {Caches} caches - the spreadsheet caches
@@ -627,6 +651,7 @@ export async function generateSubmissionsFile(
   const caches = createCaches()
   const { components, headers, rows } = caches
   const context = { caches, options }
+  let isCopyActionEnabled = options?.isCopyActionEnabled ?? false
 
   for await (const record of getSubmissionRecords(formId, options?.filter)) {
     const recordFormId = record.data.main.formId
@@ -648,6 +673,9 @@ export async function generateSubmissionsFile(
       record,
       options
     )
+    if (isAllowCopyEnabled(/** @type {FormDefinition} */ (formModel?.def))) {
+      isCopyActionEnabled = true
+    }
 
     addCellToRow(row, SUBMISSION_FORM_NAME, formNameFromId, options)
     if (formModel) {
@@ -666,7 +694,7 @@ export async function generateSubmissionsFile(
     formId,
     sortHeaders(components, headers),
     rows.toReversed(),
-    options
+    { ...options, isCopyActionEnabled }
   )
 
   // Save the Excel workbook to S3
@@ -808,6 +836,9 @@ export function buildPreHeaders(options) {
     SUBMISSION_ISPREVIEW_HEADER_TEXT,
     SUBMISSION_LANGUAGE_HEADER_TEXT
   )
+  if (options?.isCopyActionEnabled) {
+    wsPreHeaders.push(COPIED_FROM_HEADER_TEXT)
+  }
   if (addFormName) {
     wsPreHeaders.push(SUBMISSION_FORM_NAME_TEXT)
   }
@@ -876,6 +907,9 @@ function buildExcelFile(formId, headers, rows, options) {
       row.get(SUBMISSION_ISPREVIEW_HEADER),
       row.get(SUBMISSION_LANGUAGE_HEADER)
     )
+    if (preHeaderSet.has(COPIED_FROM_HEADER_TEXT)) {
+      wsRow.push(row.get(COPIED_FROM_HEADER))
+    }
     if (preHeaderSet.has(SUBMISSION_FORM_NAME_TEXT)) {
       wsRow.push(row.get(SUBMISSION_FORM_NAME))
     }
@@ -986,7 +1020,7 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { FormStatus } from '@defra/forms-model'
+ * @import { FormDefinition, FormStatus } from '@defra/forms-model'
  * @import { WithId } from 'mongodb'
  * @import { RichFormValue } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
