@@ -24,7 +24,7 @@ export default [
       const { referenceNumber } = params
       const citizenUser =
         auth.strategy === CITIZEN_ACCESS_TOKEN_STRATEGY
-          ? auth.credentials.user
+          ? /** @type {CitizenCredentials} */ (auth.credentials.user)
           : undefined
       const record = await getSubmissionRecordByReference(
         referenceNumber,
@@ -96,4 +96,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { GenerateReferenceNumber, GetSubmissionByReference } from '~/src/api/types.js'
+ * @import { CitizenCredentials } from '~/src/api/types.js'
  */
