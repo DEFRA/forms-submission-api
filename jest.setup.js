@@ -102,12 +102,10 @@ nock('https://cognito.com')
 const citizenKeyPair = generateKeyPairSync('rsa', { modulusLength: 2048 })
 
 process.env.CITIZEN_SIGNING_KEY_ID = 'sig-rs256-test'
-process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey
-  .export({
-    type: 'pkcs8',
-    format: 'pem'
-  })
-  .toString()
+process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey.export({
+  type: 'pkcs8',
+  format: 'pem'
+})
 
 nock('https://identity.test')
   .persist()
