@@ -80,6 +80,21 @@ describe('submission repository', () => {
       expect(submissionRecord.next()).toEqual(submissionDocument)
     })
 
+    it('should filter submission records', () => {
+      const filter = { 'meta.status': 'submitted' }
+      const sort = jest.fn(() => ({ next: () => submissionDocument }))
+      mockCollection.find.mockReturnValueOnce({ sort })
+
+      const submissionRecord = getSubmissionRecords(STUB_FORM_ID, filter)
+
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        'meta.formId': STUB_FORM_ID,
+        ...filter
+      })
+      expect(sort).toHaveBeenCalledWith('meta.timestamp', 'desc')
+      expect(submissionRecord.next()).toEqual(submissionDocument)
+    })
+
     it('should handle get submission record failures', () => {
       mockCollection.find.mockImplementation(() => {
         throw new Error('an error')
@@ -118,6 +133,26 @@ describe('submission repository', () => {
       )
       const submissionRecord =
         await getSubmissionRecordByReference(STUB_SUBMISSION_REF)
+      expect(submissionRecord).toEqual(submissionDocument)
+    })
+
+    it('should restrict submission record to citizen credentials', async () => {
+      const citizenUser = {
+        sub: 'citizen-subject',
+        iss: 'https://identity.forms.example'
+      }
+      mockCollection.findOne.mockResolvedValueOnce(submissionDocument)
+
+      const submissionRecord = await getSubmissionRecordByReference(
+        STUB_SUBMISSION_REF,
+        citizenUser
+      )
+
+      expect(mockCollection.findOne).toHaveBeenCalledWith({
+        'meta.referenceNumber': STUB_SUBMISSION_REF,
+        'meta.auth.sub': citizenUser.sub,
+        'meta.auth.issuer': citizenUser.iss
+      })
       expect(submissionRecord).toEqual(submissionDocument)
     })
 
@@ -198,6 +233,24 @@ describe('submission repository', () => {
           $gte: new Date('2026-02-15T00:00:00.000Z'),
           $lte: new Date('2026-02-15T23:59:59.999Z')
         }
+      })
+    })
+
+    it('should apply additional filters', () => {
+      const filter = { 'meta.isWelsh': true }
+      mockCollection.find.mockReturnValueOnce({
+        sort: jest.fn(() => ({ next: () => submissionDocument }))
+      })
+      const date = new Date('2026-02-15')
+
+      getSubmissionRecordsForDate(date, filter)
+
+      expect(mockCollection.find).toHaveBeenCalledWith({
+        'meta.timestamp': {
+          $gte: new Date('2026-02-15T00:00:00.000Z'),
+          $lte: new Date('2026-02-15T23:59:59.999Z')
+        },
+        ...filter
       })
     })
 

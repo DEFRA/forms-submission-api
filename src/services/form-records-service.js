@@ -30,7 +30,8 @@ function mapSubmission(records) {
       record.expireAt < new Date()
         ? FormRowStatus.Expired
         : FormRowStatus.Submitted,
-    createdAt: record.recordCreatedAt
+    createdAt: record.recordCreatedAt,
+    expireAt: record.expireAt
   }))
 }
 

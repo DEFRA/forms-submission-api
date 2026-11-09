@@ -1,9 +1,13 @@
 import { Roles, Scopes } from '@defra/forms-model'
 
-import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
+import {
+  AZURE_OIDC_TOKEN_STRATEGY,
+  CITIZEN_ACCESS_TOKEN_STRATEGY,
+  COGNITO_ACCESS_TOKEN
+} from '~/src/constants.js'
 
 export const authSuperadmin = {
-  strategy: 'azure-oidc-token',
+  strategy: AZURE_OIDC_TOKEN_STRATEGY,
   credentials: {
     user: {
       aud: 'api://2bf2d9fd-fe1e-47eb-9821-b6f6cd3ceba1',
@@ -36,7 +40,7 @@ export const authSuperadmin = {
 }
 
 export const authAdmin = {
-  strategy: 'azure-oidc-token',
+  strategy: AZURE_OIDC_TOKEN_STRATEGY,
   credentials: {
     user: {
       aud: 'api://2bf2d9fd-fe1e-47eb-9821-b6f6cd3ceba1',
@@ -66,7 +70,7 @@ export const authAdmin = {
 }
 
 export const authAD = {
-  strategy: 'azure-oidc-token',
+  strategy: AZURE_OIDC_TOKEN_STRATEGY,
   credentials: {
     user: {
       aud: 'api://2bf2d9fd-fe1e-47eb-9821-b6f6cd3ceba1',
@@ -86,7 +90,7 @@ export const authAD = {
 }
 
 export const appAuth = {
-  strategy: 'cognito-access-token',
+  strategy: COGNITO_ACCESS_TOKEN,
   credentials: {
     app: {
       sub: '14f14577-f400-42fd-be31-945a05c7149d',
