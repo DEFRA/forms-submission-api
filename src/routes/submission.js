@@ -20,10 +20,16 @@ export default [
     method: 'GET',
     path: '/submission/{referenceNumber}',
     async handler(request) {
-      const { params } = request
+      const { auth, params } = request
       const { referenceNumber } = params
-
-      const record = await getSubmissionRecordByReference(referenceNumber)
+      const citizenUser =
+        auth.strategy === CITIZEN_ACCESS_TOKEN_STRATEGY
+          ? auth.credentials.user
+          : undefined
+      const record = await getSubmissionRecordByReference(
+        referenceNumber,
+        citizenUser
+      )
 
       if (!record) {
         return Boom.notFound(

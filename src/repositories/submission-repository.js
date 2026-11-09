@@ -107,9 +107,13 @@ export async function createSubmissionRecord(document, session) {
 /**
  * Gets a submission record based on reference number
  * @param {string} referenceNumber - the reference number
+ * @param {CitizenCredentials} [citizenUser] - the citizen user
  * @returns { Promise<WithId<FormSubmissionDocument> | null> }
  */
-export async function getSubmissionRecordByReference(referenceNumber) {
+export async function getSubmissionRecordByReference(
+  referenceNumber,
+  citizenUser
+) {
   logger.info('Reading submission record')
 
   const coll = /** @type {Collection<FormSubmissionDocument>} */ (
@@ -117,9 +121,20 @@ export async function getSubmissionRecordByReference(referenceNumber) {
   )
 
   try {
-    const result = await coll.findOne({
+    const filter = {
       'meta.referenceNumber': referenceNumber
-    })
+    }
+
+    // If this is a citizen request then qualify
+    // the query using their auth credentials
+    if (citizenUser) {
+      Object.assign(filter, {
+        'meta.auth.sub': citizenUser.sub,
+        'meta.auth.issuer': citizenUser.iss
+      })
+    }
+
+    const result = await coll.findOne(filter)
 
     logger.info('Read submission record')
 
@@ -173,5 +188,5 @@ export async function getSubmissionRecordsForUser(sub, iss, formId, preview) {
 /**
  * @import { FormStatus } from '@defra/forms-model'
  * @import { ClientSession, Filter, ObjectId, WithId, Collection, FindCursor } from 'mongodb'
- * @import { FormSubmissionDocument } from '~/src/api/types.js'
+ * @import { CitizenCredentials, FormSubmissionDocument } from '~/src/api/types.js'
  */
