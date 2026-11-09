@@ -74,6 +74,7 @@ describe('Submission routes', () => {
       const expectedRecord = formSubmissions.at(0)
       jest
         .mocked(getSubmissionRecordByReference)
+        // @ts-expect-error - test data is not fully compliant with FormSubmissionDocument type
         .mockResolvedValue(expectedRecord)
 
       const response = await server.inject({
