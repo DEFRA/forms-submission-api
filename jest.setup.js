@@ -107,7 +107,7 @@ process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey
     type: 'pkcs8',
     format: 'pem'
   })
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
+
   .toString()
 
 nock('https://identity.test')

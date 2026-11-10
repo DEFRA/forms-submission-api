@@ -19,6 +19,7 @@ import {
   generateFeedbackSubmissionsFileForAll,
   generateFeedbackSubmissionsFileForForm,
   generateFormSubmissionsFile,
+  generateSubmissionsFile,
   getFormModel,
   lookupFormNameById,
   truncateCellValue
@@ -27,6 +28,8 @@ import {
 import feedbackSubmissions from '~/test/fixtures/feedback-submissions.json'
 import { formFeedbackVersions } from '~/test/fixtures/forms-feedback-versions.js'
 import { formPaymentVersions } from '~/test/fixtures/forms-payment-versions.js'
+// @ts-expect-error - import json
+import formSubmissionsWithCopy from '~/test/fixtures/forms-submissions-with-copy.json'
 // @ts-expect-error - import json
 import formSubmissionsWithGeo from '~/test/fixtures/forms-submissions-with-geo.json'
 // @ts-expect-error - import json
@@ -417,6 +420,84 @@ F2B-JFE-WA9,24/06/2026,draft,Yes,English,,,,,`
       for (const dataRow of dataRows) {
         expect(dataRow.split(',')[emailColumnIndex]).toBe('')
       }
+    })
+  })
+
+  describe('generateSubmissionsFile with copy action', () => {
+    test('should include copy action column when submissions have action data and form is enabled', async () => {
+      const formId = '688131eeff67f889d52c66cc'
+      const fileId = 'fc2f96e0-ed20-4e31-81a4-5a4a841aa9a5'
+      jest.mocked(getFormMetadataById).mockResolvedValue(
+        /** @type {FormMetadata}  */ ({
+          title: 'My form',
+          notificationEmail: 'enrique.chase@defra.gov.uk'
+        })
+      )
+
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          for (const submission of formSubmissionsWithCopy) {
+            yield submission
+          }
+        }
+      }
+
+      // @ts-expect-error - resolves to an async iterator like FindCursor<FormSubmissionDocument>
+      jest.mocked(getSubmissionRecords).mockReturnValueOnce(mockAsyncIterator)
+
+      const versions = /** @type {Record<string, FormDefinition>} */ (
+        /** @type {unknown} */ (formVersions)
+      )
+      const getCopyEnabledDefinition = () => ({
+        ...versions['36'],
+        metadata: {
+          ...versions['36'].metadata,
+          options: {
+            allowCopy: true
+          }
+        }
+      })
+
+      jest
+        .mocked(getFormDefinitionVersion)
+        .mockImplementation(() => Promise.resolve(getCopyEnabledDefinition()))
+
+      jest.mocked(getFormDefinition).mockImplementation(() => {
+        return Promise.resolve(getCopyEnabledDefinition())
+      })
+
+      const mockCreate = jest
+        .mocked(createSubmissionXlsxFile)
+        .mockResolvedValueOnce({ fileId })
+
+      await generateSubmissionsFile(
+        formId,
+        'enrique.chase@defra.gov.uk',
+        'My form',
+        { includeFormName: true }
+      )
+
+      expect(createSubmissionXlsxFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        expect.any(String),
+        false
+      )
+      const buffer = mockCreate.mock.calls[0][0]
+      const workbook = xlsx.read(buffer, { type: 'buffer' })
+
+      expect(workbook.Sheets.Sheet1).toBeDefined()
+
+      const sheetAsCsv = xlsx.utils.sheet_to_csv(workbook.Sheets.Sheet1)
+
+      const headerRow = sheetAsCsv.split('\n')[0].split(',')
+      const formNameColumnIndex = headerRow.indexOf('Form name')
+
+      expect(formNameColumnIndex).toBeGreaterThan(0)
+      expect(headerRow[formNameColumnIndex - 1]).toBe(
+        'Copied from reference number'
+      )
+      expect(sheetAsCsv).toContain('PRV-REF-001')
+      expect(sheetAsCsv).toContain('PRV-REF-004')
     })
   })
 
