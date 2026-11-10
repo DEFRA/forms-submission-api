@@ -1,5 +1,10 @@
 import { FormStatus as FormsEnginePluginFormStatus } from '@defra/forms-engine-plugin/types'
-import { FormMetricType, FormStatus, getErrorMessage } from '@defra/forms-model'
+import {
+  FormMetricName,
+  FormMetricType,
+  FormStatus,
+  getErrorMessage
+} from '@defra/forms-model'
 
 import { logger } from '~/src/helpers/logging/logger.js'
 import { getSubmissionRecordsForDate } from '~/src/repositories/submission-repository.js'
@@ -30,7 +35,7 @@ function pushTimelineMetric(timelineMetrics, formId, formStatus, count, date) {
       type: FormMetricType.TimelineMetric,
       formId,
       formStatus,
-      metricName: 'Submissions',
+      metricName: FormMetricName.Submissions,
       metricValue: count,
       createdAt: date
     })

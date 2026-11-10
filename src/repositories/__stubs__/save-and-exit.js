@@ -150,7 +150,7 @@ export function buildDbDocumentV1() {
     magicLinkId: 'magic-id',
     form: {
       id: 'form-id',
-      status: 'draft',
+      status: FormStatus.Draft,
       isPreview: false,
       baseUrl: 'http://localhost:3009',
       title: 'My FirstForm'
@@ -186,7 +186,7 @@ export function buildDbDocumentV2() {
     email: 'enrique.chase@defra.gov.uk',
     form: {
       id: 'form-id',
-      status: 'draft',
+      status: FormStatus.Draft,
       isPreview: false,
       baseUrl: 'http://localhost:3009',
       title: 'My FirstForm'

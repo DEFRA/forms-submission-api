@@ -32,7 +32,7 @@ if (!persistRoute) {
 
 const persistRouteHandler =
   /** @type {(request: import('@hapi/hapi').Request<{ Payload: PersistedRetrievalPayload }>) => Promise<unknown>} */ (
-    persistRoute.handler
+    persistRoute.handler.bind(persistRoute)
   )
 
 /**

@@ -1,5 +1,6 @@
 import { FormAdapterSubmissionSchemaVersion } from '@defra/forms-engine-plugin/engine/types/enums.js'
-import { FormStatus } from '@defra/forms-model'
+import { FormStatus as FormsEnginePluginFormStatus } from '@defra/forms-engine-plugin/types'
+import { FormStatus as FormsModelFormStatus } from '@defra/forms-model'
 
 import { addDays } from '~/src/helpers/date-helper.js'
 
@@ -9,7 +10,7 @@ export const STUB_SUBMISSION_RECORD_ID = '68d284ef5fa1a0fb2ede066a'
 
 /**
  * @param {string} formId
- * @param {FormStatus} formStatus
+ * @param {FormsModelFormStatus} formStatus
  * @param {Date} timestamp
  * @returns {WithId<FormSubmissionDocument>}
  */
@@ -25,7 +26,10 @@ export function buildCustomisedSubmissionDocument(
   })
   doc.meta.formId = formId
   doc.meta.timestamp = timestamp
-  doc.meta.status = formStatus
+  doc.meta.status =
+    formStatus === FormsModelFormStatus.Draft
+      ? FormsEnginePluginFormStatus.Draft
+      : FormsEnginePluginFormStatus.Live
   return doc
 }
 
@@ -55,7 +59,7 @@ export function buildFormAdapterSubmissionMessageMetaStub(
     formName: 'Order a pizza',
     formId: '68a8b0449ab460290c28940a',
     formSlug: 'order-a-pizza',
-    status: FormStatus.Live,
+    status: FormsEnginePluginFormStatus.Live,
     isPreview: false,
     notificationEmail: 'info@example.com',
     ...partialFormAdapterSubmissionMessageMeta

@@ -1020,7 +1020,8 @@ export function constructEmailContent(emailAddress, fileId, formTitle) {
 
 /**
  * @import { WorkBook } from 'xlsx'
- * @import { FormDefinition, FormStatus } from '@defra/forms-model'
+ * @import { FormDefinition } from '@defra/forms-model'
+ * @import { FormStatus } from '@defra/forms-engine-plugin/types'
  * @import { WithId } from 'mongodb'
  * @import { RichFormValue } from '@defra/forms-engine-plugin/engine/types.js'
  * @import { Component, Field } from '@defra/forms-engine-plugin/engine/components/helpers/components.js'
