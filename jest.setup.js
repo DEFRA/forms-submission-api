@@ -107,6 +107,7 @@ process.env.CITIZEN_SIGNING_PRIVATE_KEY = citizenKeyPair.privateKey
     type: 'pkcs8',
     format: 'pem'
   })
+
   .toString()
 
 nock('https://identity.test')
