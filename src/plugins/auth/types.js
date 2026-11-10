@@ -14,4 +14,5 @@
  * @typedef {object} CitizenAccessTokenPayload
  * @property {string} sub - the citizen's identifier at their provider
  * @property {string} iss - the provider that authenticated the citizen
+ * @property {string} [email] - the email of the citizen's account, when the provider includes it
  */

@@ -68,4 +68,68 @@ describe('config validation', () => {
       await expect(import('~/src/config/index.js')).resolves.toBeDefined()
     })
   })
+
+  describe('submissionLinking.allowedForms', () => {
+    const ENV_ALLOWED_FORMS = 'SUBMISSION_LINKING_ALLOWED_FORMS'
+
+    afterEach(() => {
+      delete process.env.SUBMISSION_LINKING_ALLOWED_FORMS
+    })
+
+    /**
+     * @param {string} value
+     */
+    async function loadAllowedForms(value) {
+      process.env[ENV_ALLOWED_FORMS] = value
+
+      const { config } = await import('~/src/config/index.js')
+
+      return config.get('submissionLinking.allowedForms')
+    }
+
+    it('should allow no forms by default', async () => {
+      const { config } = await import('~/src/config/index.js')
+
+      expect(config.get('submissionLinking.allowedForms')).toEqual([])
+    })
+
+    it('should allow no forms when the value is empty', async () => {
+      expect(await loadAllowedForms('  ')).toEqual([])
+    })
+
+    it('should read the forms from a JSON array', async () => {
+      const forms = [
+        { formId: 'form-1', formName: 'Order a pizza' },
+        { formId: 'form-2', formName: '' },
+        { formId: 'form-3', formName: null },
+        { formId: 'form-4' }
+      ]
+
+      expect(await loadAllowedForms(JSON.stringify(forms))).toEqual(forms)
+    })
+
+    it.each([
+      ['not JSON', 'form-1,form-2'],
+      ['not an array', '{"formId":"form-1"}']
+    ])('should reject a value that is %s', async (_description, value) => {
+      process.env[ENV_ALLOWED_FORMS] = value
+
+      await expect(import('~/src/config/index.js')).rejects.toThrow(
+        'must be a JSON array of allowed forms'
+      )
+    })
+
+    it.each([
+      ['a form without an id', '[{"formName":"Order a pizza"}]'],
+      ['a form with an empty id', '[{"formId":""}]'],
+      ['a property other than formId and formName', '[{"formID":"form-1"}]'],
+      ['the same form twice', '[{"formId":"form-1"},{"formId":"form-1"}]']
+    ])('should reject %s', async (_description, value) => {
+      process.env[ENV_ALLOWED_FORMS] = value
+
+      await expect(import('~/src/config/index.js')).rejects.toThrow(
+        'must be a list of allowed forms'
+      )
+    })
+  })
 })

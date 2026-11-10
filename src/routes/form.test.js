@@ -4,7 +4,10 @@ import { StatusCodes } from 'http-status-codes'
 
 import { createServer } from '~/src/api/server.js'
 import { submit } from '~/src/services/file-service.js'
-import { getFormRecordsForUser } from '~/src/services/form-records-service.js'
+import {
+  getFormRecordsForUser,
+  linkSubmissionsToUser
+} from '~/src/services/form-records-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
@@ -370,6 +373,95 @@ describe('Forms route', () => {
       const response = await server.inject({
         method: 'GET',
         url: `/form/records?formId=${formId}`
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)
+    })
+  })
+
+  describe('Link submissions', () => {
+    const formId = '688131eeff67f889d52c66cc'
+    const email = 'user@example.com'
+    const authCitizenWithEmail = {
+      ...authCitizen,
+      credentials: {
+        user: { ...authCitizen.credentials.user, email }
+      }
+    }
+
+    test('Testing POST /form/submissions/link links the submissions to the signed-in citizen', async () => {
+      jest.mocked(linkSubmissionsToUser).mockResolvedValueOnce({ linked: 2 })
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/form/submissions/link',
+        payload: { formId },
+        auth: authCitizenWithEmail
+      })
+
+      expect(linkSubmissionsToUser).toHaveBeenCalledWith(
+        authCitizen.credentials.user.sub,
+        authCitizen.credentials.user.iss,
+        formId,
+        email
+      )
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual({ linked: 2 })
+    })
+
+    test('Testing POST /form/submissions/link refuses a token without an email', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/form/submissions/link',
+        payload: { formId },
+        auth: authCitizen
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.FORBIDDEN)
+      expect(linkSubmissionsToUser).not.toHaveBeenCalled()
+    })
+
+    test('Testing POST /form/submissions/link returns the error of a form that is not allowed', async () => {
+      jest
+        .mocked(linkSubmissionsToUser)
+        .mockRejectedValueOnce(
+          Boom.forbidden('Submissions of this form cannot be linked')
+        )
+
+      const response = await server.inject({
+        method: 'POST',
+        url: '/form/submissions/link',
+        payload: { formId },
+        auth: authCitizenWithEmail
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.FORBIDDEN)
+    })
+
+    test.each([
+      [{}, '"formId" is required'],
+      [{ formId, email }, '"email" is not allowed']
+    ])(
+      'Testing POST /form/submissions/link refuses an invalid payload',
+      async (payload, message) => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/form/submissions/link',
+          payload,
+          auth: authCitizenWithEmail
+        })
+
+        expect(response.statusCode).toEqual(StatusCodes.BAD_REQUEST)
+        expect(response.result).toMatchObject({ message })
+        expect(linkSubmissionsToUser).not.toHaveBeenCalled()
+      }
+    )
+
+    test('Testing POST /form/submissions/link is not reachable without a citizen token', async () => {
+      const response = await server.inject({
+        method: 'POST',
+        url: '/form/submissions/link',
+        payload: { formId }
       })
 
       expect(response.statusCode).toEqual(StatusCodes.UNAUTHORIZED)

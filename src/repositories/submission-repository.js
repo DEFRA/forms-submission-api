@@ -5,6 +5,14 @@ import { SUBMISSIONS_COLLECTION_NAME, db } from '~/src/mongo.js'
 import { previewFilter } from '~/src/repositories/helpers.js'
 
 /**
+ * The collation of the user email index on the submissions collection. A query
+ * must specify this collation to use the index, and the collation makes the
+ * email match case-insensitive. It must stay the same as the collation in the
+ * migration that creates the index.
+ */
+export const USER_EMAIL_COLLATION = { locale: 'en', strength: 2 }
+
+/**
  * Gets submission records based on formId
  * @param {string} formId - the form id
  * @param {object} [filter] - restrict records returned (say by submitted form id)
@@ -165,6 +173,49 @@ export async function getSubmissionRecordsForUser(sub, iss, formId, preview) {
     logger.error(
       err,
       `Failed to read submission record - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
+ * Links to the user's account the submissions of a form that have the user's
+ * email as the confirmation email and are not yet linked to an account. The
+ * email match is case-insensitive.
+ * @param {string} sub - the user's subject identifier
+ * @param {string} iss - the issuer of the token
+ * @param {string} formId - the form ID
+ * @param {string} email - the email of the user's account
+ * @returns {Promise<number>} the number of submissions linked
+ */
+export async function linkSubmissionRecordsToUser(sub, iss, formId, email) {
+  logger.debug('Linking submission records to user')
+
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.updateMany(
+      {
+        'meta.formId': formId,
+        'meta.custom.userConfirmationEmail': email,
+        // Matches a missing `meta.auth` too
+        'meta.auth.sub': null
+      },
+      { $set: { 'meta.auth': { sub, issuer: iss } } },
+      { collation: USER_EMAIL_COLLATION }
+    )
+
+    logger.info(
+      `Linked ${result.modifiedCount} submission records to user for form ${formId}`
+    )
+
+    return result.modifiedCount
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to link submission records to user - ${getErrorMessage(err)}`
     )
     throw err
   }

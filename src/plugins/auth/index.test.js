@@ -183,6 +183,22 @@ describe('Auth plugin', () => {
       })
     })
 
+    test('Testing validateCitizenAuth carries the email of the account', () => {
+      const artifacts = buildCitizenArtifactStub({ email: 'user@example.com' })
+      const res = validateCitizenAuth(artifacts)
+
+      expect(res).toEqual({
+        isValid: true,
+        credentials: {
+          user: {
+            sub: 'a3f1c0de-0000-4000-8000-000000000001',
+            iss: 'http://identity:80',
+            email: 'user@example.com'
+          }
+        }
+      })
+    })
+
     test('Testing validateCitizenAuth with a missing payload returns isValid: false', () => {
       const artifacts = buildCitizenArtifactStub()
 

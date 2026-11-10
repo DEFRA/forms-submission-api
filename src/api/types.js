@@ -101,11 +101,12 @@
 /**
  * The citizen-access-token strategy always sets these credentials, so the
  * route reads them as present.
- * @typedef {{ sub: string, iss: string }} CitizenCredentials
+ * @typedef {{ sub: string, iss: string, email?: string }} CitizenCredentials
  * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordsRequest
  * @typedef {{ Params: { link: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetSaveAndExitRecordRequest
  * @typedef {{ Params: DeleteSavedLinkParams, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} DeleteSaveAndExitRecordRequest
  * @typedef {{ Query: { formId: string, preview?: FormStatus }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} GetFormRecordsRequest
+ * @typedef {{ Payload: { formId: string }, AuthUser: CitizenCredentials, AuthCredentialsExtra: { user: CitizenCredentials } }} LinkSubmissionsRequest
  */
 
 /**

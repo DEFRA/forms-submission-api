@@ -1,4 +1,5 @@
 import { formSubmitPayloadSchema } from '@defra/forms-model'
+import Boom from '@hapi/boom'
 import Joi from 'joi'
 
 import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
@@ -11,12 +12,16 @@ import {
   getSaveAndExitRecordsResponseSchema,
   getSavedLinkGoneSchema,
   getSavedLinkResponseSchema,
+  linkSubmissionsResponseSchema,
   magicLinkSchema,
   previewSchema,
   validateSavedLinkResponseSchema
 } from '~/src/models/form.js'
 import { submit } from '~/src/services/file-service.js'
-import { getFormRecordsForUser } from '~/src/services/form-records-service.js'
+import {
+  getFormRecordsForUser,
+  linkSubmissionsToUser
+} from '~/src/services/form-records-service.js'
 import { generateReportTimeline } from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
@@ -250,6 +255,56 @@ export default [
   }),
 
   /**
+   * Links a citizen's earlier submissions of a form to their account.
+   *
+   * Finds the submissions of the given form whose confirmation email matches
+   * the email claim in the citizen's access token (case-insensitive) and that
+   * are not yet linked to an account, then records the token's subject and
+   * issuer against them. Submissions already linked to an account are left
+   * unchanged, so calling it again is safe.
+   *
+   * Only forms listed in `submissionLinking.allowedForms` can be linked; other
+   * forms return 403, as does a token without an email claim. The response
+   * gives the number of submissions linked by this call.
+   * @type {ServerRoute<LinkSubmissionsRequest>}
+   */
+  ({
+    method: 'POST',
+    path: '/form/submissions/link',
+    handler(request) {
+      const { auth, payload } = request
+      const { sub, iss, email } = auth.credentials.user
+      const { formId } = payload
+
+      // The email comes from the token, so a caller cannot name another
+      // person's email
+      if (!email) {
+        throw Boom.forbidden('The access token has no email claim')
+      }
+
+      return linkSubmissionsToUser(sub, iss, formId, email)
+    },
+    options: {
+      tags: ['api'],
+      // The token names the citizen and their email, so the request carries
+      // neither
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
+      validate: {
+        payload: Joi.object()
+          .keys({
+            formId: Joi.string().required()
+          })
+          .label('linkSubmissionsPayload')
+      },
+      response: {
+        status: {
+          200: linkSubmissionsResponseSchema
+        }
+      }
+    }
+  }),
+
+  /**
    * @type {ServerRoute<GetReportTimelineRequest>}
    */
   ({
@@ -283,5 +338,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { SubmitPayload } from '@defra/forms-model'
- * @import { GetFormRecordsRequest, GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
+ * @import { GetFormRecordsRequest, LinkSubmissionsRequest, GetSavedLinkParams, GetReportTimelineRequest, GetSaveAndExitRecordRequest, GetSaveAndExitRecordsRequest, ValidateSaveAndExit, DeleteSaveAndExitRecordRequest } from '~/src/api/types.js'
  */
