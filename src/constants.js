@@ -1,4 +1,6 @@
 export const MONGO_DUPLICATE_KEY_ERROR = 11000
+export const AZURE_OIDC_TOKEN_STRATEGY = 'azure-oidc-token'
+export const COGNITO_ACCESS_TOKEN = 'cognito-access-token'
 export const CITIZEN_ACCESS_TOKEN_STRATEGY = 'citizen-access-token'
 
 export const EN_GB = 'en-GB'

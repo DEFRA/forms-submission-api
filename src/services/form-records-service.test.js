@@ -105,7 +105,8 @@ describe('form-records-service', () => {
       jest.mocked(getSubmissionRecordsForUser).mockResolvedValueOnce([
         /** @type {any} */ ({
           meta: { referenceNumber: '123-456-789' },
-          recordCreatedAt: new Date('2026-09-01T09:00:00.000Z')
+          recordCreatedAt: new Date('2026-09-01T09:00:00.000Z'),
+          expireAt: new Date('2026-11-02T09:00:00.000Z')
         })
       ])
 
@@ -123,7 +124,8 @@ describe('form-records-service', () => {
         {
           status: FormRowStatus.Submitted,
           referenceNumber: '123-456-789',
-          createdAt: new Date('2026-09-01T09:00:00.000Z')
+          createdAt: new Date('2026-09-01T09:00:00.000Z'),
+          expireAt: new Date('2026-11-02T09:00:00.000Z')
         },
         {
           status: FormRowStatus.Deleted,

@@ -109,7 +109,7 @@ export default [
     options: {
       tags: ['api'],
       // The token names the citizen, so the request carries no identifier.
-      auth: 'citizen-access-token',
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
       validate: {
         params: Joi.object()
           .keys({
@@ -170,7 +170,7 @@ export default [
     },
     options: {
       tags: ['api'],
-      auth: 'citizen-access-token',
+      auth: CITIZEN_ACCESS_TOKEN_STRATEGY,
       validate: {
         params: Joi.object()
           .keys({

@@ -2,7 +2,11 @@ import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
 import { config } from '~/src/config/index.js'
-import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
+import {
+  AZURE_OIDC_TOKEN_STRATEGY,
+  CITIZEN_ACCESS_TOKEN_STRATEGY,
+  COGNITO_ACCESS_TOKEN
+} from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
 
@@ -44,7 +48,7 @@ export const auth = {
     async register(server) {
       await server.register(Jwt)
 
-      server.auth.strategy('azure-oidc-token', 'jwt', {
+      server.auth.strategy(AZURE_OIDC_TOKEN_STRATEGY, 'jwt', {
         keys: {
           uri: oidcJwksUri
         },
@@ -58,7 +62,7 @@ export const auth = {
         validate: validateAuth
       })
 
-      server.auth.strategy('cognito-access-token', 'jwt', {
+      server.auth.strategy(COGNITO_ACCESS_TOKEN, 'jwt', {
         keys: {
           uri: cognitoJwksUri
         },

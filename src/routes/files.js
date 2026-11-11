@@ -1,3 +1,7 @@
+import {
+  AZURE_OIDC_TOKEN_STRATEGY,
+  COGNITO_ACCESS_TOKEN
+} from '~/src/constants.js'
 import { createTimer } from '~/src/helpers/timer.js'
 import {
   fileAccessPayloadSchema,
@@ -127,7 +131,7 @@ export default [
     options: {
       tags: ['api'],
       auth: {
-        strategies: ['azure-oidc-token', 'cognito-access-token']
+        strategies: [AZURE_OIDC_TOKEN_STRATEGY, COGNITO_ACCESS_TOKEN]
       },
       validate: {
         payload: fileAccessPayloadSchema

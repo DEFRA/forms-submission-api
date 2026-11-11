@@ -2,6 +2,10 @@ import Boom from '@hapi/boom'
 import Joi from 'joi'
 
 import {
+  AZURE_OIDC_TOKEN_STRATEGY,
+  CITIZEN_ACCESS_TOKEN_STRATEGY
+} from '~/src/constants.js'
+import {
   generateReferenceNumberResponseSchema,
   getSubmissionByReferenceResponseSchema
 } from '~/src/models/form.js'
@@ -16,10 +20,16 @@ export default [
     method: 'GET',
     path: '/submission/{referenceNumber}',
     async handler(request) {
-      const { params } = request
+      const { auth, params } = request
       const { referenceNumber } = params
-
-      const record = await getSubmissionRecordByReference(referenceNumber)
+      const citizenUser =
+        auth.strategy === CITIZEN_ACCESS_TOKEN_STRATEGY
+          ? /** @type {CitizenCredentials} */ (auth.credentials.user)
+          : undefined
+      const record = await getSubmissionRecordByReference(
+        referenceNumber,
+        citizenUser
+      )
 
       if (!record) {
         return Boom.notFound(
@@ -32,6 +42,7 @@ export default [
     options: {
       tags: ['api'],
       auth: {
+        strategies: [AZURE_OIDC_TOKEN_STRATEGY, CITIZEN_ACCESS_TOKEN_STRATEGY],
         access: {
           entity: 'user',
           scope: false
@@ -85,4 +96,5 @@ export default [
 /**
  * @import { ServerRoute } from '@hapi/hapi'
  * @import { GenerateReferenceNumber, GetSubmissionByReference } from '~/src/api/types.js'
+ * @import { CitizenCredentials } from '~/src/api/types.js'
  */
