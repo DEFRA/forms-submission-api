@@ -1,3 +1,6 @@
+// Keep the tests independent of any local .env file
+jest.mock('dotenv/config', () => ({}))
+
 const ENV_EXPIRY_WINDOW =
   'EMAIL_USERS_EXPIRING_SOON_SAVED_FOR_LATER_LINK_EXPIRY_WINDOW_HOURS'
 const ENV_MINIMUM_HOURS =
