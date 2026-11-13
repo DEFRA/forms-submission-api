@@ -12,7 +12,8 @@ import {
   getSubmissionRecordByReference,
   getSubmissionRecords,
   getSubmissionRecordsForDate,
-  getSubmissionRecordsForUser
+  getSubmissionRecordsForUser,
+  linkSubmissionRecordsToUser
 } from '~/src/repositories/submission-repository.js'
 
 const mockCollection = buildMockCollection()
@@ -214,6 +215,45 @@ describe('submission repository', () => {
 
       await expect(
         getSubmissionRecordsForUser(sub, iss, STUB_FORM_ID)
+      ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('linkSubmissionRecordsToUser', () => {
+    const sub = 'a3f1c0de-0000-4000-8000-000000000001'
+    const iss = 'https://identity.forms.example'
+    const email = 'user@example.com'
+
+    it('should link the unlinked submissions with the email to the user', async () => {
+      mockCollection.updateMany.mockResolvedValueOnce({
+        matchedCount: 2,
+        modifiedCount: 2
+      })
+
+      const result = await linkSubmissionRecordsToUser(
+        sub,
+        iss,
+        STUB_FORM_ID,
+        email
+      )
+
+      expect(result).toBe(2)
+      expect(mockCollection.updateMany).toHaveBeenCalledWith(
+        {
+          'meta.formId': STUB_FORM_ID,
+          'meta.custom.userConfirmationEmail': email,
+          'meta.auth.sub': null
+        },
+        { $set: { 'meta.auth': { sub, issuer: iss } } },
+        { collation: { locale: 'en', strength: 2 } }
+      )
+    })
+
+    it('should log and rethrow update failures', async () => {
+      mockCollection.updateMany.mockRejectedValueOnce(new Error('an error'))
+
+      await expect(
+        linkSubmissionRecordsToUser(sub, iss, STUB_FORM_ID, email)
       ).rejects.toThrow(new Error('an error'))
     })
   })

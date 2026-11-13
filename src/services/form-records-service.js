@@ -1,5 +1,12 @@
+import Boom from '@hapi/boom'
+
+import { config } from '~/src/config/index.js'
 import { FormRowStatus } from '~/src/constants.js'
-import { getSubmissionRecordsForUser } from '~/src/repositories/submission-repository.js'
+import { logger } from '~/src/helpers/logging/logger.js'
+import {
+  getSubmissionRecordsForUser,
+  linkSubmissionRecordsToUser
+} from '~/src/repositories/submission-repository.js'
 import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-service.js'
 
 /**
@@ -54,6 +61,42 @@ export async function getFormRecordsForUser(sub, iss, formId, preview) {
   ]
 
   return records.sort(formRowSorter)
+}
+
+/**
+ * Links to the user's account the submissions of a form that were made with
+ * the user's email and are not yet linked to an account. Only the forms in the
+ * `submissionLinking.allowedForms` config can be linked.
+ * @param {string} sub - the user's subject identifier
+ * @param {string} iss - the issuer of the token
+ * @param {string} formId - the form ID
+ * @param {string} email - the email of the user's account
+ * @returns {Promise<{ linked: number }>} the number of submissions linked
+ * @throws {Boom.Boom} forbidden when the form is not allowed
+ */
+export async function linkSubmissionsToUser(sub, iss, formId, email) {
+  const allowedForm = config
+    .get('submissionLinking.allowedForms')
+    .find((form) => form.formId === formId)
+
+  if (!allowedForm) {
+    logger.warn(
+      `Refused to link submissions of form ${formId} to a user: the form is not in the allowed forms`
+    )
+
+    throw Boom.forbidden('Submissions of this form cannot be linked')
+  }
+
+  // Nothing checks the configured name against the form, so it may be wrong
+  const formNameNote = allowedForm.formName
+    ? ` (possible form name '${allowedForm.formName}')`
+    : ''
+
+  logger.info(`Linking submissions of form ${formId}${formNameNote} to a user`)
+
+  const linked = await linkSubmissionRecordsToUser(sub, iss, formId, email)
+
+  return { linked }
 }
 
 // Order of statuses for sorting purposes

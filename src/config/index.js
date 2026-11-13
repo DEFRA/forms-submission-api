@@ -2,10 +2,25 @@ import { cwd } from 'node:process'
 
 import 'dotenv/config'
 import convict from 'convict'
+import Joi from 'joi'
 
 const isProduction = process.env.NODE_ENV === 'production'
 const isTest = process.env.NODE_ENV === 'test'
 const POSITIVE_NUMBER_VALIDATOR = 'positive-number'
+const ALLOWED_FORMS_VALIDATOR = 'allowed-forms'
+
+/**
+ * A list of forms. `formName` is only a note for the people who set the
+ * config, so it can be missing, empty or null.
+ */
+const allowedFormsSchema = Joi.array()
+  .items(
+    Joi.object({
+      formId: Joi.string().required(),
+      formName: Joi.string().allow('', null)
+    })
+  )
+  .unique('formId')
 
 convict.addFormat({
   name: POSITIVE_NUMBER_VALIDATOR,
@@ -17,6 +32,37 @@ convict.addFormat({
   coerce: (value) => {
     const coercedValue = Number(value)
     return coercedValue
+  }
+})
+
+convict.addFormat({
+  name: ALLOWED_FORMS_VALIDATOR,
+  validate(value) {
+    const { error } = allowedFormsSchema.validate(value)
+
+    if (error) {
+      throw new TypeError(`must be a list of allowed forms: ${error.message}`)
+    }
+  },
+  coerce: (value) => {
+    if (value.trim() === '') {
+      return []
+    }
+
+    /** @type {unknown} */
+    let forms
+
+    try {
+      forms = JSON.parse(value)
+    } catch {
+      throw new TypeError('must be a JSON array of allowed forms')
+    }
+
+    if (!Array.isArray(forms)) {
+      throw new TypeError('must be a JSON array of allowed forms')
+    }
+
+    return forms
   }
 })
 
@@ -356,6 +402,15 @@ export const config = convict({
     default: null,
     env: 'SQS_VISIBILITY_TIMEOUT'
   },
+  submissionLinking: {
+    /** @type {SchemaObj<AllowedForm[]>} */
+    allowedForms: {
+      doc: 'The forms whose submissions a signed-in citizen can link to their account, as a JSON array such as [{"formId":"688131eeff67f889d52c66cc","formName":"Land Use"}]. `formName` is optional and only helps people identify the form. No forms are allowed by default.',
+      format: ALLOWED_FORMS_VALIDATOR,
+      default: [],
+      env: 'SUBMISSION_LINKING_ALLOWED_FORMS'
+    }
+  },
   /** @type {SchemaObj<number>} */
   saveAndExitExpiryInDays: {
     doc: 'Save-and-exit expiry as number of days',
@@ -447,6 +502,13 @@ if (expiryWindow <= minimumHours) {
     `expiryWindowInHours (${expiryWindow}) must be greater than minimumHoursRemaining (${minimumHours})`
   )
 }
+
+/**
+ * A form whose submissions a signed-in citizen can link to their account
+ * @typedef {object} AllowedForm
+ * @property {string} formId - the ID of the form
+ * @property {string | null} [formName] - the name of the form, as a note for the people who set the config. Nothing checks it against the form.
+ */
 
 /**
  * @import { SchemaObj } from 'convict'

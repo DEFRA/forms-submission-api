@@ -1,15 +1,27 @@
 import { FormStatus } from '@defra/forms-model'
 
+import { config } from '~/src/config/index.js'
 import { FormRowStatus } from '~/src/constants.js'
-import { getSubmissionRecordsForUser } from '~/src/repositories/submission-repository.js'
+import { logger } from '~/src/helpers/logging/logger.js'
+import {
+  getSubmissionRecordsForUser,
+  linkSubmissionRecordsToUser
+} from '~/src/repositories/submission-repository.js'
 import {
   formRowSorter,
-  getFormRecordsForUser
+  getFormRecordsForUser,
+  linkSubmissionsToUser
 } from '~/src/services/form-records-service.js'
 import { getSaveAndExitRecordsForUser } from '~/src/services/save-and-exit-service.js'
 
 jest.mock('~/src/repositories/submission-repository.js')
 jest.mock('~/src/services/save-and-exit-service.js')
+jest.mock('~/src/helpers/logging/logger.js', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn()
+  }
+}))
 
 describe('form-records-service', () => {
   const sub = 'a3f1c0de-0000-4000-8000-000000000001'
@@ -224,4 +236,91 @@ describe('form-records-service', () => {
       expect(formRowSorter(unknown, inProgress)).toBeLessThan(0)
     })
   })
+
+  describe('linkSubmissionsToUser', () => {
+    const email = 'user@example.com'
+    const otherFormId = '688131eeff67f889d52c66dd'
+
+    /** @type {AllowedForm[]} */
+    let configuredForms
+
+    beforeEach(() => {
+      configuredForms = config.get('submissionLinking.allowedForms')
+    })
+
+    afterEach(() => {
+      config.set('submissionLinking.allowedForms', configuredForms)
+    })
+
+    /**
+     * @param {AllowedForm[]} forms
+     */
+    function allowForms(forms) {
+      config.set('submissionLinking.allowedForms', forms)
+    }
+
+    it('should link the submissions of an allowed form', async () => {
+      allowForms([{ formId, formName: 'Order a pizza' }])
+      jest.mocked(linkSubmissionRecordsToUser).mockResolvedValueOnce(3)
+
+      const result = await linkSubmissionsToUser(sub, iss, formId, email)
+
+      expect(result).toEqual({ linked: 3 })
+      expect(linkSubmissionRecordsToUser).toHaveBeenCalledWith(
+        sub,
+        iss,
+        formId,
+        email
+      )
+      expect(logger.info).toHaveBeenCalledWith(
+        `Linking submissions of form ${formId} (possible form name 'Order a pizza') to a user`
+      )
+    })
+
+    it.each([
+      ['missing', { formId }],
+      ['empty', { formId, formName: '' }],
+      ['null', { formId, formName: null }]
+    ])(
+      'should leave the form name out of the log when it is %s',
+      async (_description, allowedForm) => {
+        allowForms([allowedForm])
+        jest.mocked(linkSubmissionRecordsToUser).mockResolvedValueOnce(0)
+
+        await linkSubmissionsToUser(sub, iss, formId, email)
+
+        expect(logger.info).toHaveBeenCalledWith(
+          `Linking submissions of form ${formId} to a user`
+        )
+      }
+    )
+
+    it('should refuse a form that is not allowed', async () => {
+      allowForms([{ formId: otherFormId, formName: 'Another form' }])
+
+      await expect(
+        linkSubmissionsToUser(sub, iss, formId, email)
+      ).rejects.toMatchObject({
+        isBoom: true,
+        output: { statusCode: 403 }
+      })
+      expect(linkSubmissionRecordsToUser).not.toHaveBeenCalled()
+      expect(logger.warn).toHaveBeenCalledWith(
+        `Refused to link submissions of form ${formId} to a user: the form is not in the allowed forms`
+      )
+    })
+
+    it('should refuse every form when no forms are allowed', async () => {
+      allowForms([])
+
+      await expect(
+        linkSubmissionsToUser(sub, iss, formId, email)
+      ).rejects.toMatchObject({ output: { statusCode: 403 } })
+      expect(linkSubmissionRecordsToUser).not.toHaveBeenCalled()
+    })
+  })
 })
+
+/**
+ * @import { AllowedForm } from '~/src/config/index.js'
+ */

@@ -123,6 +123,10 @@ export const dqlSchema = Joi.string().valid('form-submissions', 'save-and-exit')
 
 export const messageIdSchema = Joi.string()
 
+export const linkSubmissionsResponseSchema = Joi.object({
+  linked: Joi.number().integer().min(0).required()
+}).label('linkSubmissionsResponse')
+
 export const getFormRecordsResponseSchema = Joi.array()
   .items(
     Joi.object({

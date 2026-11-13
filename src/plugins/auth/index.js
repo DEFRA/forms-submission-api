@@ -172,6 +172,7 @@ export function validateAppAuth(artifacts) {
 /**
  * Additional validation for citizen access token based authentication. A
  * `sub` is unique only within its provider, so the issuer is carried with it.
+ * The email of the citizen's account is carried when the token has it.
  * @param {Artifacts<CitizenAccessTokenPayload>} artifacts
  */
 export function validateCitizenAuth(artifacts) {
@@ -192,7 +193,8 @@ export function validateCitizenAuth(artifacts) {
     credentials: {
       user: {
         sub: citizen.sub,
-        iss: citizen.iss
+        iss: citizen.iss,
+        email: citizen.email
       }
     }
   }

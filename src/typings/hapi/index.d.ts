@@ -38,6 +38,11 @@ declare module '@hapi/hapi' {
      * Issuer of a citizen access token
      */
     iss?: string
+
+    /**
+     * Email of the account of a citizen access token, when the token has it
+     */
+    email?: string
   }
 
   interface AppCredentials {
