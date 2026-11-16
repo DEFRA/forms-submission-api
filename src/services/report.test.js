@@ -1,4 +1,4 @@
-import { FormStatus } from '@defra/forms-model'
+import { CopyAnswersMetricName, FormStatus } from '@defra/forms-model'
 
 import { buildCustomisedSubmissionDocument } from '~/src/repositories/__stubs__/submission.js'
 import { getSubmissionRecordsForDate } from '~/src/repositories/submission-repository.js'
@@ -99,6 +99,105 @@ describe('report-timeline', () => {
             metricName: 'Submissions',
             metricValue: 1,
             createdAt: new Date('2025-05-07T00:00:00.000Z')
+          }
+        ]
+      })
+    })
+
+    it('should filter by language and count copy submissions without live previews', async () => {
+      const reportDate = new Date('2025-05-07T00:00:00.000Z')
+      const draftSubmissions = [
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now),
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now),
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now),
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now),
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now),
+        buildCustomisedSubmissionDocument(form1Id, FormStatus.Draft, now)
+      ]
+
+      draftSubmissions[0].meta.custom = {
+        actionName: 'copy',
+        actionReferenceNumber: '123-ABC'
+      }
+      draftSubmissions[1].meta.custom = {
+        actionName: 'copy',
+        actionReferenceNumber: '456-DEF'
+      }
+      draftSubmissions[2].meta.custom = { actionName: '' }
+      draftSubmissions[3].meta.custom = { actionName: 'delete' }
+      draftSubmissions[4].meta.custom = { actionName: 'copy' }
+      draftSubmissions[5].meta.custom = {
+        actionName: 'copy',
+        actionReferenceNumber: 123
+      }
+
+      const liveSubmission = buildCustomisedSubmissionDocument(
+        form1Id,
+        FormStatus.Live,
+        now
+      )
+      liveSubmission.meta.custom = {
+        actionName: 'copy',
+        actionReferenceNumber: '789-GHI'
+      }
+
+      const livePreview = buildCustomisedSubmissionDocument(
+        form1Id,
+        FormStatus.Live,
+        now
+      )
+      livePreview.meta.isPreview = true
+
+      const submissions = [...draftSubmissions, liveSubmission, livePreview]
+      const mockAsyncIterator = {
+        [Symbol.asyncIterator]: function* () {
+          yield* submissions
+        }
+      }
+
+      jest
+        .mocked(getSubmissionRecordsForDate)
+        // @ts-expect-error - resolves to an async iterator like FindCursor<FormMetadataDocument>
+        .mockReturnValueOnce(mockAsyncIterator)
+
+      const metrics = await generateReportTimeline(reportDate, 'cy')
+
+      expect(getSubmissionRecordsForDate).toHaveBeenCalledWith(reportDate, {
+        'meta.language': 'cy'
+      })
+      expect(metrics).toEqual({
+        timeline: [
+          {
+            type: 'timeline-metric',
+            formId: form1Id,
+            formStatus: 'draft',
+            metricName: 'Submissions',
+            metricValue: 6,
+            createdAt: reportDate
+          },
+          {
+            type: 'timeline-metric',
+            formId: form1Id,
+            formStatus: 'live',
+            metricName: 'Submissions',
+            metricValue: 1,
+            createdAt: reportDate
+          },
+          {
+            type: 'timeline-metric',
+            formId: form1Id,
+            formStatus: 'draft',
+            metricName: CopyAnswersMetricName.CopyAnswersSubmission,
+            metricValue: 2,
+            createdAt: reportDate
+          },
+          {
+            type: 'timeline-metric',
+            formId: form1Id,
+            formStatus: 'live',
+            metricName: CopyAnswersMetricName.CopyAnswersSubmission,
+            metricValue: 1,
+            createdAt: reportDate
           }
         ]
       })

@@ -130,59 +130,31 @@ export async function generateReportTimeline(date, language) {
 
     const timelineMetrics = /** @type {FormTimelineMetric[]} */ ([])
 
-    if (timelineMapDraft.size) {
-      for (const [formId, count] of timelineMapDraft) {
-        pushTimelineMetric(
-          timelineMetrics,
-          formId,
-          FormStatus.Draft,
-          count,
-          date
-        )
-      }
-    }
+    addFormTimelineMetric(
+      timelineMapDraft,
+      timelineMetrics,
+      FormStatus.Draft,
+      date
+    )
+    addFormTimelineMetric(
+      timelineMapLive,
+      timelineMetrics,
+      FormStatus.Live,
+      date
+    )
 
-    if (timelineMapLive.size) {
-      for (const [formId, count] of timelineMapLive) {
-        pushTimelineMetric(
-          timelineMetrics,
-          formId,
-          FormStatus.Live,
-          count,
-          date
-        )
-      }
-    }
-
-    if (functionalAreaMapDraft.size) {
-      for (const [formId, countMap] of functionalAreaMapDraft) {
-        for (const [actionName, count] of countMap) {
-          pushTimelineMetric(
-            timelineMetrics,
-            formId,
-            FormStatus.Draft,
-            count,
-            date,
-            actionName
-          )
-        }
-      }
-    }
-
-    if (functionalAreaMapLive.size) {
-      for (const [formId, countMap] of functionalAreaMapLive) {
-        for (const [actionName, count] of countMap) {
-          pushTimelineMetric(
-            timelineMetrics,
-            formId,
-            FormStatus.Live,
-            count,
-            date,
-            actionName
-          )
-        }
-      }
-    }
+    addFunctionalAreaTimelineMetric(
+      functionalAreaMapDraft,
+      timelineMetrics,
+      FormStatus.Draft,
+      date
+    )
+    addFunctionalAreaTimelineMetric(
+      functionalAreaMapLive,
+      timelineMetrics,
+      FormStatus.Live,
+      date
+    )
 
     logger.info(
       `[report] Generated timeline report for date ${date.toString()}`
@@ -198,6 +170,44 @@ export async function generateReportTimeline(date, language) {
     )
 
     throw err
+  }
+}
+
+/**
+ * @param {Map<string, number>} timelineMap
+ * @param {FormTimelineMetric[]} timelineMetrics
+ * @param {FormStatus} formStatus
+ * @param {Date} date
+ */
+function addFormTimelineMetric(timelineMap, timelineMetrics, formStatus, date) {
+  for (const [formId, count] of timelineMap) {
+    pushTimelineMetric(timelineMetrics, formId, formStatus, count, date)
+  }
+}
+
+/**
+ * @param {Map<string, Map<string, number>>} functionalAreaMap
+ * @param {FormTimelineMetric[]} timelineMetrics
+ * @param {FormStatus} formStatus
+ * @param {Date} date
+ */
+function addFunctionalAreaTimelineMetric(
+  functionalAreaMap,
+  timelineMetrics,
+  formStatus,
+  date
+) {
+  for (const [formId, countMap] of functionalAreaMap) {
+    for (const [actionName, count] of countMap) {
+      pushTimelineMetric(
+        timelineMetrics,
+        formId,
+        formStatus,
+        count,
+        date,
+        actionName
+      )
+    }
   }
 }
 
