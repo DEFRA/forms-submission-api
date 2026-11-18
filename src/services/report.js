@@ -1,5 +1,6 @@
 import { FormStatus as FormsEnginePluginFormStatus } from '@defra/forms-engine-plugin/types'
 import {
+  CopyAnswersMetricName,
   FormMetricName,
   FormMetricType,
   FormStatus,
@@ -23,19 +24,70 @@ function incrementFormCount(map, formId, ignore = false) {
 }
 
 /**
- * @param {any[]} timelineMetrics
+ * Validates the action within the custom metadata
+ * @param { Record<string, unknown> | undefined } custom
+ * @returns {{ actionName: string, referenceNumber: string } | undefined }
+ */
+function validateActionDetails(custom) {
+  const actionName = custom?.actionName
+  if (!actionName) {
+    return undefined
+  }
+  if (
+    actionName === 'copy' &&
+    custom.actionReferenceNumber &&
+    typeof custom.actionReferenceNumber === 'string'
+  ) {
+    return {
+      actionName: CopyAnswersMetricName.CopyAnswersSubmission,
+      referenceNumber: custom.actionReferenceNumber
+    }
+  }
+  return undefined
+}
+
+/**
+ * @param {Map<string, Map<string, number>>} map
+ * @param {FormAdapterSubmissionMessageMeta} meta
+ * @param {boolean} [ignore] - ignore live/draft previews
+ */
+function applyFunctionalArea(map, meta, ignore = false) {
+  const { formId, custom } = meta
+  const validDetails = validateActionDetails(custom)
+  if (!validDetails || ignore) {
+    return
+  }
+  const current =
+    map.get(formId) ?? /** @type {Map<string, number>} */ (new Map())
+  const currentCount = current.get(validDetails.actionName) ?? 0
+  current.set(validDetails.actionName, currentCount + 1)
+  map.set(formId, current)
+}
+
+/**
+ * @param {(FormTimelineMetric | FunctionalAreaTimelineMetric)[]} timelineMetrics
  * @param {string} formId
  * @param {FormStatus} formStatus
  * @param {number} count
  * @param {Date} date
+ * @param {string} [metricName] - optional metric name, defaults to FormMetricName.Submissions
  */
-function pushTimelineMetric(timelineMetrics, formId, formStatus, count, date) {
+function pushTimelineMetric(
+  timelineMetrics,
+  formId,
+  formStatus,
+  count,
+  date,
+  metricName
+) {
   timelineMetrics.push(
-    /** @type {FormTimelineMetric} */ ({
+    /** @type {FormTimelineMetric | FunctionalAreaTimelineMetric} */ ({
       type: FormMetricType.TimelineMetric,
       formId,
       formStatus,
-      metricName: FormMetricName.Submissions,
+      metricName: /** @type {string} */ (
+        metricName ?? FormMetricName.Submissions
+      ),
       metricValue: count,
       createdAt: date
     })
@@ -60,42 +112,50 @@ export async function generateReportTimeline(date, language) {
 
     const timelineMapDraft = /** @type {Map<string, number>} */ (new Map())
     const timelineMapLive = /** @type {Map<string, number>} */ (new Map())
+    const functionalAreaMapDraft =
+      /** @type {Map<string, Map<string, number>>} */ (new Map())
+    const functionalAreaMapLive =
+      /** @type {Map<string, Map<string, number>>} */ (new Map())
 
     for await (const submission of submissionsCursor) {
       const { formId, isPreview, status } = submission.meta
       if (status === FormsEnginePluginFormStatus.Draft) {
         incrementFormCount(timelineMapDraft, formId)
+        applyFunctionalArea(functionalAreaMapDraft, submission.meta)
       } else {
         const ignore = isPreview
         incrementFormCount(timelineMapLive, formId, ignore)
+        applyFunctionalArea(functionalAreaMapLive, submission.meta, ignore)
       }
     }
 
     const timelineMetrics = /** @type {FormTimelineMetric[]} */ ([])
 
-    if (timelineMapDraft.size) {
-      for (const [formId, count] of timelineMapDraft) {
-        pushTimelineMetric(
-          timelineMetrics,
-          formId,
-          FormStatus.Draft,
-          count,
-          date
-        )
-      }
-    }
+    addFormTimelineMetric(
+      timelineMapDraft,
+      timelineMetrics,
+      FormStatus.Draft,
+      date
+    )
+    addFormTimelineMetric(
+      timelineMapLive,
+      timelineMetrics,
+      FormStatus.Live,
+      date
+    )
 
-    if (timelineMapLive.size) {
-      for (const [formId, count] of timelineMapLive) {
-        pushTimelineMetric(
-          timelineMetrics,
-          formId,
-          FormStatus.Live,
-          count,
-          date
-        )
-      }
-    }
+    addFunctionalAreaTimelineMetric(
+      functionalAreaMapDraft,
+      timelineMetrics,
+      FormStatus.Draft,
+      date
+    )
+    addFunctionalAreaTimelineMetric(
+      functionalAreaMapLive,
+      timelineMetrics,
+      FormStatus.Live,
+      date
+    )
 
     logger.info(
       `[report] Generated timeline report for date ${date.toString()}`
@@ -115,5 +175,44 @@ export async function generateReportTimeline(date, language) {
 }
 
 /**
- * @import { FormTimelineMetric } from '@defra/forms-model'
+ * @param {Map<string, number>} timelineMap
+ * @param {FormTimelineMetric[]} timelineMetrics
+ * @param {FormStatus} formStatus
+ * @param {Date} date
+ */
+function addFormTimelineMetric(timelineMap, timelineMetrics, formStatus, date) {
+  for (const [formId, count] of timelineMap) {
+    pushTimelineMetric(timelineMetrics, formId, formStatus, count, date)
+  }
+}
+
+/**
+ * @param {Map<string, Map<string, number>>} functionalAreaMap
+ * @param {FormTimelineMetric[]} timelineMetrics
+ * @param {FormStatus} formStatus
+ * @param {Date} date
+ */
+function addFunctionalAreaTimelineMetric(
+  functionalAreaMap,
+  timelineMetrics,
+  formStatus,
+  date
+) {
+  for (const [formId, countMap] of functionalAreaMap) {
+    for (const [actionName, count] of countMap) {
+      pushTimelineMetric(
+        timelineMetrics,
+        formId,
+        formStatus,
+        count,
+        date,
+        actionName
+      )
+    }
+  }
+}
+
+/**
+ * @import { FormTimelineMetric, FunctionalAreaTimelineMetric } from '@defra/forms-model'
+ * @import { FormAdapterSubmissionMessageMeta } from '@defra/forms-engine-plugin/engine/types.js'
  */
