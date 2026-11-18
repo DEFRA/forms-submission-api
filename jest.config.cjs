@@ -45,7 +45,8 @@ module.exports = {
       'nanoid', // Supports ESM only
       'slug', // Supports ESM only
       '@defra/forms-engine-plugin', // Supports ESM only
-      'geodesy' // Supports ESM only
+      'geodesy', // Supports ESM only
+      'jose' // Supports ESM only
     ].join('|')}/)`
   ]
 }
