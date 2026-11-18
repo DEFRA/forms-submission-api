@@ -28,7 +28,7 @@ function incrementFormCount(map, formId, ignore = false) {
  * @param { Record<string, unknown> | undefined } custom
  * @returns {{ actionName: string, referenceNumber: string } | undefined }
  */
-function actionDetailsAreValid(custom) {
+function validateActionDetails(custom) {
   const actionName = custom?.actionName
   if (!actionName) {
     return undefined
@@ -49,11 +49,12 @@ function actionDetailsAreValid(custom) {
 /**
  * @param {Map<string, Map<string, number>>} map
  * @param {FormAdapterSubmissionMessageMeta} meta
+ * @param {boolean} [ignore] - ignore live/draft previews
  */
-function applyFunctionalArea(map, meta) {
+function applyFunctionalArea(map, meta, ignore = false) {
   const { formId, custom } = meta
-  const validDetails = actionDetailsAreValid(custom)
-  if (!validDetails) {
+  const validDetails = validateActionDetails(custom)
+  if (!validDetails || ignore) {
     return
   }
   const current =
@@ -124,7 +125,7 @@ export async function generateReportTimeline(date, language) {
       } else {
         const ignore = isPreview
         incrementFormCount(timelineMapLive, formId, ignore)
-        applyFunctionalArea(functionalAreaMapLive, submission.meta)
+        applyFunctionalArea(functionalAreaMapLive, submission.meta, ignore)
       }
     }
 
