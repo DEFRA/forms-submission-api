@@ -6,7 +6,8 @@ import { config } from '~/src/config/index.js'
 import {
   AZURE_OIDC_TOKEN_STRATEGY,
   CITIZEN_ACCESS_TOKEN_STRATEGY,
-  COGNITO_ACCESS_TOKEN
+  COGNITO_ACCESS_TOKEN,
+  HTTP_INTERNAL_SERVER_ERROR
 } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
@@ -106,7 +107,10 @@ export const auth = {
           filter: { tags: ['auth', 'unauthenticated', 'try'], all: true }
         },
         (request, { error }) => {
-          if (Boom.isBoom(error) && error.output.statusCode >= 500) {
+          if (
+            Boom.isBoom(error) &&
+            error.output.statusCode >= HTTP_INTERNAL_SERVER_ERROR
+          ) {
             logger.error(
               `[authFailed] ${request.auth.strategy} could not authenticate the request - ${getErrorMessage(error)}`
             )
