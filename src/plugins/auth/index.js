@@ -1,3 +1,4 @@
+import { getErrorMessage } from '@defra/forms-model'
 import Boom from '@hapi/boom'
 import Jwt from '@hapi/jwt'
 
@@ -5,7 +6,8 @@ import { config } from '~/src/config/index.js'
 import {
   AZURE_OIDC_TOKEN_STRATEGY,
   CITIZEN_ACCESS_TOKEN_STRATEGY,
-  COGNITO_ACCESS_TOKEN
+  COGNITO_ACCESS_TOKEN,
+  HTTP_INTERNAL_SERVER_ERROR
 } from '~/src/constants.js'
 import { logger } from '~/src/helpers/logging/logger.js'
 import { getUserScopes } from '~/src/services/entitlements-service.js'
@@ -93,6 +95,28 @@ export const auth = {
 
       // Set as the default strategy
       server.auth.default('azure-oidc-token')
+
+      // `try` carries on past a strategy that failed, and hapi reports it
+      // only as this internal event. A 5xx is a fault in the service rather
+      // than bad credentials. The message alone is logged, as the error can
+      // carry tokens.
+      server.events.on(
+        {
+          name: 'request',
+          channels: 'internal',
+          filter: { tags: ['auth', 'unauthenticated', 'try'], all: true }
+        },
+        (request, { error }) => {
+          if (
+            Boom.isBoom(error) &&
+            error.output.statusCode >= HTTP_INTERNAL_SERVER_ERROR
+          ) {
+            logger.error(
+              `[authFailed] ${request.auth.strategy} could not authenticate the request - ${getErrorMessage(error)}`
+            )
+          }
+        }
+      )
     }
   }
 }

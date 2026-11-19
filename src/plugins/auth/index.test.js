@@ -1,5 +1,10 @@
+import Boom from '@hapi/boom'
+import Hapi from '@hapi/hapi'
+
+import { logger } from '~/src/helpers/logging/logger.js'
 import { buildArtifactStub } from '~/src/plugins/auth/auth-stub.js'
 import {
+  auth,
   validateAppAuth,
   validateAuth,
   validateCitizenAuth,
@@ -10,6 +15,85 @@ import { getUserScopes } from '~/src/services/entitlements-service.js'
 jest.mock('~/src/services/entitlements-service.js')
 
 describe('Auth plugin', () => {
+  describe('authentication failure events', () => {
+    /** @type {Hapi.Server} */
+    let server
+    /** @type {jest.SpyInstance} */
+    let logError
+
+    beforeEach(async () => {
+      server = Hapi.server()
+      logError = jest.spyOn(logger, 'error').mockReturnValue(undefined)
+      await server.register(auth)
+    })
+
+    afterEach(async () => {
+      await server.stop()
+    })
+
+    /**
+     * @param {Hapi.Server} server
+     * @param {Error | undefined} error
+     * @param {string[]} tags
+     * @param {string} channel
+     */
+    const emitEvent = (server, error, tags, channel = 'internal') => {
+      const request = { auth: { strategy: 'azure-oidc-token' } }
+      const event = { error, tags, channel }
+
+      server.events.emit({ name: 'request', tags, channel }, [request, event])
+    }
+
+    test.each([500, 503])(
+      'logs a %i authentication failure without logging the error object',
+      (statusCode) => {
+        const error = Boom.boomify(new Error('Authentication service failed'), {
+          statusCode,
+          data: { token: 'sensitive-token' }
+        })
+
+        emitEvent(server, error, ['auth', 'unauthenticated', 'try'])
+
+        expect(logError).toHaveBeenCalledExactlyOnceWith(
+          '[authFailed] azure-oidc-token could not authenticate the request - Authentication service failed'
+        )
+      }
+    )
+
+    test.each([
+      ['a 4xx Boom error', Boom.unauthorized('Invalid credentials')],
+      [
+        'a 499 Boom error',
+        Boom.boomify(new Error('Client failure'), { statusCode: 499 })
+      ],
+      ['a non-Boom error', new Error('Failure')],
+      ['an absent error', undefined]
+    ])('does not log %s', (_description, error) => {
+      emitEvent(server, error, ['auth', 'unauthenticated', 'try'])
+
+      expect(logError).not.toHaveBeenCalled()
+    })
+
+    test.each([
+      ['app', ['auth', 'unauthenticated', 'try']],
+      ['internal', ['auth', 'unauthenticated']],
+      ['internal', ['auth', 'try']],
+      ['internal', ['unauthenticated', 'try']]
+    ])(
+      'ignores events outside the subscribed channel or tags',
+      (channel, tags) => {
+        emitEvent(
+          server,
+          Boom.internal('Authentication service failed'),
+          tags,
+          channel
+        )
+
+        expect(logError).not.toHaveBeenCalled()
+      }
+    )
+  })
+
   describe('Validate azure JWT', () => {
     test('Testing validateAuth with a valid artifact returns isValid: true', async () => {
       jest
