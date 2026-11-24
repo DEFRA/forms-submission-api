@@ -11,7 +11,6 @@ import { logger } from '~/src/helpers/logging/logger.js'
 import { requestTracing } from '~/src/helpers/request-tracing.js'
 import { prepareDb } from '~/src/mongo.js'
 import { auth } from '~/src/plugins/auth/index.js'
-import { forwardLogs } from '~/src/plugins/forward-logs.js'
 import { logErrors } from '~/src/plugins/log-errors.js'
 import { logRequests } from '~/src/plugins/log-requests.js'
 import { router } from '~/src/plugins/router.js'
@@ -75,13 +74,7 @@ export async function createServer() {
 
   server.app.runtimeId = runtimeId
 
-  await server.register([
-    logRequests,
-    requestTracing,
-    auth,
-    logErrors,
-    forwardLogs
-  ])
+  await server.register([logRequests, requestTracing, auth, logErrors])
 
   if (isProduction) {
     prepareSecureContext((message) => {
