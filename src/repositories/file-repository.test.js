@@ -69,6 +69,7 @@ describe('file repository', () => {
     formId: '1234',
     retrievalKey: 'test',
     retrievalKeyIsCaseSensitive: true,
+    publicRetrievalId: 'guid',
     _id: new ObjectId()
   }
 

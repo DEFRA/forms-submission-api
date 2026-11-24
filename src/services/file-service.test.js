@@ -555,7 +555,8 @@ describe('Files service', () => {
         formId: '1234',
         retrievalKey: 'test',
         retrievalKeyIsCaseSensitive: true,
-        _id: new ObjectId()
+        _id: new ObjectId(),
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(uploadedFile)
@@ -575,7 +576,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -600,7 +602,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         _id: new ObjectId(),
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(repository.getByFileId).mockResolvedValueOnce(dummyData)
@@ -628,7 +631,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -649,7 +653,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         _id: new ObjectId(),
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(false)
@@ -675,7 +680,8 @@ describe('Files service', () => {
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        publicRetrievalId: 'guid'
       }
 
       const caseSensitiveKey = 'Some.Name@gov.uk'
@@ -707,7 +713,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       const expectedNewKey = 'loaded/dummy-file-123.txt'
@@ -767,14 +774,16 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       /** @type {FormFileUploadStatus} */
       const dummyData2 = {
         ...successfulFile,
         s3Key: "staging/path-that-won't-exist.txt",
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -823,7 +832,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(false)
@@ -854,7 +864,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/extra-level/extra-level-two/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       const expectedNewKey = 'loaded/dummy-file-123.txt'
@@ -899,7 +910,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'loaded/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -933,7 +945,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'loaded/dummy-file-123.txt',
         s3Bucket: undefined,
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -962,7 +975,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: undefined,
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -990,7 +1004,8 @@ describe('Files service', () => {
         ...successfulFile,
         s3Key: 'dummy',
         s3Bucket: 'dummy',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -1022,7 +1037,8 @@ describe('Files service', () => {
       const dummyData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'test'
+        retrievalKey: 'test',
+        publicRetrievalId: 'guid'
       }
       const unexpectedError = new Error('Unexpected S3 failure')
 
@@ -1051,7 +1067,8 @@ describe('Files service', () => {
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(hash).mockResolvedValueOnce('hashedKey')
@@ -1078,7 +1095,8 @@ describe('Files service', () => {
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)
@@ -1111,7 +1129,8 @@ describe('Files service', () => {
       const mockData = {
         ...successfulFile,
         s3Key: 'staging/dummy-file-123.txt',
-        retrievalKey: 'some-key'
+        retrievalKey: 'some-key',
+        publicRetrievalId: 'guid'
       }
 
       jest.mocked(verify).mockResolvedValueOnce(true)

@@ -28,7 +28,7 @@
  */
 
 /**
- * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
+ * @typedef {Omit<FileUploadStatus, 'fileStatus'> & { publicRetrievalId: string, retrievalKey: string, retrievalKeyIsCaseSensitive?: boolean }} FormFileUploadStatus
  */
 
 /**
@@ -64,7 +64,7 @@
  */
 
 /**
- * @typedef {FormAdapterSubmissionMessagePayload & { recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
+ * @typedef {FormAdapterSubmissionMessagePayload & { publicRetrievalId: string, recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
  */
 
 /**

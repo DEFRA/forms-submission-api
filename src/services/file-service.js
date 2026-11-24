@@ -1,3 +1,5 @@
+import crypto from 'node:crypto'
+
 import {
   GetObjectCommand,
   HeadObjectCommand,
@@ -70,7 +72,8 @@ export async function ingestFile(uploadPayload) {
       s3Key: fileContainer.s3Key,
       s3Bucket: fileContainer.s3Bucket,
       retrievalKey: hashed,
-      retrievalKeyIsCaseSensitive
+      retrievalKeyIsCaseSensitive,
+      publicRetrievalId: crypto.randomUUID()
     }
 
     try {

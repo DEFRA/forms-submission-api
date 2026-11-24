@@ -1,3 +1,5 @@
+import crypto from 'node:crypto'
+
 import { runWithMessageLogContext } from '@defra/forms-common'
 import { formAdapterSubmissionMessagePayloadSchema } from '@defra/forms-engine-plugin/engine/types/schema.js'
 import { getErrorMessage } from '@defra/forms-model'
@@ -59,7 +61,8 @@ export function mapSubmissionDataToDocument(message) {
   return {
     ...message.parsedContent,
     recordCreatedAt,
-    expireAt
+    expireAt,
+    publicRetrievalId: crypto.randomUUID()
   }
 }
 

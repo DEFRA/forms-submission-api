@@ -78,7 +78,8 @@ describe('Service Helpers', () => {
         s3Key: expect.stringContaining('loaded/'),
         s3Bucket: expect.any(String),
         retrievalKey: 'hashed-key',
-        retrievalKeyIsCaseSensitive: true
+        retrievalKeyIsCaseSensitive: true,
+        publicRetrievalId: expect.any(String)
       })
     })
 

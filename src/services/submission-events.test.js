@@ -149,6 +149,7 @@ describe('events', () => {
       expect(mapSubmissionDataToDocument(messageData)).toEqual({
         recordCreatedAt: expect.any(Date),
         expireAt: expect.any(Date),
+        publicRetrievalId: expect.any(String),
         meta: {
           schemaVersion: 1,
           timestamp: new Date('2025-11-14T10:42:05.534Z'),

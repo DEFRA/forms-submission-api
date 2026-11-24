@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto'
+import { randomUUID } from 'node:crypto'
 
 import Boom from '@hapi/boom'
 
@@ -47,7 +47,8 @@ export async function createMainCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    publicRetrievalId: randomUUID()
   })
 
   return fileId
@@ -88,7 +89,8 @@ export async function createRepeaterCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    publicRetrievalId: randomUUID()
   })
 
   return { name: repeater.name, fileId }
@@ -155,7 +157,8 @@ export async function createSubmissionXlsxFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive
+    retrievalKeyIsCaseSensitive,
+    publicRetrievalId: randomUUID()
   })
 
   return { fileId }
