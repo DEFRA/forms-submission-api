@@ -47,8 +47,7 @@ export async function createMainCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive,
-    publicRetrievalId: randomUUID()
+    retrievalKeyIsCaseSensitive
   })
 
   return fileId
@@ -89,8 +88,7 @@ export async function createRepeaterCsvFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive,
-    publicRetrievalId: randomUUID()
+    retrievalKeyIsCaseSensitive
   })
 
   return { name: repeater.name, fileId }
@@ -157,8 +155,7 @@ export async function createSubmissionXlsxFile(
     s3Key: fileKey,
     s3Bucket,
     retrievalKey: hashedRetrievalKey,
-    retrievalKeyIsCaseSensitive,
-    publicRetrievalId: randomUUID()
+    retrievalKeyIsCaseSensitive
   })
 
   return { fileId }

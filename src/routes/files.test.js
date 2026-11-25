@@ -175,8 +175,7 @@ describe('Files route', () => {
         retrievalKeyIsCaseSensitive: true,
         fileId: '12345',
         filename: 'test.txt',
-        retrievalKey: 'test-key',
-        publicRetrievalId: 'guid'
+        retrievalKey: 'test-key'
       })
 
       const response = await server.inject({
@@ -195,8 +194,7 @@ describe('Files route', () => {
       jest.mocked(checkFileStatus).mockResolvedValue({
         fileId: '12345',
         filename: 'test.txt',
-        retrievalKey: 'test-key',
-        publicRetrievalId: 'guid'
+        retrievalKey: 'test-key'
       })
 
       const response = await server.inject({
