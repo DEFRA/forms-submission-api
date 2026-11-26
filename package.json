@@ -55,7 +55,7 @@
     "@hapi/jwt": "^3.2.3",
     "@hapi/vision": "^7.0.3",
     "@types/content-disposition": "^0.5.9",
-    "argon2": "^0.44.0",
+    "argon2": "^0.45.1",
     "content-disposition": "^2.0.1",
     "convict": "^6.2.5",
     "csv-stringify": "^6.7.0",
