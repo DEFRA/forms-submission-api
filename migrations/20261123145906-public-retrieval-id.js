@@ -25,6 +25,16 @@ export const up = async (db) => {
   console.log(
     `[PUBLIC-RETRIEVAL-ID] Added public retrieval ID to the ${SUBMISSIONS_COLLECTION_NAME} collection`
   )
+
+  console.log(
+    `[PUBLIC-RETRIEVAL-ID] Adding public retrieval ID index to the ${SUBMISSIONS_COLLECTION_NAME} collection`
+  )
+
+  await submissionsColl.createIndex({ publicRetrievalId: 1 }, { unique: true })
+
+  console.log(
+    `[PUBLIC-RETRIEVAL-ID] Added public retrieval ID index to the ${SUBMISSIONS_COLLECTION_NAME} collection`
+  )
 }
 
 /**
