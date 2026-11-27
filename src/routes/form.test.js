@@ -8,7 +8,10 @@ import {
   getFormRecordsForUser,
   linkSubmissionsToUser
 } from '~/src/services/form-records-service.js'
-import { generateReportTimeline } from '~/src/services/report.js'
+import {
+  generateReportTimeline,
+  getEarliestSubmission
+} from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
@@ -482,6 +485,31 @@ describe('Forms route', () => {
       expect(response.result).toMatchObject({
         timeline: []
       })
+    })
+
+    test('Testing GET /report/earliest-submission route returns data', async () => {
+      const earliestDate = new Date('2025-08-05T10:11:12.000Z')
+      jest.mocked(getEarliestSubmission).mockResolvedValueOnce({ earliestDate })
+      const response = await server.inject({
+        method: 'GET',
+        url: '/report/earliest-submission'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual({ earliestDate })
+    })
+
+    test('Testing GET /report/earliest-submission route returns null when no submissions', async () => {
+      jest
+        .mocked(getEarliestSubmission)
+        .mockResolvedValueOnce({ earliestDate: null })
+      const response = await server.inject({
+        method: 'GET',
+        url: '/report/earliest-submission'
+      })
+
+      expect(response.statusCode).toEqual(StatusCodes.OK)
+      expect(response.result).toEqual({ earliestDate: null })
     })
   })
 

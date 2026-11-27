@@ -9,6 +9,7 @@ import {
 } from '~/src/repositories/__stubs__/submission.js'
 import {
   createSubmissionRecord,
+  getEarliestSubmissionDate,
   getSubmissionRecordByReference,
   getSubmissionRecords,
   getSubmissionRecordsForDate,
@@ -302,6 +303,35 @@ describe('submission repository', () => {
       expect(() => getSubmissionRecordsForDate(date, undefined)).toThrow(
         'db error'
       )
+    })
+  })
+
+  describe('getEarliestSubmissionDate', () => {
+    it('should return the timestamp of the earliest submission', async () => {
+      const timestamp = new Date('2025-08-05T10:11:12.000Z')
+      mockCollection.findOne.mockResolvedValueOnce({ meta: { timestamp } })
+
+      const result = await getEarliestSubmissionDate()
+
+      expect(result).toEqual(timestamp)
+      expect(mockCollection.findOne).toHaveBeenCalledWith(
+        { 'meta.timestamp': { $type: 'date' } },
+        { sort: { 'meta.timestamp': 1 }, projection: { 'meta.timestamp': 1 } }
+      )
+    })
+
+    it('should return null when there are no submissions', async () => {
+      mockCollection.findOne.mockResolvedValueOnce(null)
+
+      const result = await getEarliestSubmissionDate()
+
+      expect(result).toBeNull()
+    })
+
+    it('should log and throw when error', async () => {
+      mockCollection.findOne.mockRejectedValueOnce(new Error('db error'))
+
+      await expect(getEarliestSubmissionDate()).rejects.toThrow('db error')
     })
   })
 })

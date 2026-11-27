@@ -8,7 +8,10 @@ import {
 } from '@defra/forms-model'
 
 import { logger } from '~/src/helpers/logging/logger.js'
-import { getSubmissionRecordsForDate } from '~/src/repositories/submission-repository.js'
+import {
+  getEarliestSubmissionDate,
+  getSubmissionRecordsForDate
+} from '~/src/repositories/submission-repository.js'
 
 /**
  * @param {Map<string, number>} map
@@ -92,6 +95,15 @@ function pushTimelineMetric(
       createdAt: date
     })
   )
+}
+
+/**
+ * Gets the date of the earliest submission record still held
+ * @returns {Promise<{ earliestDate: Date | null }>}
+ */
+export async function getEarliestSubmission() {
+  const earliestDate = await getEarliestSubmissionDate()
+  return { earliestDate }
 }
 
 /**

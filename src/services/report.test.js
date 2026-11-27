@@ -1,8 +1,14 @@
 import { CopyAnswersMetricName, FormStatus } from '@defra/forms-model'
 
 import { buildCustomisedSubmissionDocument } from '~/src/repositories/__stubs__/submission.js'
-import { getSubmissionRecordsForDate } from '~/src/repositories/submission-repository.js'
-import { generateReportTimeline } from '~/src/services/report.js'
+import {
+  getEarliestSubmissionDate,
+  getSubmissionRecordsForDate
+} from '~/src/repositories/submission-repository.js'
+import {
+  generateReportTimeline,
+  getEarliestSubmission
+} from '~/src/services/report.js'
 
 jest.mock('~/src/repositories/submission-repository.js')
 
@@ -15,6 +21,15 @@ jest.mock('~/src/mongo.js', () => ({
 }))
 
 describe('report-timeline', () => {
+  describe('getEarliestSubmission', () => {
+    it('should return the earliest submission date', async () => {
+      const earliestDate = new Date('2025-08-05T10:11:12.000Z')
+      jest.mocked(getEarliestSubmissionDate).mockResolvedValueOnce(earliestDate)
+
+      await expect(getEarliestSubmission()).resolves.toEqual({ earliestDate })
+    })
+  })
+
   describe('generateReportTimeline', () => {
     const now = new Date()
 

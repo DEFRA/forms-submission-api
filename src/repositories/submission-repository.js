@@ -44,6 +44,32 @@ export function getSubmissionRecords(formId, filter) {
 }
 
 /**
+ * Gets the timestamp of the earliest submission record still held
+ * (older records may have been removed by the TTL index)
+ * @returns {Promise<Date | null>}
+ */
+export async function getEarliestSubmissionDate() {
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  try {
+    const earliest = await coll.findOne(
+      { 'meta.timestamp': { $type: 'date' } },
+      { sort: { 'meta.timestamp': 1 }, projection: { 'meta.timestamp': 1 } }
+    )
+
+    return earliest?.meta.timestamp ?? null
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to read earliest submission date - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Gets all submission records for a single day
  * @param {Date} date - the specified day
  * @param { Filter<FormSubmissionDocument> | undefined } filter - additional properties by which to filter records e.g. 'welsh-submission'

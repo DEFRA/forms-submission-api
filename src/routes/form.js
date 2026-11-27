@@ -5,6 +5,7 @@ import Joi from 'joi'
 import { CITIZEN_ACCESS_TOKEN_STRATEGY } from '~/src/constants.js'
 import {
   deleteSavedLinkResponseSchema,
+  earliestSubmissionResponseSchema,
   formSubmitResponseSchema,
   generateReportTimelineResponseSchema,
   getFormRecordsResponseSchema,
@@ -22,7 +23,10 @@ import {
   getFormRecordsForUser,
   linkSubmissionsToUser
 } from '~/src/services/form-records-service.js'
-import { generateReportTimeline } from '~/src/services/report.js'
+import {
+  generateReportTimeline,
+  getEarliestSubmission
+} from '~/src/services/report.js'
 import {
   getSaveAndExitRecordForUser,
   getSaveAndExitRecordsForUser,
@@ -332,7 +336,24 @@ export default [
         }
       }
     }
-  })
+  }),
+
+  {
+    method: 'GET',
+    path: '/report/earliest-submission',
+    handler() {
+      return getEarliestSubmission()
+    },
+    options: {
+      tags: ['api'],
+      auth: false,
+      response: {
+        status: {
+          200: earliestSubmissionResponseSchema
+        }
+      }
+    }
+  }
 ]
 
 /**
