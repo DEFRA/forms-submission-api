@@ -109,6 +109,10 @@ export const generateReportTimelineResponseSchema = Joi.object({
   })
 }).label('generateReportTimelineResponse')
 
+export const earliestSubmissionResponseSchema = Joi.object({
+  earliestDate: Joi.date().allow(null).required()
+}).label('earliestSubmissionResponse')
+
 /**
  * @type {Joi.StringSchema<string>}
  */
