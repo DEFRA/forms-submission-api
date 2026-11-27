@@ -7,10 +7,13 @@ import {
 } from '~/src/constants.js'
 import {
   generateReferenceNumberResponseSchema,
-  getSubmissionByReferenceResponseSchema
+  getSubmissionResponseSchema
 } from '~/src/models/form.js'
 import { create as createReferenceNumber } from '~/src/repositories/reference-number-repository.js'
-import { getSubmissionRecordByReference } from '~/src/repositories/submission-repository.js'
+import {
+  getSubmissionRecordByReference,
+  getSubmissionRecordByRetrievalId
+} from '~/src/repositories/submission-repository.js'
 
 export default [
   /**
@@ -57,7 +60,7 @@ export default [
       },
       response: {
         status: {
-          200: getSubmissionByReferenceResponseSchema
+          200: getSubmissionResponseSchema
         }
       }
     }
@@ -90,11 +93,53 @@ export default [
         }
       }
     }
+  }),
+  /**
+   * @satisfies {ServerRoute<GetSubmissionByRetrievalId>}
+   */
+  ({
+    method: 'GET',
+    path: '/submission/retrieve/{retrievalId}',
+    async handler(request) {
+      const { params } = request
+      const { retrievalId } = params
+      const record = await getSubmissionRecordByRetrievalId(retrievalId)
+
+      if (!record) {
+        return Boom.notFound(
+          `Submission record with retrieval id ${retrievalId} was not found`
+        )
+      }
+
+      return record
+    },
+    options: {
+      tags: ['api'],
+      auth: {
+        strategy: AZURE_OIDC_TOKEN_STRATEGY,
+        access: {
+          entity: 'user',
+          scope: false
+        }
+      },
+      validate: {
+        params: Joi.object()
+          .keys({
+            retrievalId: Joi.string().required()
+          })
+          .label('getSubmissionByRetrievalParams')
+      },
+      response: {
+        status: {
+          200: getSubmissionResponseSchema
+        }
+      }
+    }
   })
 ]
 
 /**
  * @import { ServerRoute } from '@hapi/hapi'
- * @import { GenerateReferenceNumber, GetSubmissionByReference } from '~/src/api/types.js'
+ * @import { GenerateReferenceNumber, GetSubmissionByRetrievalId, GetSubmissionByReference } from '~/src/api/types.js'
  * @import { CitizenCredentials } from '~/src/api/types.js'
  */

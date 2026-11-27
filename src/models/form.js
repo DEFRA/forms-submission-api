@@ -89,14 +89,14 @@ export const resetSaveAndExitLinkResponseSchema = Joi.object({
 /**
  * @type {Joi.ObjectSchema<FormSubmissionDocument>}
  */
-export const getSubmissionByReferenceResponseSchema = Joi.object()
+export const getSubmissionResponseSchema = Joi.object()
   .keys({
     _id: Joi.string().hex().required(),
     recordCreatedAt: Joi.string().isoDate().required(),
     expireAt: Joi.string().isoDate().required()
   })
   .concat(formAdapterSubmissionMessagePayloadSchema)
-  .label('getSubmissionByReferenceResponseSchema')
+  .label('getSubmissionResponseSchema')
 
 export const generateReportTimelineResponseSchema = Joi.object({
   timeline: Joi.array().items({

@@ -132,6 +132,7 @@ export function buildFormAdapterSubmissionMessagePayloadStub(
     meta: buildFormAdapterSubmissionMessageMetaStub(),
     data: buildFormAdapterSubmissionMessageData(),
     result: buildFormAdapterSubmissionMessageResult(),
+    publicRetrievalId: '4975fcc5-2962-4ef5-b43c-c935ab734f3b',
     ...partialFormAdapterSubmissionMessagePayload
   }
 }
