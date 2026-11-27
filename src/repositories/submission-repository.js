@@ -157,6 +157,35 @@ export async function getSubmissionRecordByReference(
 }
 
 /**
+ * Gets a submission record based on the public retrieval id
+ * @param {string} retrievalId - the reference number
+ * @returns { Promise<WithId<FormSubmissionDocument> | null> }
+ */
+export async function getSubmissionRecordByRetrievalId(retrievalId) {
+  logger.info('Reading submission record by retrieval id')
+
+  const coll = /** @type {Collection<FormSubmissionDocument>} */ (
+    db.collection(SUBMISSIONS_COLLECTION_NAME)
+  )
+
+  try {
+    const result = await coll.findOne({
+      publicRetrievalId: retrievalId
+    })
+
+    logger.info('Read submission record by retrieval id')
+
+    return result
+  } catch (err) {
+    logger.error(
+      err,
+      `Failed to read submission record by retrieval id - ${getErrorMessage(err)}`
+    )
+    throw err
+  }
+}
+
+/**
  * Get all submission records for a user based on form ID
  * @param {string} sub - the user's subject identifier
  * @param {string} iss - the issuer of the token

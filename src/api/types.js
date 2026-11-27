@@ -64,7 +64,7 @@
  */
 
 /**
- * @typedef {FormAdapterSubmissionMessagePayload & { publicRetrievalId: string, recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
+ * @typedef {FormAdapterSubmissionMessagePayload & { recordCreatedAt: Date, expireAt: Date }} FormSubmissionDocument
  */
 
 /**
@@ -82,6 +82,7 @@
 /**
  * @typedef {{ Params: { referenceNumber: string }}} GetSubmissionByReference
  * @typedef {{ Query: { prefix?: string }}} GenerateReferenceNumber
+ * @typedef {{ Params: { retrievalId: string }}} GetSubmissionByRetrievalId
  * @typedef {{ Params: { dlq: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueRequest
  * @typedef {{ Params: { dlq: string, messageId: string }, Query: { visibilityTimeout?: number, waitTimeSeconds?: number }}} DeadLetterQueueMessageRequest
  */

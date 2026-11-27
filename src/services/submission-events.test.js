@@ -62,7 +62,7 @@ describe('events', () => {
    * @type {Message}
    */
   const submissionMessage = {
-    Body: `{"meta":{"schemaVersion":1,"timestamp":"2025-11-14T10:42:05.534Z","referenceNumber":"121-6C2-5B4","formName":"My form","formId":"688131eeff67f889d52c66cc","formSlug":"my-form","status":"live","isPreview":false,"notificationEmail":"name@example.gov.uk","versionMetadata":{"versionNumber":36,"createdAt":"2025-10-16T13:54:59.512Z"}},"data":{"main":{"dGCWRr":"England","mpDPsu":{"day":13,"month":2,"year":1978},"qHKjBt":"Chocolate"},"repeaters":{},"files":{}},"result":{"files":{"main":"814b448c-c9f0-48ba-83f4-f5500df91cdc","repeaters":{}}}}`,
+    Body: `{"meta":{"schemaVersion":1,"timestamp":"2025-11-14T10:42:05.534Z","referenceNumber":"121-6C2-5B4","formName":"My form","formId":"688131eeff67f889d52c66cc","formSlug":"my-form","status":"live","isPreview":false,"notificationEmail":"name@example.gov.uk","versionMetadata":{"versionNumber":36,"createdAt":"2025-10-16T13:54:59.512Z"}},"data":{"main":{"dGCWRr":"England","mpDPsu":{"day":13,"month":2,"year":1978},"qHKjBt":"Chocolate"},"repeaters":{},"files":{}},"result":{"files":{"main":"814b448c-c9f0-48ba-83f4-f5500df91cdc","repeaters":{}}},"publicRetrievalId":"0401f929-a1c4-441c-9cd0-d2d847845523"}`,
     MD5OfBody: 'a06ffc5688321b187cec5fdb9bcc62fa',
     MessageAttributes: {},
     MessageId: 'fbafb17e-86f0-4ac6-b864-3f32cd60b228',
@@ -108,7 +108,8 @@ describe('events', () => {
               main: '814b448c-c9f0-48ba-83f4-f5500df91cdc',
               repeaters: {}
             }
-          }
+          },
+          publicRetrievalId: '0401f929-a1c4-441c-9cd0-d2d847845523'
         }
       })
     })

@@ -10,6 +10,7 @@ import {
 import {
   createSubmissionRecord,
   getSubmissionRecordByReference,
+  getSubmissionRecordByRetrievalId,
   getSubmissionRecords,
   getSubmissionRecordsForDate,
   getSubmissionRecordsForUser,
@@ -164,6 +165,39 @@ describe('submission repository', () => {
 
       await expect(
         getSubmissionRecordByReference(STUB_SUBMISSION_REF)
+      ).rejects.toThrow(new Error('an error'))
+    })
+  })
+
+  describe('getSubmissionRecordByRetrievalId', () => {
+    const retrievalId = '0401f929-a1c4-441c-9cd0-d2d847845523'
+
+    it('should get submission record', async () => {
+      mockCollection.findOne.mockResolvedValueOnce(submissionDocument)
+
+      const submissionRecord =
+        await getSubmissionRecordByRetrievalId(retrievalId)
+
+      expect(mockCollection.findOne).toHaveBeenCalledWith({
+        publicRetrievalId: retrievalId
+      })
+      expect(submissionRecord).toEqual(submissionDocument)
+    })
+
+    it('should return null when no submission record is found', async () => {
+      mockCollection.findOne.mockResolvedValueOnce(null)
+
+      const submissionRecord =
+        await getSubmissionRecordByRetrievalId(retrievalId)
+
+      expect(submissionRecord).toBeNull()
+    })
+
+    it('should handle get submission record failures', async () => {
+      mockCollection.findOne.mockRejectedValueOnce(new Error('an error'))
+
+      await expect(
+        getSubmissionRecordByRetrievalId(retrievalId)
       ).rejects.toThrow(new Error('an error'))
     })
   })
